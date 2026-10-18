@@ -57,6 +57,18 @@ jobs:
       - name: Pull Vercel project settings and environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
+      # Secret-type variables are write-only, and `vercel pull` writes a
+      # [SENSITIVE] placeholder for them; values baked into the build must be
+      # Config-type in the Vercel project.
+      - name: Verify build-time variables are readable
+        run: |
+          for key in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY; do
+            if grep -qE "^${key}=.*\[SENSITIVE\]" .vercel/.env.production.local; then
+              echo "::error::$key is Secret-type in Vercel, so vercel pull cannot read its value. Recreate it as a Config-type variable, then deploy again."
+              exit 1
+            fi
+          done
+
       - name: Build production artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 

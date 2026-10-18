@@ -132,6 +132,12 @@ One-time setup:
 2. In the Vercel project, set **Node.js Version** to 24 under Settings →
    General, then add the environment variables above for **Production**
    (`NEXT_PUBLIC_SITE_URL` is the production origin once the domain is known).
+   Use the **Config** type for every `NEXT_PUBLIC_*` variable: Secret-type
+   values are write-only, so `vercel pull` cannot read them and the build
+   inlines a `[SENSITIVE]` placeholder instead. (The Supabase integration
+   creates its variables as Secret; recreate the `NEXT_PUBLIC_*` ones it
+   provides as Config.) The workflow fails fast if a required build-time
+   variable comes back as a placeholder.
 3. Run `npx vercel login` and `npx vercel link` locally, read `orgId` and
    `projectId` from `.vercel/project.json`, and create a token under Account
    Settings → Tokens.
