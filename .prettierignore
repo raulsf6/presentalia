@@ -1,0 +1,6 @@
+node_modules
+.next
+.superpowers
+.vercel
+next-env.d.ts
+package-lock.json

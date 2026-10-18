@@ -1,0 +1,9 @@
+{
+  "plugins": ["prettier-plugin-sql", "prettier-plugin-tailwindcss"],
+  "printWidth": 80,
+  "language": "postgresql",
+  "keywordCase": "upper",
+  "semi": true,
+  "singleQuote": false,
+  "tailwindFunctions": ["clsx", "cva", "cn", "twMerge"]
+}
