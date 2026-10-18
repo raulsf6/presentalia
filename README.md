@@ -44,7 +44,7 @@ chooses identifiable results before launching a poll.
    invitees can read their email before the link expires.
 5. Under **Project Settings → API**, copy the project URL, anon/public key,
    and service-role key. Under **Project Settings → Database → Connection
-   string**, copy the **Transaction pooler** URL for the app's `DATABASE_URL`.
+   string**, copy the **Transaction pooler** URL for the app's `POSTGRES_URL`.
    The database password is URL-encoded if it contains reserved characters.
 
 Only provisioned app users and the one-time bootstrap email can request a
@@ -103,7 +103,7 @@ For a hosted Supabase project, configure these environment variables in
 | ------------------------------- | ------------------------------------------------------------ | -------------------------------------------- |
 | `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL                                         | Browser and server                           |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key                                     | Browser and server                           |
-| `DATABASE_URL`                  | Supabase transaction-pooler URL, including `sslmode=require` | **Server only**                              |
+| `POSTGRES_URL`                  | Supabase transaction-pooler URL, including `sslmode=require` | **Server only**                              |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service-role key                                    | **Server only; never expose to the browser** |
 | `ADMIN_EMAIL`                   | One-time email for bootstrapping the first database admin    | **Server only**                              |
 | `NEXT_PUBLIC_SITE_URL`          | Optional app origin                                          | Browser and server                           |
@@ -144,7 +144,7 @@ pass through a Vercel function. The bucket enforces the 20 MB and PDF MIME
 limits. Downloads use a server-issued signed URL after talk-access
 authorization.
 
-Keep `DATABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` server-only. Never prefix
+Keep `POSTGRES_URL` and `SUPABASE_SERVICE_ROLE_KEY` server-only. Never prefix
 them with `NEXT_PUBLIC_` or expose them in client components.
 
 ## Architecture map
@@ -156,7 +156,7 @@ them with `NEXT_PUBLIC_` or expose them in client components.
 - `src/db/schema.ts` — Drizzle schema and inferred row types; talk roster
   membership references app-user IDs, with email verification mirrored from
   Auth.
-- `src/db/index.ts` — server-only Drizzle connection using `DATABASE_URL`.
+- `src/db/index.ts` — server-only Drizzle connection using `POSTGRES_URL`.
 - `src/lib/membership.ts` — shared server-side talk authorization for admins,
   presenters, and rostered attendees.
 - `src/lib/polls.ts` and `src/lib/poll-results.ts` — poll validation,

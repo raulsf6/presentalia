@@ -16,13 +16,13 @@ declare global {
 }
 
 function createDb(): NodePgDatabase<typeof schema> {
-  if (!process.env.DATABASE_URL) {
+  if (!process.env.POSTGRES_URL) {
     throw new Error(
-      "DATABASE_URL is not set. Use the Supabase pooler connection string (see .env.example).",
+      "POSTGRES_URL is not set. Use the Supabase pooler connection string (see .env.example).",
     );
   }
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.POSTGRES_URL,
     max: 10,
   });
   return drizzle(pool, { schema });
