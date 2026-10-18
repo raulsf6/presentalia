@@ -1,0 +1,16 @@
+<h2>You've been added to Presentalia</h2>
+<p>
+  An account was created for this email address. Click the link below to
+  confirm it and sign in &mdash; no password needed.
+</p>
+<p>
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite">
+    Confirm email and sign in
+  </a>
+</p>
+<p>
+  This link is for your first sign-in and expires after a while for security.
+  If it has expired, you can always get a new one: go to
+  <a href="{{ .SiteURL }}/login">{{ .SiteURL }}/login</a>, enter this email
+  address, and we&rsquo;ll send a fresh link.
+</p>

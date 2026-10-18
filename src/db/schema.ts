@@ -1,0 +1,159 @@
+import { sql } from "drizzle-orm";
+import {
+  bigint,
+  boolean,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
+
+import { APP_ROLES } from "@/lib/roles";
+
+// Mirrors supabase/migrations/0001_talk_platform.sql. The migration is the
+// source of truth for constraints and triggers (the database is never
+// generated from this file); keep both in sync.
+
+export const appRole = pgEnum("app_role", [...APP_ROLES]);
+
+// Mirror of auth.users; role is app-owned and verification mirrors Auth.
+export const appUsers = pgTable(
+  "app_users",
+  {
+    id: uuid("id").primaryKey(),
+    email: text("email"),
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    role: appRole("role").notNull().default("attendee"),
+  },
+  (table) => [
+    uniqueIndex("app_users_email_unique")
+      .on(table.email)
+      .where(sql`email IS NOT NULL`),
+  ],
+);
+
+export const talks = pgTable("talks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description"),
+  heldAt: timestamp("held_at", { withTimezone: true }),
+  slidesUpdatedAt: timestamp("slides_updated_at", { withTimezone: true }),
+  createdBy: uuid("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const talkRoster = pgTable(
+  "talk_roster",
+  {
+    talkId: uuid("talk_id")
+      .notNull()
+      .references(() => talks.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => appUsers.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.talkId, table.userId] }),
+    index("talk_roster_user_id_idx").on(table.userId),
+  ],
+);
+
+/**
+ * Shared activity lifecycle. `type` names the activity module that owns the
+ * type-specific data; polls were the first module. One activity may be
+ * active per talk at a time.
+ */
+export const activities = pgTable(
+  "activities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    talkId: uuid("talk_id")
+      .notNull()
+      .references(() => talks.id, { onDelete: "cascade" }),
+    type: text("type").notNull().default("poll"),
+    status: text("status").notNull().default("draft"),
+    launchedAt: timestamp("launched_at", { withTimezone: true }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("activities_one_active_per_talk")
+      .on(table.talkId)
+      .where(sql`status = 'active'`),
+    index("activities_talk_id_idx").on(table.talkId),
+  ],
+);
+
+export const polls = pgTable("polls", {
+  activityId: uuid("activity_id")
+    .primaryKey()
+    .references(() => activities.id, { onDelete: "cascade" }),
+  question: text("question").notNull(),
+  resultsIdentifiable: boolean("results_identifiable").notNull().default(false),
+});
+
+export const pollOptions = pgTable("poll_options", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pollId: uuid("poll_id")
+    .notNull()
+    .references(() => polls.activityId, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  position: integer("position").notNull().default(0),
+});
+
+// One immutable vote per attendee per poll (primary key). user_id's foreign
+// key to auth.users exists in the migration; it is omitted here because the
+// auth schema is not part of this app mapping.
+export const pollVotes = pgTable(
+  "poll_votes",
+  {
+    pollId: uuid("poll_id")
+      .notNull()
+      .references(() => polls.activityId, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(),
+    optionId: uuid("option_id")
+      .notNull()
+      .references(() => pollOptions.id, { onDelete: "cascade" }),
+    voterEmail: text("voter_email").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.pollId, table.userId] })],
+);
+
+// Pre-aggregated counts maintained by a trigger in the migration.
+export const pollVoteCounts = pgTable(
+  "poll_vote_counts",
+  {
+    pollId: uuid("poll_id")
+      .notNull()
+      .references(() => polls.activityId, { onDelete: "cascade" }),
+    optionId: uuid("option_id")
+      .notNull()
+      .references(() => pollOptions.id, { onDelete: "cascade" }),
+    votes: bigint("votes", { mode: "number" }).notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.pollId, table.optionId] })],
+);
+
+export type TalkRow = typeof talks.$inferSelect;
+export type TalkRosterRow = typeof talkRoster.$inferSelect;
+export type ActivityRow = typeof activities.$inferSelect;
+export type PollRow = typeof polls.$inferSelect;
+export type PollOptionRow = typeof pollOptions.$inferSelect;
+export type PollVoteRow = typeof pollVotes.$inferSelect;
+export type PollVoteCountRow = typeof pollVoteCounts.$inferSelect;
+export type AppUserRow = typeof appUsers.$inferSelect;
