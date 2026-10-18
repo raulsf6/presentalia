@@ -56,6 +56,24 @@ describe("logServerError", () => {
       spy.mockRestore();
     }
   });
+
+  test("redacts email addresses embedded in error messages and causes", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      logServerError("test.scope", {
+        message: "Failed query: select 1\nparams: raulsf.it@gmail.com,1",
+        cause: { message: "rejected recipient invitee@example.com" },
+      });
+
+      const payload = String(spy.mock.calls[0]?.[1]);
+      expect(payload).not.toContain("raulsf.it@gmail.com");
+      expect(payload).toContain("r***@gmail.com");
+      expect(payload).not.toContain("invitee@example.com");
+      expect(payload).toContain("i***@example.com");
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe("logServerWarning", () => {
@@ -72,6 +90,19 @@ describe("logServerWarning", () => {
         message: "something happened",
         email: "u***@example.com",
       });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test("redacts email addresses in warning text as a safety net", () => {
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      logServerWarning("test.scope", "failed for raulsf.it@gmail.com");
+
+      const payload = String(spy.mock.calls[0]?.[1]);
+      expect(payload).not.toContain("raulsf.it@gmail.com");
+      expect(payload).toContain("r***@gmail.com");
     } finally {
       spy.mockRestore();
     }

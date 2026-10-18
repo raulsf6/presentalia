@@ -44,6 +44,19 @@ export function maskEmail(email: string): string {
   return `${normalized.slice(0, 1)}***${normalized.slice(at)}`;
 }
 
+/**
+ * Matches anything email-shaped so messages we do not control (for example
+ * Drizzle's "Failed query" text embedding SQL parameters) are masked too.
+ * Already-masked values like r***@gmail.com contain no match and stay as-is.
+ */
+const EMAIL_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+
+function formatPayload(payload: Record<string, unknown>): string {
+  return JSON.stringify(payload).replace(EMAIL_PATTERN, (match) =>
+    maskEmail(match),
+  );
+}
+
 export function logServerError(
   scope: string,
   error: unknown,
@@ -51,7 +64,7 @@ export function logServerError(
 ): void {
   console.error(
     `[${scope}]`,
-    JSON.stringify({ ...errorFields(error), ...meta }),
+    formatPayload({ ...errorFields(error), ...meta }),
   );
 }
 
@@ -60,5 +73,5 @@ export function logServerWarning(
   message: string,
   meta: Record<string, unknown> = {},
 ): void {
-  console.warn(`[${scope}]`, JSON.stringify({ message, ...meta }));
+  console.warn(`[${scope}]`, formatPayload({ message, ...meta }));
 }
