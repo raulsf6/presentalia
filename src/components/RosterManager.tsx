@@ -1,0 +1,289 @@
+"use client";
+
+import { useMemo, useRef, useState, useTransition } from "react";
+
+import {
+  addRosterAction,
+  importRosterCsvAction,
+  removeRosterEntryAction,
+  type RosterSummary,
+} from "@/actions/roster";
+import { parseCsv, parseEmailList } from "@/lib/roster";
+
+export type RosterEntry = {
+  userId: string;
+  email: string | null;
+  addedAtLabel: string;
+  emailVerifiedAt: string | null;
+};
+
+function formatList(items: string[], limit = 5): string {
+  const shown = items.slice(0, limit).join(", ");
+  const rest = items.length - Math.min(items.length, limit);
+  return rest > 0 ? `${shown} … (+${rest} more)` : shown;
+}
+
+function Summary({ summary }: { summary: RosterSummary }) {
+  if (!summary.ok) {
+    return (
+      <p role="alert" className="text-sm text-red-600">
+        {summary.error}
+      </p>
+    );
+  }
+  return (
+    <div role="status" className="flex flex-col gap-1 text-sm">
+      {summary.added !== undefined ? (
+        <p className="font-medium text-emerald-700">
+          Added {summary.added} {summary.added === 1 ? "address" : "addresses"}.
+        </p>
+      ) : null}
+      {summary.invalid && summary.invalid.length > 0 ? (
+        <p className="text-amber-700">
+          Couldn&apos;t read: {formatList(summary.invalid)}
+        </p>
+      ) : null}
+      {summary.duplicates && summary.duplicates.length > 0 ? (
+        <p className="text-zinc-600">
+          Ignored duplicates: {formatList(summary.duplicates)}
+        </p>
+      ) : null}
+      {summary.alreadyPresent && summary.alreadyPresent.length > 0 ? (
+        <p className="text-zinc-600">
+          Already on the roster: {formatList(summary.alreadyPresent)}
+        </p>
+      ) : null}
+      {summary.inviteFailed && summary.inviteFailed.length > 0 ? (
+        <p className="text-amber-700">
+          Added to the roster, but couldn&apos;t send an invite to:{" "}
+          {formatList(summary.inviteFailed)}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export function RosterManager({
+  talkId,
+  roster,
+}: {
+  talkId: string;
+  roster: RosterEntry[];
+}) {
+  const [raw, setRaw] = useState("");
+  const [summary, setSummary] = useState<RosterSummary | null>(null);
+  const [csvSummary, setCsvSummary] = useState<RosterSummary | null>(null);
+  const [csvFileName, setCsvFileName] = useState("");
+  const [csvText, setCsvText] = useState("");
+  const [csvTooLarge, setCsvTooLarge] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const csvInput = useRef<HTMLInputElement>(null);
+  const [pending, startTransition] = useTransition();
+  const [csvPending, startCsvTransition] = useTransition();
+  const [removePending, startRemoveTransition] = useTransition();
+
+  const preview = useMemo(() => parseEmailList(raw), [raw]);
+  const csvPreview = useMemo(() => parseCsv(csvText), [csvText]);
+
+  function onCsvSelected(file: File | undefined) {
+    setCsvSummary(null);
+    setCsvFileName(file?.name ?? "");
+    const tooLarge = Boolean(file && file.size > 1024 * 1024);
+    setCsvTooLarge(tooLarge);
+    if (!file || tooLarge) {
+      setCsvText("");
+      return;
+    }
+    void file.text().then(setCsvText);
+  }
+
+  function onAdd() {
+    setSummary(null);
+    startTransition(async () => {
+      const result = await addRosterAction(talkId, raw);
+      setSummary(result);
+      if (result.ok) {
+        setRaw("");
+      }
+    });
+  }
+
+  function onImportCsv() {
+    setCsvSummary(null);
+    const file = csvInput.current?.files?.[0];
+    if (!file) {
+      setCsvSummary({ ok: false, error: "Please choose a CSV file." });
+      return;
+    }
+    const formData = new FormData();
+    formData.set("csv", file);
+    startCsvTransition(async () => {
+      const result = await importRosterCsvAction(talkId, formData);
+      setCsvSummary(result);
+      if (result.ok && csvInput.current) {
+        csvInput.current.value = "";
+        setCsvFileName("");
+        setCsvText("");
+        setCsvTooLarge(false);
+      }
+    });
+  }
+
+  function onRemove(userId: string) {
+    setRemoveError(null);
+    startRemoveTransition(async () => {
+      const result = await removeRosterEntryAction(talkId, userId);
+      if (!result.ok) {
+        setRemoveError(result.error ?? "Could not remove the address.");
+      }
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
+          Add attendees
+        </h2>
+        <textarea
+          rows={3}
+          value={raw}
+          onChange={(event) => setRaw(event.target.value)}
+          placeholder={
+            "one@email.com, another@email.com\none per line also works"
+          }
+          aria-label="Email addresses"
+          className="rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+        />
+        {raw.trim().length > 0 ? (
+          <div className="flex flex-col gap-1 text-xs text-zinc-600">
+            <p>
+              {preview.valid.length} valid{" "}
+              {preview.valid.length === 1 ? "address" : "addresses"} will be
+              added
+              {preview.duplicates.length > 0
+                ? `, ${preview.duplicates.length} duplicate${preview.duplicates.length === 1 ? "" : "s"} ignored`
+                : ""}
+              .
+            </p>
+            {preview.invalid.length > 0 ? (
+              <p className="text-amber-700">
+                Couldn&apos;t read: {formatList(preview.invalid)}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={onAdd}
+          disabled={pending || raw.trim().length === 0}
+          className="w-fit rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {pending ? "Adding…" : "Add addresses"}
+        </button>
+        {summary ? <Summary summary={summary} /> : null}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
+          Import CSV
+        </h2>
+        <p className="text-xs text-zinc-500">
+          First column is used, or the column headed &quot;email&quot;. 1 MB
+          limit.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            ref={csvInput}
+            type="file"
+            accept=".csv,text/csv"
+            aria-label="CSV file"
+            onChange={(event) => onCsvSelected(event.target.files?.[0])}
+            className="text-sm"
+          />
+          <button
+            type="button"
+            onClick={onImportCsv}
+            disabled={csvPending || !csvFileName}
+            className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {csvPending ? "Importing…" : "Import CSV"}
+          </button>
+        </div>
+        {csvTooLarge ? (
+          <p role="alert" className="text-sm text-red-600">
+            That CSV is too large (1 MB limit).
+          </p>
+        ) : csvFileName && csvText ? (
+          <div className="flex flex-col gap-1 text-xs text-zinc-600">
+            <p>
+              Preview: {csvPreview.valid.length} valid{" "}
+              {csvPreview.valid.length === 1 ? "address" : "addresses"} will be
+              added
+              {csvPreview.duplicates.length > 0
+                ? `, ${csvPreview.duplicates.length} duplicate${csvPreview.duplicates.length === 1 ? "" : "s"} ignored`
+                : ""}
+              .
+            </p>
+            {csvPreview.invalid.length > 0 ? (
+              <p className="text-amber-700">
+                Couldn&apos;t read: {formatList(csvPreview.invalid)}
+              </p>
+            ) : null}
+            {csvPreview.duplicates.length > 0 ? (
+              <p className="text-zinc-600">
+                Duplicate addresses: {formatList(csvPreview.duplicates)}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {csvSummary ? <Summary summary={csvSummary} /> : null}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
+          Roster ({roster.length})
+        </h2>
+        {removeError ? (
+          <p role="alert" className="text-sm text-red-600">
+            {removeError}
+          </p>
+        ) : null}
+        {roster.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500">
+            No attendees yet. Add users here to give them access to this talk.
+          </p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-zinc-100 rounded-lg border border-zinc-200">
+            {roster.map((entry) => (
+              <li
+                key={entry.userId}
+                className="flex items-center justify-between gap-4 px-4 py-2.5"
+              >
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate font-mono text-sm text-zinc-900">
+                    {entry.email ?? "No email address"}
+                  </span>
+                  <span className="text-xs text-zinc-500">
+                    added {entry.addedAtLabel}
+                    {entry.emailVerifiedAt
+                      ? " · email verified"
+                      : " · email not verified"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  disabled={removePending}
+                  onClick={() => onRemove(entry.userId)}
+                  className="shrink-0 rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
