@@ -110,18 +110,39 @@ For a hosted Supabase project, configure these environment variables in
 
 ## Deploy to Vercel
 
-1. Import the repository into Vercel and select the default Next.js settings.
-2. Add the environment variables above to the Vercel project (Production and
-   any Preview environments that should be usable). Set `NEXT_PUBLIC_SITE_URL`
-   to the corresponding app origin if needed.
-3. Add the matching `/auth/confirm` URL to Supabase's Auth redirect allow-list.
-4. Set `ADMIN_EMAIL` to the existing first-admin address and deploy. Complete a
-   verified magic-link sign-in with that account to bootstrap its database role
-   and assign legacy talks. Slide PDFs upload
-   directly from a talk owner/admin's browser to the private Supabase bucket
-   using a server-issued, time-limited upload token; they do not pass through a
-   Vercel function. The bucket enforces the 20 MB and PDF MIME limits. Downloads
-   use a server-issued signed URL after talk-access authorization.
+Deployments are manual and production-only. Pushing to `main` deploys nothing:
+`vercel.json` disables Vercel's automatic Git deployments, and there are no
+preview deployments. Deployments run from the **Deploy to Production** workflow
+(`.github/workflows/deploy.yml`), which lints, tests, and builds the latest
+`main` before uploading it to Vercel. Start one from the repository's
+**Actions** tab with **Run workflow**; it prints the deployment URL when it
+finishes.
+
+One-time setup:
+
+1. Import the repository into Vercel (**Add New → Project**) and select the
+   default Next.js settings. The deployment Vercel creates while importing can
+   be ignored or deleted; later deploys come only from the workflow.
+2. In the Vercel project, set **Node.js Version** to 24 under Settings →
+   General, then add the environment variables above for **Production**
+   (`NEXT_PUBLIC_SITE_URL` is the production origin once the domain is known).
+3. Run `npx vercel login` and `npx vercel link` locally, read `orgId` and
+   `projectId` from `.vercel/project.json`, and create a token under Account
+   Settings → Tokens.
+4. Add these repository secrets (GitHub → Settings → Secrets and variables →
+   Actions): `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+5. Press **Run workflow** (Actions → Deploy to Production).
+6. Add `https://YOUR-VERCEL-DOMAIN/auth/confirm` to Supabase's Auth redirect
+   allow-list (with Site URL set to the production origin), set
+   `NEXT_PUBLIC_SITE_URL`, deploy again, and complete a verified magic-link
+   sign-in with the `ADMIN_EMAIL` account to bootstrap its database role and
+   assign legacy talks.
+
+Slide PDFs upload directly from a talk owner/admin's browser to the private
+Supabase bucket using a server-issued, time-limited upload token; they do not
+pass through a Vercel function. The bucket enforces the 20 MB and PDF MIME
+limits. Downloads use a server-issued signed URL after talk-access
+authorization.
 
 Keep `DATABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` server-only. Never prefix
 them with `NEXT_PUBLIC_` or expose them in client components.
