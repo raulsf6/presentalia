@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
@@ -16,7 +17,7 @@ export type SessionUser = {
  * The authenticated user for the current request, or null when not signed
  * in. Email is lowercased for roster and bootstrap-email comparisons.
  */
-export async function getSessionUser(): Promise<SessionUser | null> {
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
@@ -48,4 +49,4 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 
   return role ? { id: data.user.id, email, role } : null;
-}
+});

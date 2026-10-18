@@ -1,7 +1,8 @@
+import { cache } from "react";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
 
-import { getDb, type DbTx } from "@/db";
-import { talkRoster, talks, type TalkRow } from "@/db/schema";
+import { getDb, type Db, type DbTx } from "@/db";
+import { appUsers, talkRoster, talks, type TalkRow } from "@/db/schema";
 import { getSessionUser, type SessionUser } from "@/lib/auth";
 
 export type TalkAccess = {
@@ -49,12 +50,12 @@ export async function getTalkAccessForUser(
 }
 
 /** Request-level talk access. Null intentionally hides missing vs inaccessible talks. */
-export async function loadTalkAccess(
-  talkId: string,
-): Promise<TalkAccess | null> {
-  const user = await getSessionUser();
-  return user ? getTalkAccessForUser(user, talkId) : null;
-}
+export const loadTalkAccess = cache(
+  async (talkId: string): Promise<TalkAccess | null> => {
+    const user = await getSessionUser();
+    return user ? getTalkAccessForUser(user, talkId) : null;
+  },
+);
 
 /** Lists only talks the verified user may access. */
 export async function listAccessibleTalks(
@@ -104,6 +105,22 @@ export async function isRosteredAttendee(
     .limit(1);
   const [membership] = tx ? await query.for("share") : await query;
   return Boolean(membership);
+}
+
+/** Owner emails by user id, used for attribution in the admin talk list. */
+export async function loadOwnerEmails(
+  userIds: string[],
+  db: Db = getDb(),
+): Promise<Map<string, string | null>> {
+  const uniqueIds = [...new Set(userIds)];
+  if (uniqueIds.length === 0) {
+    return new Map();
+  }
+  const rows = await db
+    .select({ id: appUsers.id, email: appUsers.email })
+    .from(appUsers)
+    .where(inArray(appUsers.id, uniqueIds));
+  return new Map(rows.map((row) => [row.id, row.email]));
 }
 
 /** Re-checks ownership/role inside every server action that manages a talk. */

@@ -50,20 +50,15 @@ export default async function TalkPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <div className="mb-2 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-ink text-2xl font-extrabold">
-            {talk.name}
-          </h1>
-          {talk.heldAt ? (
-            <p className="text-muted mt-1 text-sm font-semibold">
-              {formatDate(talk.heldAt)}
-            </p>
-          ) : null}
-        </div>
-        <Link href="/talks" className="linky shrink-0">
-          ← All talks
-        </Link>
+      <div className="mb-2">
+        <h1 className="font-display text-ink text-2xl font-extrabold">
+          {talk.name}
+        </h1>
+        {talk.heldAt ? (
+          <p className="text-muted mt-1 text-sm font-semibold">
+            {formatDate(talk.heldAt)}
+          </p>
+        ) : null}
       </div>
       {talk.description ? (
         <p className="text-ink/75 mb-8 text-sm font-semibold">
@@ -140,26 +135,8 @@ export default async function TalkPage({
 
       {role !== "member" ? (
         <section className="border-ink/15 flex flex-col gap-3 border-t-2 border-dashed pt-8">
-          <h2 className="section-label">Manage talk</h2>
+          <h2 className="section-label">Danger zone</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={`/talks/${talkId}/roster`}
-              className="btn btn-ghost btn-small"
-            >
-              Attendee roster
-            </Link>
-            <Link
-              href={`/talks/${talkId}/slides`}
-              className="btn btn-ghost btn-small"
-            >
-              Slides
-            </Link>
-            <Link
-              href={`/talks/${talkId}/polls`}
-              className="btn btn-ghost btn-small"
-            >
-              Polls
-            </Link>
             <DeleteTalkButton talkId={talkId} talkName={talk.name} />
           </div>
         </section>

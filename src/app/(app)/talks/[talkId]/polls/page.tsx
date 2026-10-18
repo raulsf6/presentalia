@@ -41,18 +41,13 @@ export default async function PollsPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-ink text-2xl font-extrabold">
-            Polls
-          </h1>
-          <p className="text-muted mt-1 text-sm font-semibold">
-            {access.talk.name}
-          </p>
-        </div>
-        <Link href={`/talks/${talkId}`} className="linky shrink-0">
-          ← Talk home
-        </Link>
+      <div className="mb-8">
+        <h1 className="font-display text-ink text-2xl font-extrabold">
+          Activities
+        </h1>
+        <p className="text-muted mt-1 text-sm font-semibold">
+          {access.talk.name}
+        </p>
       </div>
 
       <section className="card mb-10 p-6">
@@ -93,7 +88,7 @@ export default async function PollsPage({
         })}
         {pollRows.length === 0 ? (
           <p className="empty">
-            No polls yet. Create a poll above when you&apos;re ready.
+            No activities yet. Create a poll above when you&apos;re ready.
           </p>
         ) : null}
       </div>

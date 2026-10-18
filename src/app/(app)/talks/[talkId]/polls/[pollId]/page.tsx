@@ -69,19 +69,23 @@ export default async function PollPage({
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-center justify-between gap-4">
-        <Link href={`/talks/${talkId}`} className="linky">
-          ← {access.talk.name}
-        </Link>
-        {status === "active" ? (
-          <span className="chip chip-live">
-            <span className="pulse-dot" />
-            LIVE
-          </span>
-        ) : status === "closed" ? (
-          <span className="chip chip-closed uppercase">Closed</span>
-        ) : (
-          <span className="chip chip-draft">Draft</span>
-        )}
+        {access.access === "member" ? (
+          <Link href={`/talks/${talkId}`} className="linky">
+            ← {access.talk.name}
+          </Link>
+        ) : null}
+        <div className="ml-auto">
+          {status === "active" ? (
+            <span className="chip chip-live">
+              <span className="pulse-dot" />
+              LIVE
+            </span>
+          ) : status === "closed" ? (
+            <span className="chip chip-closed uppercase">Closed</span>
+          ) : (
+            <span className="chip chip-draft">Draft</span>
+          )}
+        </div>
       </div>
 
       <h1 className="font-display text-ink mb-8 text-2xl font-extrabold">

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { SlidesManager } from "@/components/SlidesManager";
@@ -28,19 +27,14 @@ export default async function SlidesPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-ink text-2xl font-extrabold">
-            Slides
-          </h1>
-          <p className="text-muted mt-1 text-sm font-semibold">
-            {access.talk.name} — one PDF per talk, kept private to its rostered
-            attendees.
-          </p>
-        </div>
-        <Link href={`/talks/${talkId}`} className="linky shrink-0">
-          ← Talk home
-        </Link>
+      <div className="mb-8">
+        <h1 className="font-display text-ink text-2xl font-extrabold">
+          Slides
+        </h1>
+        <p className="text-muted mt-1 text-sm font-semibold">
+          {access.talk.name} — one PDF per talk, kept private to its rostered
+          attendees.
+        </p>
       </div>
       <div className="card p-6">
         <SlidesManager talkId={talkId} uploadedLabel={uploadedLabel} />
