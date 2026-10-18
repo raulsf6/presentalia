@@ -35,6 +35,27 @@ describe("logServerError", () => {
       spy.mockRestore();
     }
   });
+
+  test("includes the wrapped cause chain", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      logServerError("test.scope", {
+        message: 'Failed query: select "id" from "app_users"',
+        cause: {
+          message: 'relation "app_users" does not exist',
+          code: "42P01",
+        },
+      });
+
+      const parsed = JSON.parse(String(spy.mock.calls[0]?.[1]));
+      expect(parsed.cause).toEqual({
+        message: 'relation "app_users" does not exist',
+        code: "42P01",
+      });
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe("logServerWarning", () => {
