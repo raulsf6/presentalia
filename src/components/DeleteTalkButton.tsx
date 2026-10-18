@@ -32,12 +32,12 @@ export function DeleteTalkButton({
     <div
       role="alertdialog"
       aria-label="Delete talk"
-      className="border-red bg-redsoft flex flex-col gap-3 rounded-xl border-2 p-4"
+      className="border-red bg-redsoft flex flex-col gap-3 rounded-lg border-[2.5px] p-4"
     >
       <p className="text-reddeep text-sm font-bold">
-        Delete <span className="font-extrabold">{talkName}</span>? This removes
-        its attendee roster, polls and votes, and the uploaded slides, and
-        revokes all attendee access. This cannot be undone.
+        Delete <span className="font-bold">{talkName}</span>? This removes its
+        attendee roster, polls and votes, and the uploaded slides, and revokes
+        all attendee access. This cannot be undone.
       </p>
       <div className="flex flex-wrap gap-2">
         <button

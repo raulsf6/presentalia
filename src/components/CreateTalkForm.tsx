@@ -16,7 +16,7 @@ export function CreateTalkForm() {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <label htmlFor="name" className="text-ink text-sm font-extrabold">
+        <label htmlFor="name" className="text-ink text-sm font-bold">
           Talk name <span className="text-red">*</span>
         </label>
         <input
@@ -30,17 +30,14 @@ export function CreateTalkForm() {
         />
       </div>
       <div className="flex flex-col gap-2">
-        <label htmlFor="heldAt" className="text-ink text-sm font-extrabold">
+        <label htmlFor="heldAt" className="text-ink text-sm font-bold">
           Date{" "}
           <span className="text-muted text-xs font-semibold">(optional)</span>
         </label>
         <input id="heldAt" name="heldAt" type="date" className="input" />
       </div>
       <div className="flex flex-col gap-2">
-        <label
-          htmlFor="description"
-          className="text-ink text-sm font-extrabold"
-        >
+        <label htmlFor="description" className="text-ink text-sm font-bold">
           Description{" "}
           <span className="text-muted text-xs font-semibold">(optional)</span>
         </label>

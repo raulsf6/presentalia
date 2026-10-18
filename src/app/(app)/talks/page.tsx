@@ -36,7 +36,7 @@ export default async function TalksPage() {
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-ink text-2xl font-extrabold">
+          <h1 className="font-display text-ink text-2xl">
             {user.role === "admin" ? "All talks" : "Your talks"}
           </h1>
           <p className="text-muted mt-1 text-sm font-semibold">
@@ -74,7 +74,7 @@ export default async function TalksPage() {
                   href={`/talks/${talk.id}`}
                   className="card card-hover flex flex-col gap-1 p-4"
                 >
-                  <span className="text-ink font-extrabold">{talk.name}</span>
+                  <span className="text-ink font-bold">{talk.name}</span>
                   {talk.heldAt ? (
                     <span className="text-muted text-xs font-bold">
                       {formatDate(talk.heldAt)}

@@ -100,7 +100,7 @@ export function SlidesManager({
           onChange={(event) =>
             setSelectedName(event.target.files?.[0]?.name ?? "")
           }
-          className="text-muted file:border-ink file:font-display file:text-ink file:shadow-hard hover:file:bg-cream2 focus-visible:outline-ink text-xs font-semibold file:mr-3 file:cursor-pointer file:rounded-full file:border-2 file:bg-white file:px-3.5 file:py-1.5 file:text-xs file:font-extrabold file:transition hover:file:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="text-muted file:border-ink file:text-ink file:shadow-hard hover:file:bg-cream2 hover:file:shadow-hard-md focus-visible:outline-ink text-xs font-medium file:mr-3 file:cursor-pointer file:rounded-md file:border-[2.5px] file:bg-white file:px-3.5 file:py-1.5 file:font-sans file:text-xs file:font-bold file:tracking-[0.04em] file:uppercase file:transition file:duration-150 hover:file:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2"
         />
         <button
           type="button"
@@ -129,7 +129,7 @@ export function SlidesManager({
       </p>
       {result ? (
         result.ok ? (
-          <p role="status" className="text-green text-sm font-extrabold">
+          <p role="status" className="text-green text-sm font-bold">
             Slides uploaded. Rostered attendees can download them now.
           </p>
         ) : (

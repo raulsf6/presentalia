@@ -34,9 +34,7 @@ export default async function AdminUsersPage() {
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8">
-        <h1 className="font-display text-ink text-2xl font-extrabold">
-          Manage users
-        </h1>
+        <h1 className="font-display text-ink text-2xl">Manage users</h1>
         <p className="text-muted mt-1 text-sm font-semibold">
           Add attendees and presenters, assign roles, and check email status.
         </p>

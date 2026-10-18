@@ -53,9 +53,7 @@ export default async function TalkPage({
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-2">
-        <h1 className="font-display text-ink text-2xl font-extrabold">
-          {talk.name}
-        </h1>
+        <h1 className="font-display text-ink text-2xl">{talk.name}</h1>
         {talk.heldAt ? (
           <p className="text-muted mt-1 text-sm font-semibold">
             {formatDate(talk.heldAt)}
@@ -79,14 +77,14 @@ export default async function TalkPage({
                 ? `/talks/${talkId}/activities/${activePoll.id}`
                 : `/talks/${talkId}/activities/${activePoll.id}/results`
             }
-            className="border-green shadow-hard-green flex flex-col gap-1 rounded-2xl border-2 bg-white p-4 transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_var(--color-green)]"
+            className="card card-hover border-l-green flex flex-col gap-1 border-l-[9px] p-4"
           >
             <span className="flex flex-wrap items-center gap-2">
               <span className="chip chip-live">
                 <span className="pulse-dot" />
                 LIVE
               </span>
-              <span className="text-ink font-extrabold">
+              <span className="text-ink font-bold">
                 Poll is open: {activePoll.question}
               </span>
             </span>
@@ -110,9 +108,7 @@ export default async function TalkPage({
                 <div className="card flex flex-col gap-4 p-4">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="chip chip-draft">Draft</span>
-                    <span className="text-ink font-extrabold">
-                      {poll.question}
-                    </span>
+                    <span className="text-ink font-bold">{poll.question}</span>
                   </span>
                   <PollAdminControls
                     pollId={poll.id}
@@ -137,7 +133,7 @@ export default async function TalkPage({
             href={`/talks/${talkId}/slides/download`}
             className="card card-hover flex flex-col gap-0.5 p-4"
           >
-            <span className="text-ink font-extrabold">
+            <span className="text-ink font-bold">
               📄 Download the slides (PDF)
             </span>
             <span className="text-muted text-xs font-semibold">
@@ -171,8 +167,8 @@ export default async function TalkPage({
       ) : null}
 
       {role !== "member" ? (
-        <section className="border-ink/15 flex flex-col gap-3 border-t-2 border-dashed pt-8">
-          <h2 className="section-label">Danger zone</h2>
+        <section className="border-ink/25 flex flex-col gap-3 border-t-[3px] border-dashed pt-8">
+          <h2 className="section-label section-label-danger">Danger zone</h2>
           <div className="flex flex-wrap items-center gap-2">
             <DeleteTalkButton talkId={talkId} talkName={talk.name} />
           </div>

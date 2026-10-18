@@ -18,10 +18,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6">
       <div className="card flex flex-col gap-6 p-8">
         <div className="flex flex-col gap-1">
-          <span className="font-display text-ink text-lg font-extrabold">
+          <span className="font-display text-ink text-lg">
             Presentalia<span className="text-coral">.</span>
           </span>
-          <h1 className="font-display text-ink text-xl font-extrabold">
+          <h1 className="font-display text-ink text-xl">
             Sign in to Presentalia
           </h1>
           <p className="text-muted text-sm font-semibold">

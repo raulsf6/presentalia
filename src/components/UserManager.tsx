@@ -129,9 +129,7 @@ export function UserManager({
   return (
     <div className="flex flex-col gap-10">
       <section className="flex flex-col gap-3">
-        <h2 className="font-display text-ink text-lg font-bold">
-          Add an attendee
-        </h2>
+        <h2 className="font-display text-ink text-lg">Add an attendee</h2>
         <p className="text-muted text-sm font-semibold">
           They can sign in before being assigned to a talk.
         </p>
@@ -178,9 +176,7 @@ export function UserManager({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-display text-ink text-lg font-bold">
-          Add a presenter
-        </h2>
+        <h2 className="font-display text-ink text-lg">Add a presenter</h2>
         <p className="text-muted text-sm font-semibold">
           They can request a sign-in link using this email address.
         </p>
@@ -227,7 +223,7 @@ export function UserManager({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-display text-ink text-lg font-bold">Users</h2>
+        <h2 className="font-display text-ink text-lg">Users</h2>
         {users.length === 0 ? (
           <p className="empty">No provisioned users yet.</p>
         ) : (

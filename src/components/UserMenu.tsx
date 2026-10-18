@@ -74,7 +74,7 @@ export function UserMenu({
             <span className="text-ink truncate font-mono text-xs font-bold">
               {email ?? "No email address"}
             </span>
-            <span className="text-muted text-[0.65rem] font-black tracking-[0.05em] uppercase">
+            <span className="text-muted text-[0.65rem] font-bold tracking-[0.05em] uppercase">
               {role}
             </span>
           </div>

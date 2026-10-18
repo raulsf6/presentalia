@@ -83,7 +83,7 @@ export function LiveResults({
           </span>
         </div>
         <h1
-          className={`font-display text-ink font-extrabold tracking-tight ${
+          className={`font-display text-ink tracking-tight ${
             large
               ? "text-4xl leading-tight md:text-6xl"
               : "text-2xl md:text-3xl"
@@ -105,7 +105,7 @@ export function LiveResults({
             >
               <div className="mb-3 flex items-baseline justify-between gap-4">
                 <span
-                  className={`text-ink font-extrabold ${
+                  className={`text-ink font-bold ${
                     large ? "text-2xl md:text-3xl" : "text-base md:text-lg"
                   }`}
                 >
@@ -117,9 +117,7 @@ export function LiveResults({
                     large ? "text-2xl md:text-3xl" : "text-sm md:text-base"
                   }`}
                 >
-                  <strong className="font-display font-extrabold">
-                    {row.percent}%
-                  </strong>
+                  <strong className="font-display">{row.percent}%</strong>
                   <span className="text-muted ml-2 font-bold">{row.votes}</span>
                 </span>
               </div>
@@ -145,7 +143,7 @@ export function LiveResults({
                   {optionVoters?.map((voter, voterIndex) => (
                     <span
                       key={`${voter.email}-${voterIndex}`}
-                      className="border-ink/10 bg-cream2 text-ink/80 rounded-full border-2 px-3 py-1 font-semibold"
+                      className="border-ink/15 bg-cream2 text-ink/80 rounded-md border-[2.5px] px-3 py-1 font-medium"
                     >
                       {voter.email}
                     </span>

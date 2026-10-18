@@ -74,7 +74,7 @@ export function PollAdminControls({
           {launch ? "Launch poll…" : "Close poll…"}
         </button>
       ) : (
-        <div className="border-amber bg-ambersoft flex flex-col gap-3 rounded-xl border-2 p-4">
+        <div className="border-amber bg-ambersoft flex flex-col gap-3 rounded-lg border-[2.5px] p-4">
           <p className="text-amberdeep text-sm font-bold">{prompt}</p>
           <div className="flex flex-wrap gap-2">
             <button

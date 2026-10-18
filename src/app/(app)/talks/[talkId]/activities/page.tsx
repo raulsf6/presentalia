@@ -42,9 +42,7 @@ export default async function PollsPage({
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-ink text-2xl font-extrabold">
-            Activities
-          </h1>
+          <h1 className="font-display text-ink text-2xl">Activities</h1>
           <p className="text-muted mt-1 text-sm font-semibold">
             {access.talk.name}
           </p>

@@ -15,7 +15,7 @@ export function PollForm({ talkId }: { talkId: string }) {
   return (
     <form action={formAction} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <label htmlFor="question" className="text-ink text-sm font-extrabold">
+        <label htmlFor="question" className="text-ink text-sm font-bold">
           Poll question
         </label>
         <textarea
@@ -30,7 +30,7 @@ export function PollForm({ talkId }: { talkId: string }) {
       </div>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-ink mb-1 text-sm font-extrabold">
+        <legend className="text-ink mb-1 text-sm font-bold">
           Answer options{" "}
           <span className="text-muted text-xs font-semibold">(2–8)</span>
         </legend>
@@ -87,7 +87,7 @@ export function PollForm({ talkId }: { talkId: string }) {
           className="accent-coral mt-0.5 size-4"
         />
         <span className="flex flex-col gap-0.5">
-          <span className="text-ink text-sm font-extrabold">
+          <span className="text-ink text-sm font-bold">
             Show voter email addresses in results
           </span>
           <span className="text-muted text-xs font-semibold">

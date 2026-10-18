@@ -89,9 +89,7 @@ export async function PollActivity({
         </div>
       </div>
 
-      <h1 className="font-display text-ink mb-8 text-2xl font-extrabold">
-        {poll.question}
-      </h1>
+      <h1 className="font-display text-ink mb-8 text-2xl">{poll.question}</h1>
 
       {access.access !== "member" ? (
         <section className="card flex flex-col gap-6 p-6">

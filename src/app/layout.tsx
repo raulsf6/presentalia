@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Baloo_2, Geist_Mono, Nunito } from "next/font/google";
+import { Archivo_Black, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const baloo = Baloo_2({
-  variable: "--font-baloo",
+const archivoBlack = Archivo_Black({
+  variable: "--font-archivo-black",
+  weight: "400",
   subsets: ["latin"],
 });
 
-const nunito = Nunito({
-  variable: "--font-nunito",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
@@ -27,7 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${baloo.variable} ${nunito.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${archivoBlack.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>

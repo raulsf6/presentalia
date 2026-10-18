@@ -16,7 +16,7 @@ export function MagicLinkForm() {
   if (state.sent) {
     return (
       <div role="status" className="alert alert-ok">
-        <p className="font-extrabold">
+        <p className="font-bold">
           Check your inbox — a sign-in link is on its way.
         </p>
         <p className="mt-1 font-semibold">
@@ -30,7 +30,7 @@ export function MagicLinkForm() {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <label htmlFor="email" className="text-ink text-sm font-extrabold">
+        <label htmlFor="email" className="text-ink text-sm font-bold">
           Email address
         </label>
         <input

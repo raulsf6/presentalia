@@ -53,7 +53,7 @@ export function VoteForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <fieldset
-        className="flex flex-col gap-2"
+        className="flex flex-col gap-2.5"
         disabled={pending || celebrating}
       >
         <legend className="sr-only">Choose one answer</legend>
@@ -62,11 +62,7 @@ export function VoteForm({
           return (
             <label
               key={option.id}
-              className={`border-ink flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3.5 transition duration-150 ${
-                isSelected
-                  ? "bg-peach shadow-[0_3px_0_var(--color-coral)]"
-                  : "shadow-hard hover:shadow-hard-lg bg-white hover:-translate-y-0.5"
-              }`}
+              className={`vote-option ${isSelected ? "is-selected" : ""}`}
             >
               <input
                 type="radio"
@@ -80,10 +76,7 @@ export function VoteForm({
                 {option.label}
               </span>
               {isSelected ? (
-                <span
-                  aria-hidden="true"
-                  className="bg-coral font-display ml-auto flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white"
-                >
+                <span aria-hidden="true" className="vote-option-check">
                   ✓
                 </span>
               ) : null}
@@ -91,20 +84,18 @@ export function VoteForm({
           );
         })}
       </fieldset>
-      <p className="text-muted text-xs font-semibold">
+      <p className="text-muted text-xs font-medium">
         Your vote is final and cannot be changed.
       </p>
-      <button
-        type="submit"
-        disabled={!selected || pending || celebrating}
-        className={`pow-btn ${celebrating ? "is-celebrating" : ""}`}
-      >
-        <span aria-hidden="true" className="pow-btn-shadow" />
-        <span aria-hidden="true" className="pow-btn-frame" />
-        <span className="pow-btn-inner">
+      <div className={`vote-celebrate ${celebrating ? "is-celebrating" : ""}`}>
+        <button
+          type="submit"
+          disabled={!selected || pending || celebrating}
+          className="vote-btn"
+        >
           {pending ? "Submitting…" : "Submit my vote"}
-        </span>
-      </button>
+        </button>
+      </div>
       {error ? (
         <p role="alert" className="text-red text-sm font-bold">
           {error}

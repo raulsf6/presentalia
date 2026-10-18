@@ -28,9 +28,7 @@ export default async function SlidesPage({
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8">
-        <h1 className="font-display text-ink text-2xl font-extrabold">
-          Slides
-        </h1>
+        <h1 className="font-display text-ink text-2xl">Slides</h1>
         <p className="text-muted mt-1 text-sm font-semibold">
           {access.talk.name} — one PDF per talk, kept private to its rostered
           attendees.

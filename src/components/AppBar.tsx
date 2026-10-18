@@ -11,7 +11,7 @@ export function AppBar({ user }: { user: SessionUser }) {
         <Link
           href="/talks"
           aria-label="Presentalia — all talks"
-          className="font-display text-ink min-w-0 truncate text-lg font-extrabold"
+          className="font-display text-ink min-w-0 truncate text-lg"
         >
           Presentalia<span className="text-coral">.</span>
         </Link>

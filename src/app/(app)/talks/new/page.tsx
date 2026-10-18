@@ -16,9 +16,7 @@ export default async function NewTalkPage() {
 
   return (
     <main className="mx-auto w-full max-w-lg px-6 py-12">
-      <h1 className="font-display text-ink mb-8 text-2xl font-extrabold">
-        New talk
-      </h1>
+      <h1 className="font-display text-ink mb-8 text-2xl">New talk</h1>
       <div className="card p-6">
         <CreateTalkForm />
       </div>

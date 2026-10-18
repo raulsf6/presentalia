@@ -21,9 +21,7 @@ export default async function NewPollPage({
   return (
     <main className="mx-auto w-full max-w-lg px-6 py-12">
       <div className="mb-8 flex items-center justify-between gap-4">
-        <h1 className="font-display text-ink text-2xl font-extrabold">
-          New poll
-        </h1>
+        <h1 className="font-display text-ink text-2xl">New poll</h1>
         <Link
           href={`/talks/${talkId}/activities/new`}
           className="linky shrink-0"

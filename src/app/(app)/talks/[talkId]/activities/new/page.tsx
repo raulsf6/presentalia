@@ -21,9 +21,7 @@ export default async function NewActivityPage({
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8">
-        <h1 className="font-display text-ink text-2xl font-extrabold">
-          New activity
-        </h1>
+        <h1 className="font-display text-ink text-2xl">New activity</h1>
         <p className="text-muted mt-1 text-sm font-semibold">
           {access.talk.name} — choose what to create.
         </p>
@@ -34,11 +32,11 @@ export default async function NewActivityPage({
           href={`/talks/${talkId}/activities/new/poll`}
           className="card card-hover flex items-center gap-4 p-4"
         >
-          <span className="border-ink bg-peach flex size-11 shrink-0 items-center justify-center rounded-full border-2">
+          <span className="border-ink bg-coral shadow-hard-sm flex size-11 shrink-0 items-center justify-center rounded-lg border-[2.5px]">
             <ChartIcon className="size-5" />
           </span>
           <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-ink font-extrabold">Poll</span>
+            <span className="text-ink font-bold">Poll</span>
             <span className="text-muted text-xs font-semibold">
               Ask a multiple-choice question and show the results live.
             </span>
