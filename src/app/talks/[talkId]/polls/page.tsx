@@ -43,19 +43,20 @@ export default async function PollsPage({
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Polls</h1>
-          <p className="mt-1 text-sm text-zinc-600">{access.talk.name}</p>
+          <h1 className="font-display text-ink text-2xl font-extrabold">
+            Polls
+          </h1>
+          <p className="text-muted mt-1 text-sm font-semibold">
+            {access.talk.name}
+          </p>
         </div>
-        <Link
-          href={`/talks/${talkId}`}
-          className="shrink-0 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
-        >
+        <Link href={`/talks/${talkId}`} className="linky shrink-0">
           ← Talk home
         </Link>
       </div>
 
-      <section className="mb-10 rounded-lg border border-zinc-200 bg-white p-6">
-        <h2 className="mb-5 text-lg font-semibold text-zinc-900">
+      <section className="card mb-10 p-6">
+        <h2 className="font-display text-ink mb-5 text-lg font-bold">
           Create a poll
         </h2>
         <PollForm talkId={talkId} />
@@ -69,20 +70,18 @@ export default async function PollsPage({
           if (items.length === 0) return null;
           return (
             <section key={section.status} className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
-                {section.title}
-              </h2>
+              <h2 className="section-label">{section.title}</h2>
               <ul className="flex flex-col gap-2">
                 {items.map((poll) => (
                   <li key={poll.id}>
                     <Link
                       href={`/talks/${talkId}/polls/${poll.id}`}
-                      className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
+                      className="card card-hover flex items-center justify-between gap-4 p-4"
                     >
-                      <span className="font-medium text-zinc-900">
+                      <span className="text-ink font-bold">
                         {poll.question}
                       </span>
-                      <span className="shrink-0 text-sm text-zinc-500">
+                      <span className="text-muted shrink-0 text-sm font-bold">
                         {section.status === "active" ? "Manage →" : "View →"}
                       </span>
                     </Link>
@@ -93,7 +92,7 @@ export default async function PollsPage({
           );
         })}
         {pollRows.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-8 text-center text-sm text-zinc-500">
+          <p className="empty">
             No polls yet. Create a poll above when you&apos;re ready.
           </p>
         ) : null}

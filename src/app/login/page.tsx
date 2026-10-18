@@ -16,29 +16,26 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6">
-      <div className="flex flex-col gap-6 rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
+      <div className="card flex flex-col gap-6 p-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold text-zinc-900">
+          <span className="font-display text-ink text-lg font-extrabold">
+            Presentalia<span className="text-coral">.</span>
+          </span>
+          <h1 className="font-display text-ink text-xl font-extrabold">
             Sign in to Presentalia
           </h1>
-          <p className="text-sm text-zinc-600">
+          <p className="text-muted text-sm font-semibold">
             Enter your rostered or presenter email address. We&apos;ll send you
             a one-time sign-in link — no password needed.
           </p>
         </div>
         {linkExpired ? (
-          <p
-            role="alert"
-            className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
+          <p role="alert" className="alert alert-err">
             That sign-in link is no longer valid. Please request a new one.
           </p>
         ) : null}
         {accessDenied ? (
-          <p
-            role="alert"
-            className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
+          <p role="alert" className="alert alert-err">
             This email address does not have access yet. Ask a presenter to add
             it to a talk&apos;s roster or an admin to add it as a presenter.
           </p>

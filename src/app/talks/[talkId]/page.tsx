@@ -52,88 +52,85 @@ export default async function TalkPage({
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-2 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">{talk.name}</h1>
+          <h1 className="font-display text-ink text-2xl font-extrabold">
+            {talk.name}
+          </h1>
           {talk.heldAt ? (
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="text-muted mt-1 text-sm font-semibold">
               {formatDate(talk.heldAt)}
             </p>
           ) : null}
         </div>
-        <Link
-          href="/talks"
-          className="shrink-0 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
-        >
+        <Link href="/talks" className="linky shrink-0">
           ← All talks
         </Link>
       </div>
       {talk.description ? (
-        <p className="mb-8 text-sm text-zinc-600">{talk.description}</p>
+        <p className="text-ink/75 mb-8 text-sm font-semibold">
+          {talk.description}
+        </p>
       ) : (
         <div className="mb-8" />
       )}
 
       <section className="mb-8 flex flex-col gap-3">
-        <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
-          Live now
-        </h2>
+        <h2 className="section-label">Live now</h2>
         {activePoll ? (
           <Link
             href={`/talks/${talkId}/polls/${activePoll.id}`}
-            className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 transition-colors hover:border-emerald-500"
+            className="border-green shadow-hard-green flex flex-col gap-1 rounded-2xl border-2 bg-white p-4 transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_var(--color-green)]"
           >
-            <span className="font-medium text-emerald-900">
-              Poll is open: {activePoll.question}
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="chip chip-live">
+                <span className="pulse-dot" />
+                LIVE
+              </span>
+              <span className="text-ink font-extrabold">
+                Poll is open: {activePoll.question}
+              </span>
             </span>
-            <span className="mt-1 block text-sm text-emerald-700">
+            <span className="text-green text-sm font-bold">
               Tap to {role === "member" ? "vote and see results" : "manage"} →
             </span>
           </Link>
         ) : (
-          <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500">
-            No active poll right now.
-          </p>
+          <p className="empty">No active poll right now.</p>
         )}
       </section>
 
       <section className="mb-8 flex flex-col gap-3">
-        <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
-          Materials
-        </h2>
+        <h2 className="section-label">Materials</h2>
         {talk.slidesUpdatedAt ? (
           <a
             href={`/talks/${talkId}/slides/download`}
-            className="rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
+            className="card card-hover flex flex-col gap-0.5 p-4"
           >
-            <span className="font-medium text-zinc-900">
-              Download the slides (PDF)
+            <span className="text-ink font-extrabold">
+              📄 Download the slides (PDF)
             </span>
-            <span className="mt-1 block text-xs text-zinc-500">
+            <span className="text-muted text-xs font-semibold">
               Uploaded {formatDate(talk.slidesUpdatedAt)}
             </span>
           </a>
         ) : (
-          <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500">
-            Slides have not been uploaded yet.
-          </p>
+          <p className="empty">Slides have not been uploaded yet.</p>
         )}
       </section>
 
       {closedPolls.length > 0 ? (
         <section className="mb-8 flex flex-col gap-3">
-          <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
-            Past polls
-          </h2>
+          <h2 className="section-label">Past polls</h2>
           <ul className="flex flex-col gap-2">
             {closedPolls.map((poll) => (
               <li key={poll.id}>
                 <Link
                   href={`/talks/${talkId}/polls/${poll.id}/results`}
-                  className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
+                  className="card card-hover flex items-center justify-between gap-4 p-4"
                 >
-                  <span className="font-medium text-zinc-900">
-                    {poll.question}
+                  <span className="text-ink font-bold">{poll.question}</span>
+                  <span className="text-muted shrink-0 text-sm font-bold">
+                    Results →
                   </span>
-                  <span className="text-sm text-zinc-500">Results →</span>
                 </Link>
               </li>
             ))}
@@ -142,31 +139,29 @@ export default async function TalkPage({
       ) : null}
 
       {role !== "member" ? (
-        <section className="flex flex-col gap-3 border-t border-zinc-200 pt-8">
-          <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
-            Manage talk
-          </h2>
-          <div className="flex flex-wrap gap-2">
+        <section className="border-ink/15 flex flex-col gap-3 border-t-2 border-dashed pt-8">
+          <h2 className="section-label">Manage talk</h2>
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/talks/${talkId}/roster`}
-              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
+              className="btn btn-ghost btn-small"
             >
               Attendee roster
             </Link>
             <Link
               href={`/talks/${talkId}/slides`}
-              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
+              className="btn btn-ghost btn-small"
             >
               Slides
             </Link>
             <Link
               href={`/talks/${talkId}/polls`}
-              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
+              className="btn btn-ghost btn-small"
             >
               Polls
             </Link>
+            <DeleteTalkButton talkId={talkId} talkName={talk.name} />
           </div>
-          <DeleteTalkButton talkId={talkId} talkName={talk.name} />
         </section>
       ) : null}
     </main>

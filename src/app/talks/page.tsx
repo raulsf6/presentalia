@@ -28,10 +28,10 @@ export default async function TalksPage() {
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">
+          <h1 className="font-display text-ink text-2xl font-extrabold">
             {user.role === "admin" ? "All talks" : "Your talks"}
           </h1>
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="text-muted mt-1 text-sm font-semibold">
             {user.role === "admin"
               ? "Create and manage talks, rosters, slides, and polls."
               : user.role === "presenter"
@@ -41,19 +41,13 @@ export default async function TalksPage() {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
           {user.role === "admin" ? (
-            <Link
-              href="/admin/users"
-              className="text-sm font-medium text-zinc-700 underline underline-offset-4"
-            >
+            <Link href="/admin/users" className="linky">
               Manage users
             </Link>
           ) : null}
           {user.role !== "attendee" ? (
-            <Link
-              href="/talks/new"
-              className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
-            >
-              New talk
+            <Link href="/talks/new" className="btn btn-small">
+              + New talk
             </Link>
           ) : null}
           <SignOutButton />
@@ -61,7 +55,7 @@ export default async function TalksPage() {
       </div>
 
       {rows.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-10 text-center text-sm text-zinc-500">
+        <p className="empty">
           {user.role === "admin"
             ? "No talks yet. Create your first talk to get started."
             : user.role === "presenter"
@@ -74,24 +68,22 @@ export default async function TalksPage() {
             <li key={talk.id}>
               <Link
                 href={`/talks/${talk.id}`}
-                className="flex flex-col gap-1 rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
+                className="card card-hover flex flex-col gap-1 p-4"
               >
-                <span className="font-medium text-zinc-900">{talk.name}</span>
+                <span className="text-ink font-extrabold">{talk.name}</span>
                 {talk.heldAt ? (
-                  <span className="text-xs text-zinc-500">
+                  <span className="text-muted text-xs font-bold">
                     {formatDate(talk.heldAt)}
                   </span>
                 ) : null}
                 {talk.description ? (
-                  <span className="text-sm text-zinc-600">
+                  <span className="text-ink/75 text-sm font-semibold">
                     {talk.description}
                   </span>
                 ) : null}
                 <span className="mt-1 flex gap-2 text-xs">
                   {talk.slidesUpdatedAt ? (
-                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700">
-                      Slides available
-                    </span>
+                    <span className="chip chip-slide">📄 Slides available</span>
                   ) : null}
                 </span>
               </Link>

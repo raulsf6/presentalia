@@ -53,7 +53,7 @@ export function LiveResults({
 
   if (!payload) {
     return (
-      <p role="alert" className="rounded-lg bg-amber-50 p-5 text-amber-900">
+      <p role="alert" className="alert alert-warn p-5">
         {accessRevoked
           ? "You no longer have access to these results."
           : "Results are temporarily unavailable. Refresh to try again."}
@@ -68,21 +68,22 @@ export function LiveResults({
     <section className={`flex flex-col ${large ? "gap-10" : "gap-7"}`}>
       <header className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
+          {poll.status === "active" ? (
+            <span className="chip chip-live">
+              <span className="pulse-dot" />
+              LIVE
+            </span>
+          ) : (
+            <span className="chip chip-closed">CLOSED</span>
+          )}
           <span
-            className={`rounded-full px-3 py-1 text-sm font-semibold ${
-              poll.status === "active"
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-zinc-100 text-zinc-700"
-            }`}
+            className={`${large ? "text-lg" : "text-sm"} text-muted font-bold`}
           >
-            {poll.status === "active" ? "Live" : "Closed"}
-          </span>
-          <span className={`${large ? "text-lg" : "text-sm"} text-zinc-500`}>
             {total} {total === 1 ? "response" : "responses"}
           </span>
         </div>
         <h1
-          className={`font-bold tracking-tight text-zinc-950 ${
+          className={`font-display text-ink font-extrabold tracking-tight ${
             large
               ? "text-4xl leading-tight md:text-6xl"
               : "text-2xl md:text-3xl"
@@ -100,26 +101,26 @@ export function LiveResults({
           return (
             <li
               key={row.optionId}
-              className={`rounded-xl border border-zinc-200 bg-white ${
-                large ? "p-6 md:p-8" : "p-4 md:p-5"
-              }`}
+              className={`card ${large ? "p-6 md:p-8" : "p-4 md:p-5"}`}
             >
               <div className="mb-3 flex items-baseline justify-between gap-4">
                 <span
-                  className={`font-semibold text-zinc-900 ${
+                  className={`text-ink font-extrabold ${
                     large ? "text-2xl md:text-3xl" : "text-base md:text-lg"
                   }`}
                 >
-                  <span className="mr-2 text-zinc-400">{index + 1}.</span>
+                  <span className="text-muted mr-2">{index + 1}.</span>
                   {row.label}
                 </span>
                 <span
-                  className={`shrink-0 text-zinc-700 tabular-nums ${
+                  className={`text-ink shrink-0 tabular-nums ${
                     large ? "text-2xl md:text-3xl" : "text-sm md:text-base"
                   }`}
                 >
-                  <strong className="font-bold">{row.percent}%</strong>
-                  <span className="ml-2 text-zinc-500">{row.votes}</span>
+                  <strong className="font-display font-extrabold">
+                    {row.percent}%
+                  </strong>
+                  <span className="text-muted ml-2 font-bold">{row.votes}</span>
                 </span>
               </div>
               <div
@@ -128,12 +129,10 @@ export function LiveResults({
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={row.percent}
-                className={`overflow-hidden rounded-full bg-zinc-100 ${
-                  large ? "h-5" : "h-3"
-                }`}
+                className={`bar ${large ? "h-5" : "h-4"}`}
               >
-                <div
-                  className="h-full rounded-full bg-indigo-600 transition-[width] duration-500"
+                <span
+                  className="bar-fill"
                   style={{ width: `${row.percent}%` }}
                 />
               </div>
@@ -146,7 +145,7 @@ export function LiveResults({
                   {optionVoters?.map((voter, voterIndex) => (
                     <span
                       key={`${voter.email}-${voterIndex}`}
-                      className="rounded-full bg-zinc-100 px-3 py-1 text-zinc-700"
+                      className="border-ink/10 bg-cream2 text-ink/80 rounded-full border-2 px-3 py-1 font-semibold"
                     >
                       {voter.email}
                     </span>
@@ -159,12 +158,14 @@ export function LiveResults({
       </ol>
 
       {voters === null ? (
-        <p className={`${large ? "text-lg" : "text-sm"} text-zinc-500`}>
+        <p
+          className={`${large ? "text-lg" : "text-sm"} text-muted font-semibold`}
+        >
           Results are anonymous.
         </p>
       ) : null}
       {poll.status === "active" ? (
-        <p className="text-xs text-zinc-400" aria-live="polite">
+        <p className="text-muted text-xs font-semibold" aria-live="polite">
           Results update automatically as votes arrive.
         </p>
       ) : null}

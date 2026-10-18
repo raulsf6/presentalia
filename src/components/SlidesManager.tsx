@@ -7,6 +7,7 @@ import {
   createSlidesUploadAction,
   type SlidesResult,
 } from "@/actions/slides";
+import { LoadingDots } from "@/components/LoadingDots";
 import { MAX_SLIDES_BYTES } from "@/lib/slides";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -85,7 +86,7 @@ export function SlidesManager({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-zinc-600">
+      <p className="text-ink/75 text-sm font-semibold">
         {uploadedLabel
           ? `Current slides uploaded ${uploadedLabel}. Uploading again replaces the file attendees download.`
           : "No slides uploaded yet. Attendees see a download button once a PDF is uploaded."}
@@ -99,35 +100,40 @@ export function SlidesManager({
           onChange={(event) =>
             setSelectedName(event.target.files?.[0]?.name ?? "")
           }
-          className="text-sm"
+          className="text-muted file:border-ink file:font-display file:text-ink file:shadow-hard hover:file:bg-cream2 focus-visible:outline-ink text-xs font-semibold file:mr-3 file:cursor-pointer file:rounded-full file:border-2 file:bg-white file:px-3.5 file:py-1.5 file:text-xs file:font-extrabold file:transition hover:file:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
         />
         <button
           type="button"
           onClick={onUpload}
           disabled={pending || !selectedName}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn"
         >
-          {pending
-            ? uploadStep === "preparing"
-              ? "Preparing…"
-              : uploadStep === "finishing"
-                ? "Finishing…"
-                : "Uploading…"
-            : uploadedLabel
-              ? "Replace slides"
-              : "Upload slides"}
+          {pending ? (
+            <>
+              {uploadStep === "preparing"
+                ? "Preparing…"
+                : uploadStep === "finishing"
+                  ? "Finishing…"
+                  : "Uploading…"}{" "}
+              <LoadingDots />
+            </>
+          ) : uploadedLabel ? (
+            "Replace slides"
+          ) : (
+            "Upload slides"
+          )}
         </button>
       </div>
-      <p className="text-xs text-zinc-500">
+      <p className="text-muted text-xs font-semibold">
         PDF only, up to {Math.round(MAX_SLIDES_BYTES / (1024 * 1024))} MB.
       </p>
       {result ? (
         result.ok ? (
-          <p role="status" className="text-sm font-medium text-emerald-700">
+          <p role="status" className="text-green text-sm font-extrabold">
             Slides uploaded. Rostered attendees can download them now.
           </p>
         ) : (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-red text-sm font-bold">
             {result.error}
           </p>
         )

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { closePollAction, launchPollAction } from "@/actions/polls";
+import { LoadingDots } from "@/components/LoadingDots";
 
 export function PollAdminControls({
   pollId,
@@ -34,7 +35,7 @@ export function PollAdminControls({
 
   if (status === "closed") {
     return (
-      <p className="text-sm text-zinc-500">
+      <p className="text-muted text-sm font-semibold">
         This poll is closed. Its question, options, and results setting are
         read-only.
       </p>
@@ -52,37 +53,35 @@ export function PollAdminControls({
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className={`w-fit rounded-md px-4 py-2 text-sm font-medium text-white transition-colors ${
-            launch
-              ? "bg-emerald-700 hover:bg-emerald-800"
-              : "bg-zinc-900 hover:bg-zinc-700"
-          }`}
+          className={`btn w-fit ${launch ? "btn-green" : "btn-ink"}`}
         >
           {launch ? "Launch poll…" : "Close poll…"}
         </button>
       ) : (
-        <div className="flex flex-col gap-3 rounded-md border border-amber-300 bg-amber-50 p-4">
-          <p className="text-sm text-amber-900">{prompt}</p>
+        <div className="border-amber bg-ambersoft flex flex-col gap-3 rounded-xl border-2 p-4">
+          <p className="text-amberdeep text-sm font-bold">{prompt}</p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={pending}
               onClick={runAction}
-              className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`btn btn-small ${launch ? "btn-green" : "btn-ink"}`}
             >
-              {pending
-                ? launch
-                  ? "Launching…"
-                  : "Closing…"
-                : launch
-                  ? "Yes, launch poll"
-                  : "Yes, close voting"}
+              {pending ? (
+                <>
+                  {launch ? "Launching…" : "Closing…"} <LoadingDots />
+                </>
+              ) : launch ? (
+                "Yes, launch poll 🎉"
+              ) : (
+                "Yes, close voting"
+              )}
             </button>
             <button
               type="button"
               disabled={pending}
               onClick={() => setConfirming(false)}
-              className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn btn-ghost btn-small"
             >
               Cancel
             </button>
@@ -90,7 +89,7 @@ export function PollAdminControls({
         </div>
       )}
       {error ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-red text-sm font-bold">
           {error}
         </p>
       ) : null}

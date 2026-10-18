@@ -41,16 +41,10 @@ export default async function PollResultsPage({
       }`}
     >
       <div className="mb-6 flex items-center justify-between gap-4">
-        <Link
-          href={`/talks/${talkId}`}
-          className="text-sm text-zinc-500 transition-colors hover:text-zinc-900"
-        >
+        <Link href={`/talks/${talkId}`} className="linky">
           ← {access.talk.name}
         </Link>
-        <Link
-          href={toggleHref}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
-        >
+        <Link href={toggleHref} className="btn btn-ghost btn-small">
           {projector ? "Attendee view" : "Projector view"}
         </Link>
       </div>

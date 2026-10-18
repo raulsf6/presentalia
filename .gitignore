@@ -28,6 +28,9 @@
 /TODO.txt
 /docs/
 
+# brainstorming companion mockups (local only)
+/.superpowers/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

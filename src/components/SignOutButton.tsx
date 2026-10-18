@@ -4,10 +4,7 @@ import { signOutAction } from "@/actions/auth";
 export function SignOutButton() {
   return (
     <form action={signOutAction}>
-      <button
-        type="submit"
-        className="text-sm text-zinc-500 transition-colors hover:text-zinc-900"
-      >
+      <button type="submit" className="linky">
         Sign out
       </button>
     </form>

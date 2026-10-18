@@ -8,6 +8,7 @@ import {
   removeRosterEntryAction,
   type RosterSummary,
 } from "@/actions/roster";
+import { LoadingDots } from "@/components/LoadingDots";
 import { parseCsv, parseEmailList } from "@/lib/roster";
 
 export type RosterEntry = {
@@ -26,35 +27,35 @@ function formatList(items: string[], limit = 5): string {
 function Summary({ summary }: { summary: RosterSummary }) {
   if (!summary.ok) {
     return (
-      <p role="alert" className="text-sm text-red-600">
+      <p role="alert" className="text-red text-sm font-bold">
         {summary.error}
       </p>
     );
   }
   return (
-    <div role="status" className="flex flex-col gap-1 text-sm">
+    <div role="status" className="flex flex-col gap-1 text-sm font-semibold">
       {summary.added !== undefined ? (
-        <p className="font-medium text-emerald-700">
+        <p className="text-green font-extrabold">
           Added {summary.added} {summary.added === 1 ? "address" : "addresses"}.
         </p>
       ) : null}
       {summary.invalid && summary.invalid.length > 0 ? (
-        <p className="text-amber-700">
+        <p className="text-amberdeep font-bold">
           Couldn&apos;t read: {formatList(summary.invalid)}
         </p>
       ) : null}
       {summary.duplicates && summary.duplicates.length > 0 ? (
-        <p className="text-zinc-600">
+        <p className="text-muted">
           Ignored duplicates: {formatList(summary.duplicates)}
         </p>
       ) : null}
       {summary.alreadyPresent && summary.alreadyPresent.length > 0 ? (
-        <p className="text-zinc-600">
+        <p className="text-muted">
           Already on the roster: {formatList(summary.alreadyPresent)}
         </p>
       ) : null}
       {summary.inviteFailed && summary.inviteFailed.length > 0 ? (
-        <p className="text-amber-700">
+        <p className="text-amberdeep font-bold">
           Added to the roster, but couldn&apos;t send an invite to:{" "}
           {formatList(summary.inviteFailed)}
         </p>
@@ -142,9 +143,7 @@ export function RosterManager({
   return (
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
-          Add attendees
-        </h2>
+        <h2 className="section-label">Add attendees</h2>
         <textarea
           rows={3}
           value={raw}
@@ -153,10 +152,10 @@ export function RosterManager({
             "one@email.com, another@email.com\none per line also works"
           }
           aria-label="Email addresses"
-          className="rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+          className="input font-mono"
         />
         {raw.trim().length > 0 ? (
-          <div className="flex flex-col gap-1 text-xs text-zinc-600">
+          <div className="text-muted flex flex-col gap-1 text-xs font-semibold">
             <p>
               {preview.valid.length} valid{" "}
               {preview.valid.length === 1 ? "address" : "addresses"} will be
@@ -167,7 +166,7 @@ export function RosterManager({
               .
             </p>
             {preview.invalid.length > 0 ? (
-              <p className="text-amber-700">
+              <p className="text-amberdeep font-bold">
                 Couldn&apos;t read: {formatList(preview.invalid)}
               </p>
             ) : null}
@@ -177,18 +176,22 @@ export function RosterManager({
           type="button"
           onClick={onAdd}
           disabled={pending || raw.trim().length === 0}
-          className="w-fit rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn w-fit"
         >
-          {pending ? "Adding…" : "Add addresses"}
+          {pending ? (
+            <>
+              Adding… <LoadingDots />
+            </>
+          ) : (
+            "Add addresses"
+          )}
         </button>
         {summary ? <Summary summary={summary} /> : null}
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
-          Import CSV
-        </h2>
-        <p className="text-xs text-zinc-500">
+        <h2 className="section-label">Import CSV</h2>
+        <p className="text-muted text-xs font-semibold">
           First column is used, or the column headed &quot;email&quot;. 1 MB
           limit.
         </p>
@@ -199,23 +202,32 @@ export function RosterManager({
             accept=".csv,text/csv"
             aria-label="CSV file"
             onChange={(event) => onCsvSelected(event.target.files?.[0])}
-            className="text-sm"
+            className="text-muted file:border-ink file:font-display file:text-ink file:shadow-hard hover:file:bg-cream2 focus-visible:outline-ink text-xs font-semibold file:mr-3 file:cursor-pointer file:rounded-full file:border-2 file:bg-white file:px-3.5 file:py-1.5 file:text-xs file:font-extrabold file:transition hover:file:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
           />
           <button
             type="button"
             onClick={onImportCsv}
             disabled={csvPending || !csvFileName}
-            className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn btn-ghost"
           >
-            {csvPending ? "Importing…" : "Import CSV"}
+            {csvPending ? (
+              <>
+                Importing… <LoadingDots />
+              </>
+            ) : (
+              "Import CSV"
+            )}
           </button>
         </div>
         {csvTooLarge ? (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-red text-sm font-bold">
             That CSV is too large (1 MB limit).
           </p>
         ) : csvFileName && csvText ? (
-          <div className="flex flex-col gap-1 text-xs text-zinc-600">
+          <div className="text-muted flex flex-col gap-1 text-xs font-semibold">
+            <span className="border-ink/30 text-ink mb-1 flex w-fit items-center gap-1.5 rounded-xl border-2 border-dashed px-3 py-1.5 font-extrabold">
+              📄 {csvFileName}
+            </span>
             <p>
               Preview: {csvPreview.valid.length} valid{" "}
               {csvPreview.valid.length === 1 ? "address" : "addresses"} will be
@@ -226,12 +238,12 @@ export function RosterManager({
               .
             </p>
             {csvPreview.invalid.length > 0 ? (
-              <p className="text-amber-700">
+              <p className="text-amberdeep font-bold">
                 Couldn&apos;t read: {formatList(csvPreview.invalid)}
               </p>
             ) : null}
             {csvPreview.duplicates.length > 0 ? (
-              <p className="text-zinc-600">
+              <p className="text-muted">
                 Duplicate addresses: {formatList(csvPreview.duplicates)}
               </p>
             ) : null}
@@ -241,30 +253,28 @@ export function RosterManager({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold tracking-wide text-zinc-400 uppercase">
-          Roster ({roster.length})
-        </h2>
+        <h2 className="section-label">Roster ({roster.length})</h2>
         {removeError ? (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-red text-sm font-bold">
             {removeError}
           </p>
         ) : null}
         {roster.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500">
+          <p className="empty">
             No attendees yet. Add users here to give them access to this talk.
           </p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-100 rounded-lg border border-zinc-200">
+          <ul className="card divide-ink/10 divide-y-2 divide-dashed overflow-hidden">
             {roster.map((entry) => (
               <li
                 key={entry.userId}
                 className="flex items-center justify-between gap-4 px-4 py-2.5"
               >
                 <div className="flex min-w-0 flex-col">
-                  <span className="truncate font-mono text-sm text-zinc-900">
+                  <span className="text-ink truncate font-mono text-sm font-bold">
                     {entry.email ?? "No email address"}
                   </span>
-                  <span className="text-xs text-zinc-500">
+                  <span className="text-muted text-xs font-semibold">
                     added {entry.addedAtLabel}
                     {entry.emailVerifiedAt
                       ? " · email verified"
@@ -275,7 +285,7 @@ export function RosterManager({
                   type="button"
                   disabled={removePending}
                   onClick={() => onRemove(entry.userId)}
-                  className="shrink-0 rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="btn btn-ghost btn-small shrink-0"
                 >
                   Remove
                 </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { submitVoteAction } from "@/actions/vote";
 
@@ -13,60 +14,99 @@ export function VoteForm({
 }) {
   const [selected, setSelected] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [celebrating, setCelebrating] = useState(false);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selected || pending) return;
+    if (!selected || pending || celebrating) return;
     setError(null);
     startTransition(async () => {
       const result = await submitVoteAction(pollId, selected);
       if (!result.ok) {
         setError(result.error ?? "Your vote was not accepted.");
+        return;
       }
-      // A successful action redirects to results. No option can be revised.
+      if (!result.talkId) {
+        // Defensive fallback: refreshing the poll page redirects an
+        // already-voted member to the results from the server side.
+        router.refresh();
+        return;
+      }
+      // The vote is saved. Play the celebration, then move to the results.
+      const resultsHref = `/talks/${result.talkId}/polls/${pollId}/results`;
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      if (reduceMotion) {
+        router.push(resultsHref);
+        return;
+      }
+      setCelebrating(true);
+      window.setTimeout(() => {
+        router.push(resultsHref);
+      }, 700);
     });
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <fieldset className="flex flex-col gap-2">
+      <fieldset
+        className="flex flex-col gap-2"
+        disabled={pending || celebrating}
+      >
         <legend className="sr-only">Choose one answer</legend>
-        {options.map((option) => (
-          <label
-            key={option.id}
-            className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors ${
-              selected === option.id
-                ? "border-zinc-900 bg-zinc-50"
-                : "border-zinc-200 bg-white hover:border-zinc-400"
-            }`}
-          >
-            <input
-              type="radio"
-              name="option"
-              value={option.id}
-              checked={selected === option.id}
-              onChange={() => setSelected(option.id)}
-              className="size-4 accent-zinc-900"
-            />
-            <span className="text-base font-medium text-zinc-900">
-              {option.label}
-            </span>
-          </label>
-        ))}
+        {options.map((option) => {
+          const isSelected = selected === option.id;
+          return (
+            <label
+              key={option.id}
+              className={`border-ink flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3.5 transition duration-150 ${
+                isSelected
+                  ? "bg-peach shadow-[0_3px_0_var(--color-coral)]"
+                  : "shadow-hard hover:shadow-hard-lg bg-white hover:-translate-y-0.5"
+              }`}
+            >
+              <input
+                type="radio"
+                name="option"
+                value={option.id}
+                checked={isSelected}
+                onChange={() => setSelected(option.id)}
+                className="accent-coral size-5"
+              />
+              <span className="text-ink text-base font-bold">
+                {option.label}
+              </span>
+              {isSelected ? (
+                <span
+                  aria-hidden="true"
+                  className="bg-coral font-display ml-auto flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white"
+                >
+                  ✓
+                </span>
+              ) : null}
+            </label>
+          );
+        })}
       </fieldset>
-      <p className="text-xs text-zinc-500">
+      <p className="text-muted text-xs font-semibold">
         Your vote is final and cannot be changed.
       </p>
       <button
         type="submit"
-        disabled={!selected || pending}
-        className="rounded-md bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!selected || pending || celebrating}
+        className={`pow-btn ${celebrating ? "is-celebrating" : ""}`}
       >
-        {pending ? "Submitting…" : "Submit my vote"}
+        <span aria-hidden="true" className="pow-btn-shadow" />
+        <span aria-hidden="true" className="pow-btn-frame" />
+        <span className="pow-btn-inner">
+          {pending ? "Submitting…" : "Submit my vote"}
+        </span>
       </button>
       {error ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-red text-sm font-bold">
           {error}
         </p>
       ) : null}

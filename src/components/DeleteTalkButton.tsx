@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { deleteTalkAction } from "@/actions/talks";
+import { LoadingDots } from "@/components/LoadingDots";
 
 export function DeleteTalkButton({
   talkId,
@@ -20,7 +21,7 @@ export function DeleteTalkButton({
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-50"
+        className="btn btn-danger"
       >
         Delete talk…
       </button>
@@ -31,14 +32,14 @@ export function DeleteTalkButton({
     <div
       role="alertdialog"
       aria-label="Delete talk"
-      className="flex flex-col gap-3 rounded-md border border-red-300 bg-red-50 p-4"
+      className="border-red bg-redsoft flex flex-col gap-3 rounded-xl border-2 p-4"
     >
-      <p className="text-sm text-red-800">
-        Delete <span className="font-semibold">{talkName}</span>? This removes
+      <p className="text-reddeep text-sm font-bold">
+        Delete <span className="font-extrabold">{talkName}</span>? This removes
         its attendee roster, polls and votes, and the uploaded slides, and
         revokes all attendee access. This cannot be undone.
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={pending}
@@ -50,9 +51,15 @@ export function DeleteTalkButton({
               }
             })
           }
-          className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn btn-red btn-small"
         >
-          {pending ? "Deleting…" : "Yes, delete this talk"}
+          {pending ? (
+            <>
+              Deleting… <LoadingDots />
+            </>
+          ) : (
+            "Yes, delete this talk"
+          )}
         </button>
         <button
           type="button"
@@ -61,13 +68,13 @@ export function DeleteTalkButton({
             setConfirming(false);
             setError(null);
           }}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn btn-ghost btn-small"
         >
           Cancel
         </button>
       </div>
       {error ? (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-red text-sm font-bold">
           {error}
         </p>
       ) : null}

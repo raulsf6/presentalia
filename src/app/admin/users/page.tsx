@@ -36,19 +36,18 @@ export default async function AdminUsersPage() {
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Manage users</h1>
-          <p className="mt-1 text-sm text-zinc-600">
+          <h1 className="font-display text-ink text-2xl font-extrabold">
+            Manage users
+          </h1>
+          <p className="text-muted mt-1 text-sm font-semibold">
             Add attendees and presenters, assign roles, and check email status.
           </p>
         </div>
-        <Link
-          href="/talks"
-          className="shrink-0 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
-        >
+        <Link href="/talks" className="linky shrink-0">
           ← All talks
         </Link>
       </div>
-      <div className="rounded-lg border border-zinc-200 bg-white p-6">
+      <div className="card p-6">
         <UserManager users={users} currentUserId={user.id} />
       </div>
     </main>

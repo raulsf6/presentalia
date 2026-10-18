@@ -2,7 +2,6 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
 import { activities, pollOptions, pollVotes, polls } from "@/db/schema";
@@ -11,7 +10,7 @@ import { getSessionUser } from "@/lib/auth";
 import { isRosteredAttendee } from "@/lib/membership";
 import { canVote } from "@/lib/polls";
 
-export type VoteResult = { ok: boolean; error?: string };
+export type VoteResult = { ok: boolean; error?: string; talkId?: string };
 
 /** Submit an attendee's one immutable choice for an active poll. */
 export async function submitVoteAction(
@@ -80,5 +79,7 @@ export async function submitVoteAction(
 
   revalidatePath(`/talks/${outcome.talkId}/polls/${pollId}`);
   revalidatePath(`/talks/${outcome.talkId}/polls/${pollId}/results`);
-  redirect(`/talks/${outcome.talkId}/polls/${pollId}/results`);
+  // The client navigates to the results after playing the vote celebration,
+  // so success returns the talk id instead of redirecting here.
+  return { ok: true, talkId: outcome.talkId };
 }

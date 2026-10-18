@@ -48,21 +48,18 @@ export default async function RosterPage({
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">
+          <h1 className="font-display text-ink text-2xl font-extrabold">
             Attendee roster
           </h1>
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="text-muted mt-1 text-sm font-semibold">
             {access.talk.name} — only these users can access this talk.
           </p>
         </div>
-        <Link
-          href={`/talks/${talkId}`}
-          className="shrink-0 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
-        >
+        <Link href={`/talks/${talkId}`} className="linky shrink-0">
           ← Talk home
         </Link>
       </div>
-      <div className="rounded-lg border border-zinc-200 bg-white p-6">
+      <div className="card p-6">
         <RosterManager talkId={talkId} roster={roster} />
       </div>
     </main>
