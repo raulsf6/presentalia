@@ -1,12 +1,13 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 
 export type TestUser = { id: string; email: string };
 
-const MIGRATION_PATH = fileURLToPath(
-  new URL("../../supabase/migrations/0001_talk_platform.sql", import.meta.url),
+const MIGRATIONS_DIR = fileURLToPath(
+  new URL("../../supabase/migrations", import.meta.url),
 );
 
 /** Minimal stand-ins for the Supabase auth/storage schemas and API roles. */
@@ -33,11 +34,22 @@ create role authenticated nologin;
 
 export type Db = PGlite;
 
-export async function createDb(): Promise<Db> {
+export async function createDb({
+  migrationsDir = MIGRATIONS_DIR,
+}: { migrationsDir?: string } = {}): Promise<Db> {
+  // Numeric-aware sort applies zero-padded prefixes (0002 before 0010) and
+  // timestamp prefixes in application order.
+  const files = (await readdir(migrationsDir))
+    .filter((name) => name.endsWith(".sql"))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  if (files.length === 0) {
+    throw new Error(`No migrations found in ${migrationsDir}`);
+  }
   const db = new PGlite();
   await db.exec(FAKE_SUPABASE_SETUP);
-  const migration = await readFile(MIGRATION_PATH, "utf-8");
-  await db.exec(migration);
+  for (const file of files) {
+    await db.exec(await readFile(join(migrationsDir, file), "utf-8"));
+  }
   return db;
 }
 
