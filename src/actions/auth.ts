@@ -1,0 +1,103 @@
+"use server";
+
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { isAllowedLoginEmail } from "@/lib/login-gate";
+import { waitForMinimumDuration } from "@/lib/auth-timing";
+import { normalizeEmail, validateEmail } from "@/lib/roster";
+import { ensureAppUser, sendAppUserInvite } from "@/lib/provision-user";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export type MagicLinkState = {
+  ok: boolean;
+  sent?: boolean;
+  error?: string;
+};
+
+/**
+ * Same response for every accepted address, invited or not, so the form
+ * never reveals whether an address is on any roster (no enumeration). The
+ * only observable difference is that uninvited addresses never receive an
+ * email.
+ */
+const GENERIC_SENT: MagicLinkState = { ok: true, sent: true };
+const MIN_LOGIN_RESPONSE_MS = 2_000;
+
+async function genericResponse(startedAt: number): Promise<MagicLinkState> {
+  await waitForMinimumDuration(startedAt, MIN_LOGIN_RESPONSE_MS);
+  return GENERIC_SENT;
+}
+
+async function requestOrigin(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  if (!host) {
+    return "http://localhost:3000";
+  }
+  const proto = headerList.get("x-forwarded-proto") ?? "http";
+  return `${proto}://${host}`;
+}
+
+/**
+ * Requests a magic link for an email address. Only authorized addresses
+ * (a provisioned app user or the bootstrap email) get an email;
+ * everyone else gets the identical generic success response.
+ */
+export async function requestMagicLinkAction(
+  _prev: MagicLinkState,
+  formData: FormData,
+): Promise<MagicLinkState> {
+  const raw = String(formData.get("email") ?? "");
+  if (!validateEmail(raw)) {
+    return { ok: false, error: "Enter a valid email address." };
+  }
+  const email = normalizeEmail(raw);
+  const startedAt = Date.now();
+
+  try {
+    if (!(await isAllowedLoginEmail(email))) {
+      return genericResponse(startedAt);
+    }
+
+    // Bootstrap may be allowlisted before an app user exists. Provision it as
+    // unconfirmed; the Auth invite link confirms it and the sync trigger mirrors
+    // the confirmation timestamp.
+    const appUser = await ensureAppUser(email);
+    if (!appUser) {
+      return genericResponse(startedAt);
+    }
+    if (!appUser.emailVerifiedAt) {
+      await sendAppUserInvite(email);
+      return genericResponse(startedAt);
+    }
+
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${await requestOrigin()}/auth/confirm`,
+        shouldCreateUser: false,
+      },
+    });
+    if (error) {
+      // Invalid/expired input on a valid invited address — treat any
+      // failure identically so behavior never differs by address. Every
+      // syntactically valid address also receives the same minimum duration.
+      return genericResponse(startedAt);
+    }
+    return genericResponse(startedAt);
+  } catch {
+    return genericResponse(startedAt);
+  }
+}
+
+/** Ends the Supabase session and returns the user to the login page. */
+export async function signOutAction(): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
