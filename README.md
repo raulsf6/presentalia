@@ -119,10 +119,10 @@ For a hosted Supabase project, configure these environment variables in
 Deployments are manual and production-only. Pushing to `main` deploys nothing:
 `vercel.json` disables Vercel's automatic Git deployments, and there are no
 preview deployments. Deployments run from the **Deploy to Production** workflow
-(`.github/workflows/deploy.yml`), which lints, tests, applies pending database
-migrations, builds the latest `main`, and uploads it to Vercel. Start one from
-the repository's **Actions** tab with **Run workflow**; it prints the
-deployment URL when it finishes.
+(`.github/workflows/deploy.yml`): it lints, tests, applies pending database
+migrations, then deploys the latest `main` as a source deployment that Vercel
+builds itself. Start one from the repository's **Actions** tab with **Run
+workflow**; it prints the deployment URL when it finishes.
 
 One-time setup:
 
@@ -132,12 +132,8 @@ One-time setup:
 2. In the Vercel project, set **Node.js Version** to 24 under Settings →
    General, then add the environment variables above for **Production**
    (`NEXT_PUBLIC_SITE_URL` is the production origin once the domain is known).
-   Use the **Config** type for every `NEXT_PUBLIC_*` variable: Secret-type
-   values are write-only, so `vercel pull` cannot read them and the build
-   inlines a `[SENSITIVE]` placeholder instead. (The Supabase integration
-   creates its variables as Secret; recreate the `NEXT_PUBLIC_*` ones it
-   provides as Config.) The workflow fails fast if a required build-time
-   variable comes back as a placeholder.
+   Vercel builds each deployment with direct access to its environment
+   variables, so Secret-type values work as-is.
 3. Run `npx vercel login` and `npx vercel link` locally, read `orgId` and
    `projectId` from `.vercel/project.json`, and create a token under Account
    Settings → Tokens.
