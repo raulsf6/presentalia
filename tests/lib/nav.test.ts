@@ -8,15 +8,15 @@ describe("activeTalkTab", () => {
   });
 
   test("does not mark Overview on a section below the talk home", () => {
-    expect(activeTalkTab("/talks/t1/polls", "t1")).not.toBe("overview");
+    expect(activeTalkTab("/talks/t1/activities", "t1")).not.toBe("overview");
     expect(activeTalkTab("/talks/t1/roster", "t1")).not.toBe("overview");
     expect(activeTalkTab("/talks/t1/slides", "t1")).not.toBe("overview");
   });
 
   test("marks Activities across the whole activities section", () => {
-    expect(activeTalkTab("/talks/t1/polls", "t1")).toBe("activities");
-    expect(activeTalkTab("/talks/t1/polls/p9", "t1")).toBe("activities");
-    expect(activeTalkTab("/talks/t1/polls/p9/results", "t1")).toBe(
+    expect(activeTalkTab("/talks/t1/activities", "t1")).toBe("activities");
+    expect(activeTalkTab("/talks/t1/activities/p9", "t1")).toBe("activities");
+    expect(activeTalkTab("/talks/t1/activities/p9/results", "t1")).toBe(
       "activities",
     );
   });
@@ -30,14 +30,14 @@ describe("activeTalkTab", () => {
     expect(activeTalkTab("/talks", "t1")).toBeNull();
     expect(activeTalkTab("/talks/new", "t1")).toBeNull();
     expect(activeTalkTab("/talks/t2", "t1")).toBeNull();
-    expect(activeTalkTab("/talks/t2/polls", "t1")).toBeNull();
+    expect(activeTalkTab("/talks/t2/activities", "t1")).toBeNull();
     expect(activeTalkTab("/admin/users", "t1")).toBeNull();
   });
 
   test("matches whole path segments, not string prefixes", () => {
     expect(activeTalkTab("/talks/abcd", "abc")).toBeNull();
-    expect(activeTalkTab("/talks/abcd/polls", "abc")).toBeNull();
+    expect(activeTalkTab("/talks/abcd/activities", "abc")).toBeNull();
     expect(activeTalkTab("/talks/t1x", "t1")).toBeNull();
-    expect(activeTalkTab("/talks/t1x/polls", "t1")).toBeNull();
+    expect(activeTalkTab("/talks/t1x/activities", "t1")).toBeNull();
   });
 });

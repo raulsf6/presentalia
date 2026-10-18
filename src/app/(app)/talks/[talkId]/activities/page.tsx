@@ -4,7 +4,6 @@ import { desc, eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { activities, polls } from "@/db/schema";
-import { PollForm } from "@/components/PollForm";
 import { loadTalkAccess } from "@/lib/membership";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +16,7 @@ const sections = [
 
 export default async function PollsPage({
   params,
-}: PageProps<"/talks/[talkId]/polls">) {
+}: PageProps<"/talks/[talkId]/activities">) {
   const { talkId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {
@@ -41,21 +40,22 @@ export default async function PollsPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <div className="mb-8">
-        <h1 className="font-display text-ink text-2xl font-extrabold">
-          Activities
-        </h1>
-        <p className="text-muted mt-1 text-sm font-semibold">
-          {access.talk.name}
-        </p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-ink text-2xl font-extrabold">
+            Activities
+          </h1>
+          <p className="text-muted mt-1 text-sm font-semibold">
+            {access.talk.name}
+          </p>
+        </div>
+        <Link
+          href={`/talks/${talkId}/activities/new`}
+          className="btn btn-small shrink-0"
+        >
+          + New activity
+        </Link>
       </div>
-
-      <section className="card mb-10 p-6">
-        <h2 className="font-display text-ink mb-5 text-lg font-bold">
-          Create a poll
-        </h2>
-        <PollForm talkId={talkId} />
-      </section>
 
       <div className="flex flex-col gap-8">
         {sections.map((section) => {
@@ -67,28 +67,35 @@ export default async function PollsPage({
             <section key={section.status} className="flex flex-col gap-3">
               <h2 className="section-label">{section.title}</h2>
               <ul className="flex flex-col gap-2">
-                {items.map((poll) => (
-                  <li key={poll.id}>
-                    <Link
-                      href={`/talks/${talkId}/polls/${poll.id}`}
-                      className="card card-hover flex items-center justify-between gap-4 p-4"
-                    >
-                      <span className="text-ink font-bold">
-                        {poll.question}
-                      </span>
-                      <span className="text-muted shrink-0 text-sm font-bold">
-                        {section.status === "active" ? "Manage →" : "View →"}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
+                {items.map((poll) => {
+                  const isDraft = section.status === "draft";
+                  return (
+                    <li key={poll.id}>
+                      <Link
+                        href={
+                          isDraft
+                            ? `/talks/${talkId}/activities/${poll.id}`
+                            : `/talks/${talkId}/activities/${poll.id}/results`
+                        }
+                        className="card card-hover flex items-center justify-between gap-4 p-4"
+                      >
+                        <span className="text-ink font-bold">
+                          {poll.question}
+                        </span>
+                        <span className="text-muted shrink-0 text-sm font-bold">
+                          {isDraft ? "Manage →" : "Results →"}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           );
         })}
         {pollRows.length === 0 ? (
           <p className="empty">
-            No activities yet. Create a poll above when you&apos;re ready.
+            No activities yet. Create your first activity to get started.
           </p>
         ) : null}
       </div>

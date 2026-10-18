@@ -35,7 +35,7 @@ export function VoteForm({
         return;
       }
       // The vote is saved. Play the celebration, then move to the results.
-      const resultsHref = `/talks/${result.talkId}/polls/${pollId}/results`;
+      const resultsHref = `/talks/${result.talkId}/activities/${pollId}/results`;
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;

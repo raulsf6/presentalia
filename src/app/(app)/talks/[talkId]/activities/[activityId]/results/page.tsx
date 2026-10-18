@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { LiveResults } from "@/components/LiveResults";
+import { PollAdminControls } from "@/components/PollAdminControls";
 import { loadTalkAccess } from "@/lib/membership";
 import { loadPollResults } from "@/lib/poll-results";
 
@@ -10,19 +11,19 @@ export const dynamic = "force-dynamic";
 export default async function PollResultsPage({
   params,
   searchParams,
-}: PageProps<"/talks/[talkId]/polls/[pollId]/results">) {
-  const { talkId, pollId } = await params;
+}: PageProps<"/talks/[talkId]/activities/[activityId]/results">) {
+  const { talkId, activityId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {
     notFound();
   }
 
-  const initial = await loadPollResults(pollId, access.user);
+  const initial = await loadPollResults(activityId, access.user);
   if (!initial || initial.poll.talkId !== talkId) {
     notFound();
   }
   if (initial.poll.status === "draft") {
-    redirect(`/talks/${talkId}/polls/${pollId}`);
+    redirect(`/talks/${talkId}/activities/${activityId}`);
   }
 
   const query = await searchParams;
@@ -31,8 +32,8 @@ export default async function PollResultsPage({
     : query.display;
   const projector = display === "projector";
   const toggleHref = projector
-    ? `/talks/${talkId}/polls/${pollId}/results`
-    : `/talks/${talkId}/polls/${pollId}/results?display=projector`;
+    ? `/talks/${talkId}/activities/${activityId}/results`
+    : `/talks/${talkId}/activities/${activityId}/results?display=projector`;
 
   return (
     <main
@@ -48,6 +49,13 @@ export default async function PollResultsPage({
           {projector ? "Attendee view" : "Projector view"}
         </Link>
       </div>
+      {!projector &&
+      access.access !== "member" &&
+      initial.poll.status === "active" ? (
+        <div className="mb-6">
+          <PollAdminControls pollId={activityId} status="active" />
+        </div>
+      ) : null}
       <LiveResults initial={initial} projector={projector} />
     </main>
   );

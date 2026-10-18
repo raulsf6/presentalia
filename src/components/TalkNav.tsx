@@ -4,13 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 
-import {
-  ChartIcon,
-  FileIcon,
-  HomeIcon,
-  PlusIcon,
-  UsersIcon,
-} from "@/components/icons";
+import { ChartIcon, FileIcon, HomeIcon, UsersIcon } from "@/components/icons";
 import { activeTalkTab, type TalkTab } from "@/lib/nav";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
@@ -31,7 +25,7 @@ const TABS: ReadonlyArray<{
     tab: "activities",
     label: "Activities",
     icon: ChartIcon,
-    href: (talkId) => `/talks/${talkId}/polls`,
+    href: (talkId) => `/talks/${talkId}/activities`,
   },
   {
     tab: "roster",
@@ -71,13 +65,6 @@ export function TalkNav({ talkId }: { talkId: string }) {
             {label}
           </Link>
         ))}
-        <Link
-          href={`/talks/${talkId}/polls`}
-          className="btn btn-small ml-auto hidden md:inline-flex"
-        >
-          <PlusIcon className="size-4" />
-          New activity
-        </Link>
       </div>
     </nav>
   );

@@ -9,9 +9,12 @@ import { LoadingDots } from "@/components/LoadingDots";
 export function PollAdminControls({
   pollId,
   status,
+  launchBlockedReason,
 }: {
   pollId: string;
   status: "draft" | "active" | "closed";
+  /** When set on a draft, launching is unavailable and this explains why. */
+  launchBlockedReason?: string | null;
 }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +42,19 @@ export function PollAdminControls({
         This poll is closed. Its question, options, and results setting are
         read-only.
       </p>
+    );
+  }
+
+  if (launchBlockedReason && status === "draft") {
+    return (
+      <div className="flex flex-col gap-2">
+        <button type="button" disabled className="btn w-fit">
+          Launch poll…
+        </button>
+        <p className="text-muted text-xs font-semibold">
+          {launchBlockedReason}
+        </p>
+      </div>
     );
   }
 

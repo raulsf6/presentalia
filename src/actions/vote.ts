@@ -77,8 +77,8 @@ export async function submitVoteAction(
     return outcome;
   }
 
-  revalidatePath(`/talks/${outcome.talkId}/polls/${pollId}`);
-  revalidatePath(`/talks/${outcome.talkId}/polls/${pollId}/results`);
+  revalidatePath(`/talks/${outcome.talkId}/activities/${pollId}`);
+  revalidatePath(`/talks/${outcome.talkId}/activities/${pollId}/results`);
   // The client navigates to the results after playing the vote celebration,
   // so success returns the talk id instead of redirecting here.
   return { ok: true, talkId: outcome.talkId };

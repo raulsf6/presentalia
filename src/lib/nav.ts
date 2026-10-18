@@ -18,7 +18,7 @@ export function activeTalkTab(
   }
 
   const sections: ReadonlyArray<readonly [TalkTab, string]> = [
-    ["activities", `${base}/polls`],
+    ["activities", `${base}/activities`],
     ["roster", `${base}/roster`],
     ["slides", `${base}/slides`],
   ];

@@ -5,6 +5,7 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { activities, polls } from "@/db/schema";
 import { DeleteTalkButton } from "@/components/DeleteTalkButton";
+import { PollAdminControls } from "@/components/PollAdminControls";
 import { loadTalkAccess } from "@/lib/membership";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +47,7 @@ export default async function TalkPage({
     .orderBy(desc(activities.createdAt));
 
   const activePoll = pollRows.find((poll) => poll.status === "active");
+  const draftPolls = pollRows.filter((poll) => poll.status === "draft");
   const closedPolls = pollRows.filter((poll) => poll.status === "closed");
 
   return (
@@ -72,7 +74,11 @@ export default async function TalkPage({
         <h2 className="section-label">Live now</h2>
         {activePoll ? (
           <Link
-            href={`/talks/${talkId}/polls/${activePoll.id}`}
+            href={
+              role === "member"
+                ? `/talks/${talkId}/activities/${activePoll.id}`
+                : `/talks/${talkId}/activities/${activePoll.id}/results`
+            }
             className="border-green shadow-hard-green flex flex-col gap-1 rounded-2xl border-2 bg-white p-4 transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_5px_0_var(--color-green)]"
           >
             <span className="flex flex-wrap items-center gap-2">
@@ -85,13 +91,44 @@ export default async function TalkPage({
               </span>
             </span>
             <span className="text-green text-sm font-bold">
-              Tap to {role === "member" ? "vote and see results" : "manage"} →
+              {role === "member"
+                ? "Tap to vote and see results →"
+                : "Tap to see live results →"}
             </span>
           </Link>
         ) : (
           <p className="empty">No active poll right now.</p>
         )}
       </section>
+
+      {role !== "member" && draftPolls.length > 0 ? (
+        <section className="mb-8 flex flex-col gap-3">
+          <h2 className="section-label">Pending activities</h2>
+          <ul className="flex flex-col gap-3">
+            {draftPolls.map((poll) => (
+              <li key={poll.id}>
+                <div className="card flex flex-col gap-4 p-4">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="chip chip-draft">Draft</span>
+                    <span className="text-ink font-extrabold">
+                      {poll.question}
+                    </span>
+                  </span>
+                  <PollAdminControls
+                    pollId={poll.id}
+                    status="draft"
+                    launchBlockedReason={
+                      activePoll
+                        ? "Close the live poll before launching another."
+                        : null
+                    }
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="mb-8 flex flex-col gap-3">
         <h2 className="section-label">Materials</h2>
@@ -119,7 +156,7 @@ export default async function TalkPage({
             {closedPolls.map((poll) => (
               <li key={poll.id}>
                 <Link
-                  href={`/talks/${talkId}/polls/${poll.id}/results`}
+                  href={`/talks/${talkId}/activities/${poll.id}/results`}
                   className="card card-hover flex items-center justify-between gap-4 p-4"
                 >
                   <span className="text-ink font-bold">{poll.question}</span>

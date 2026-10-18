@@ -54,8 +54,8 @@ export async function createPollAction(
     );
   });
 
-  revalidatePath(`/talks/${talkId}/polls`);
-  redirect(`/talks/${talkId}/polls/${pollId}`);
+  revalidatePath(`/talks/${talkId}/activities`);
+  redirect(`/talks/${talkId}/activities/${pollId}`);
 }
 
 /** Launch a draft poll. The partial unique index is the race backstop. */
@@ -127,8 +127,8 @@ export async function launchPollAction(
   }
 
   revalidatePath(`/talks/${activity.talkId}`);
-  revalidatePath(`/talks/${activity.talkId}/polls`);
-  revalidatePath(`/talks/${activity.talkId}/polls/${pollId}`);
+  revalidatePath(`/talks/${activity.talkId}/activities`);
+  revalidatePath(`/talks/${activity.talkId}/activities/${pollId}`);
   return { ok: true };
 }
 
@@ -167,8 +167,10 @@ export async function closePollAction(
   }
 
   revalidatePath(`/talks/${closedActivity.talkId}`);
-  revalidatePath(`/talks/${closedActivity.talkId}/polls`);
-  revalidatePath(`/talks/${closedActivity.talkId}/polls/${pollId}`);
-  revalidatePath(`/talks/${closedActivity.talkId}/polls/${pollId}/results`);
+  revalidatePath(`/talks/${closedActivity.talkId}/activities`);
+  revalidatePath(`/talks/${closedActivity.talkId}/activities/${pollId}`);
+  revalidatePath(
+    `/talks/${closedActivity.talkId}/activities/${pollId}/results`,
+  );
   return { ok: true };
 }
