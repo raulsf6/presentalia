@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { appUsers, type AppUserRow } from "@/db/schema";
 import { normalizeEmail } from "@/lib/roster";
+import { logServerError, maskEmail } from "@/lib/server-log";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 async function findAppUser(email: string): Promise<AppUserRow | null> {
@@ -31,6 +32,9 @@ export async function ensureAppUser(
       email_confirm: false,
     });
     if (error && error.code !== "email_exists") {
+      logServerError("provision-user.create", error, {
+        email: maskEmail(email),
+      });
       return null;
     }
 
@@ -44,7 +48,8 @@ export async function ensureAppUser(
         return created;
       }
     }
-  } catch {
+  } catch (error) {
+    logServerError("provision-user.create", error, { email: maskEmail(email) });
     return findAppUser(email);
   }
 
@@ -66,8 +71,14 @@ export async function sendAppUserInvite(rawEmail: string): Promise<boolean> {
       const existing = await findAppUser(email);
       return Boolean(existing?.emailVerifiedAt);
     }
+    logServerError("provision-user.invite", error, {
+      email: maskEmail(email),
+    });
     return false;
-  } catch {
+  } catch (error) {
+    logServerError("provision-user.invite", error, {
+      email: maskEmail(email),
+    });
     return false;
   }
 }

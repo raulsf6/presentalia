@@ -1,0 +1,58 @@
+import { describe, expect, test, vi } from "vitest";
+
+import { logServerError, logServerWarning, maskEmail } from "@/lib/server-log";
+
+describe("maskEmail", () => {
+  test("keeps the first character and the domain", () => {
+    expect(maskEmail("User.Name@Example.com")).toBe("u***@example.com");
+  });
+
+  test("fully masks values without a local part", () => {
+    expect(maskEmail("not-an-email")).toBe("***");
+  });
+});
+
+describe("logServerError", () => {
+  test("writes one structured line with error fields and metadata", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      logServerError(
+        "test.scope",
+        { message: "boom", code: "e_boom", status: 500 },
+        { email: "u***@example.com" },
+      );
+
+      expect(spy).toHaveBeenCalledTimes(1);
+      const [scope, payload] = spy.mock.calls[0] ?? [];
+      expect(scope).toBe("[test.scope]");
+      expect(JSON.parse(String(payload))).toEqual({
+        message: "boom",
+        code: "e_boom",
+        status: 500,
+        email: "u***@example.com",
+      });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe("logServerWarning", () => {
+  test("writes the warning message with metadata", () => {
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      logServerWarning("test.scope", "something happened", {
+        email: "u***@example.com",
+      });
+
+      const [scope, payload] = spy.mock.calls[0] ?? [];
+      expect(scope).toBe("[test.scope]");
+      expect(JSON.parse(String(payload))).toEqual({
+        message: "something happened",
+        email: "u***@example.com",
+      });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});

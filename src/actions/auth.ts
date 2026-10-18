@@ -7,6 +7,7 @@ import { isAllowedLoginEmail } from "@/lib/login-gate";
 import { waitForMinimumDuration } from "@/lib/auth-timing";
 import { normalizeEmail, validateEmail } from "@/lib/roster";
 import { ensureAppUser, sendAppUserInvite } from "@/lib/provision-user";
+import { logServerError, logServerWarning, maskEmail } from "@/lib/server-log";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type MagicLinkState = {
@@ -60,6 +61,11 @@ export async function requestMagicLinkAction(
 
   try {
     if (!(await isAllowedLoginEmail(email))) {
+      const adminEmail = process.env.ADMIN_EMAIL;
+      logServerWarning("auth.magic-link", "address not allowlisted", {
+        email: maskEmail(email),
+        adminEmail: adminEmail ? maskEmail(adminEmail) : null,
+      });
       return genericResponse(startedAt);
     }
 
@@ -68,10 +74,18 @@ export async function requestMagicLinkAction(
     // the confirmation timestamp.
     const appUser = await ensureAppUser(email);
     if (!appUser) {
+      logServerWarning("auth.magic-link", "provisioning returned no app user", {
+        email: maskEmail(email),
+      });
       return genericResponse(startedAt);
     }
     if (!appUser.emailVerifiedAt) {
-      await sendAppUserInvite(email);
+      const sent = await sendAppUserInvite(email);
+      if (!sent) {
+        logServerWarning("auth.magic-link", "invite send failed", {
+          email: maskEmail(email),
+        });
+      }
       return genericResponse(startedAt);
     }
 
@@ -87,10 +101,12 @@ export async function requestMagicLinkAction(
       // Invalid/expired input on a valid invited address — treat any
       // failure identically so behavior never differs by address. Every
       // syntactically valid address also receives the same minimum duration.
+      logServerError("auth.magic-link", error, { email: maskEmail(email) });
       return genericResponse(startedAt);
     }
     return genericResponse(startedAt);
-  } catch {
+  } catch (error) {
+    logServerError("auth.magic-link", error, { email: maskEmail(email) });
     return genericResponse(startedAt);
   }
 }
