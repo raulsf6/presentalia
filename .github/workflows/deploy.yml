@@ -1,6 +1,7 @@
 # Production deployments are manual by design: this workflow has no push or
 # pull-request triggers. Press "Run workflow" in the repository's Actions tab
-# to run lint and the test suite, build the app, and deploy the main branch.
+# to run lint and the test suite, apply pending database migrations, build
+# the app, and deploy the main branch.
 name: Deploy to Production
 
 run-name: Deploy main to production
@@ -46,6 +47,9 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Apply pending database migrations
+        run: npx --no-install supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}" --yes
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest

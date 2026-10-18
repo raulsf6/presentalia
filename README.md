@@ -23,13 +23,15 @@ chooses identifiable results before launching a poll.
    allowlist. With no custom SMTP, Supabase's hosted built-in sender only sends
    to authorized project-team addresses and is currently limited to two emails
    per hour; it is for testing, not invitations to external attendees.
-2. Open **SQL Editor** and run
-   [`supabase/migrations/0001_talk_platform.sql`](supabase/migrations/0001_talk_platform.sql)
-   once. It creates the role and talk-owner fields, user-ID talk memberships,
-   email-verification sync, last-admin safeguards, vote-count and user-sync
-   triggers, and private slide bucket (PDF only, 20 MB max). App-table access is
-   restricted to the server's database connection; do not grant direct
-   Supabase API access to these tables. Keep the slide bucket private.
+2. The database schema is applied automatically by the deploy workflow, which
+   pushes pending migrations from
+   [`supabase/migrations/`](supabase/migrations/) before each deploy. The
+   initial migration creates the role and talk-owner fields, user-ID talk
+   memberships, email-verification sync, last-admin safeguards, vote-count and
+   user-sync triggers, and private slide bucket (PDF only, 20 MB max).
+   App-table access is restricted to the server's database connection; do not
+   grant direct Supabase API access to these tables. Keep the slide bucket
+   private.
 3. Under **Authentication → URL Configuration**, set the Site URL and add
    these redirect URLs (replace the production origin with the deployed app):
    - `http://localhost:3000/auth/confirm`
@@ -44,7 +46,8 @@ chooses identifiable results before launching a poll.
    invitees can read their email before the link expires.
 5. Under **Project Settings → API**, copy the project URL, anon/public key,
    and service-role key. Under **Project Settings → Database → Connection
-   string**, copy the **Transaction pooler** URL for the app's `POSTGRES_URL`.
+   string**, copy the **Transaction pooler** URL for the app's `POSTGRES_URL`
+   and the **Session pooler** URL for the `SUPABASE_DB_URL` deployment secret.
    The database password is URL-encoded if it contains reserved characters.
 
 Only provisioned app users and the one-time bootstrap email can request a
@@ -93,8 +96,11 @@ Studio is at
 The local stack keeps its database in Docker volumes between runs. Stop it
 with `npx supabase stop`; to reset local data and reapply migrations, run
 `npx supabase db reset` (this deletes local Supabase data). To pass Next.js
-options, use `npm run local -- --port 3001`. The MVP schema is kept in the
-original SQL file, so reset an existing local database after changing it.
+options, use `npm run local -- --port 3001`. Schema changes are append-only
+migrations in `supabase/migrations/`: create each one with
+`npx supabase migration new <name>` and apply pending ones locally with
+`npx supabase migration up`; never edit a migration that has already been
+applied.
 
 For a hosted Supabase project, configure these environment variables in
 `.env.local` for local app testing or in Vercel for deployment:
@@ -113,10 +119,10 @@ For a hosted Supabase project, configure these environment variables in
 Deployments are manual and production-only. Pushing to `main` deploys nothing:
 `vercel.json` disables Vercel's automatic Git deployments, and there are no
 preview deployments. Deployments run from the **Deploy to Production** workflow
-(`.github/workflows/deploy.yml`), which lints, tests, and builds the latest
-`main` before uploading it to Vercel. Start one from the repository's
-**Actions** tab with **Run workflow**; it prints the deployment URL when it
-finishes.
+(`.github/workflows/deploy.yml`), which lints, tests, applies pending database
+migrations, builds the latest `main`, and uploads it to Vercel. Start one from
+the repository's **Actions** tab with **Run workflow**; it prints the
+deployment URL when it finishes.
 
 One-time setup:
 
@@ -130,7 +136,9 @@ One-time setup:
    `projectId` from `.vercel/project.json`, and create a token under Account
    Settings → Tokens.
 4. Add these repository secrets (GitHub → Settings → Secrets and variables →
-   Actions): `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+   Actions): `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, and
+   `SUPABASE_DB_URL` — the hosted project's **session pooler** connection
+   string (port 5432; percent-encode the password), used to apply migrations.
 5. Press **Run workflow** (Actions → Deploy to Production).
 6. Add `https://YOUR-VERCEL-DOMAIN/auth/confirm` to Supabase's Auth redirect
    allow-list (with Site URL set to the production origin), set
