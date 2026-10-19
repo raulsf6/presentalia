@@ -1,15 +1,8 @@
-import { redirect } from "next/navigation";
-
 import { MagicLinkForm } from "@/components/MagicLinkForm";
-import { getSessionUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const user = await getSessionUser();
-  if (user) {
-    redirect("/talks");
-  }
   const params = await searchParams;
   const linkExpired = params?.error === "auth";
   const accessDenied = params?.error === "denied";

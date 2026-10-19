@@ -1,22 +1,37 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+
+import { withVerifiedIdentity } from "@/lib/session-headers";
 
 const PROTECTED_PREFIXES = ["/talks"];
 
+type PendingCookie = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
+
 /**
  * Next.js 16 proxy (formerly middleware). Refreshes the Supabase session
- * cookies on every request and gates the app's pages: unauthenticated
- * visitors are sent to /login, signed-in users skip /login. API routes are
- * not redirected here — they return proper 401/403 responses themselves.
+ * cookies when needed, then forwards the verified identity to the render as
+ * internal request headers. Server code reads those headers instead of
+ * calling `auth.getUser()` a second time; caller-supplied identity headers
+ * are stripped on every request.
+ *
+ * The proxy remains an optimistic gate only. Pages, route handlers, and
+ * server actions still check the database-backed role and talk access.
  */
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
-    return response;
+    return NextResponse.next({
+      request: { headers: withVerifiedIdentity(request.headers, null) },
+    });
   }
+
+  const pendingCookies: PendingCookie[] = [];
+  const authHeaders = new Headers();
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -27,12 +42,9 @@ export async function proxy(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value),
         );
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
-        );
+        pendingCookies.push(...cookiesToSet);
         for (const [key, value] of Object.entries(headers ?? {})) {
-          response.headers.set(key, value);
+          authHeaders.set(key, value);
         }
       },
     },
@@ -44,21 +56,37 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const requestHeaders = withVerifiedIdentity(
+    request.headers,
+    user ? { id: user.id, email: user.email ?? null } : null,
+  );
+
+  /** Applies refreshed auth cookies and cache headers to any response. */
+  const respond = (response: NextResponse) => {
+    for (const { name, value, options } of pendingCookies) {
+      response.cookies.set(name, value, options);
+    }
+    for (const [key, value] of authHeaders) {
+      response.headers.set(key, value);
+    }
+    return response;
+  };
+
   const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix),
   );
 
-  if (!user && isProtected) {
+  if (!user && (isProtected || pathname === "/")) {
     const redirectUrl = new URL("/login", request.url);
-    return NextResponse.redirect(redirectUrl);
+    return respond(NextResponse.redirect(redirectUrl));
   }
 
   if (user && pathname === "/login") {
-    return NextResponse.redirect(new URL("/talks", request.url));
+    return respond(NextResponse.redirect(new URL("/talks", request.url)));
   }
 
-  return response;
+  return respond(NextResponse.next({ request: { headers: requestHeaders } }));
 }
 
 export const config = {
