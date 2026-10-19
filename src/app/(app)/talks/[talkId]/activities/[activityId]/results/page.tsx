@@ -18,7 +18,7 @@ export default async function PollResultsPage({
     notFound();
   }
 
-  const initial = await loadPollResults(activityId, access.user);
+  const initial = await loadPollResults(activityId, access.user, { access });
   if (!initial || initial.poll.talkId !== talkId) {
     notFound();
   }

@@ -20,34 +20,77 @@ export function LiveResults({
     if (!isActive) return;
 
     let disposed = false;
+    let timer: number | undefined;
+    let refreshing = false;
+    let failures = 0;
+
+    function schedule(ms: number) {
+      if (disposed) return;
+      timer = window.setTimeout(() => {
+        timer = undefined;
+        void refresh();
+      }, ms);
+    }
 
     async function refresh() {
+      if (disposed || refreshing) return;
+
+      // Do not spend timers or requests while the tab is in the background;
+      // the visibility listener refreshes immediately when it returns.
+      if (document.visibilityState === "hidden") return;
+
+      refreshing = true;
       try {
         const response = await fetch(`/api/polls/${pollId}/results`, {
           cache: "no-store",
         });
+        if (disposed) return;
+
         if (!response.ok) {
           if (response.status === 401 || response.status === 404) {
             setPayload(null);
             setAccessRevoked(true);
+            return;
           }
+          failures = Math.min(failures + 1, 3);
+          schedule(Math.min(5_000 * 2 ** failures, 30_000));
           return;
         }
+
         const next = (await response.json()) as PollResultsPayload;
         if (!disposed) {
           setPayload(next);
           setAccessRevoked(false);
+          failures = 0;
         }
+        schedule(5_000);
       } catch {
-        // A temporary network failure should not erase the last known result;
-        // the next poll will retry.
+        // Keep the last known result and retry with backoff.
+        failures = Math.min(failures + 1, 3);
+        schedule(Math.min(5_000 * 2 ** failures, 30_000));
+      } finally {
+        refreshing = false;
       }
     }
 
-    const interval = window.setInterval(() => void refresh(), 5_000);
+    function handleVisibility() {
+      if (document.visibilityState !== "visible") return;
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+        timer = undefined;
+      }
+      void refresh();
+    }
+
+    schedule(5_000);
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
       disposed = true;
-      window.clearInterval(interval);
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [isActive, pollId]);
 

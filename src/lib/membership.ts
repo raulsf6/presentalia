@@ -20,33 +20,37 @@ export type TalkManagerGuard =
     }
   | { ok: false; error: string };
 
+export type TalkListRow = TalkRow & {
+  ownerEmail: string | null;
+};
+
 /** Checks a talk using the verified session role and the database roster. */
 export async function getTalkAccessForUser(
   user: SessionUser,
   talkId: string,
+  db: Db = getDb(),
 ): Promise<TalkAccess | null> {
-  const db = getDb();
-  const [talk] = await db
-    .select()
+  const [row] = await db
+    .select({ talk: talks, memberUserId: talkRoster.userId })
     .from(talks)
+    .leftJoin(
+      talkRoster,
+      and(eq(talkRoster.talkId, talks.id), eq(talkRoster.userId, user.id)),
+    )
     .where(eq(talks.id, talkId))
     .limit(1);
-  if (!talk) {
+  if (!row) {
     return null;
   }
 
+  const { talk } = row;
   if (user.role === "admin") {
     return { user, talk, access: "admin" };
   }
   if (user.role === "presenter" && talk.createdBy === user.id) {
     return { user, talk, access: "presenter" };
   }
-  const [membership] = await db
-    .select({ userId: talkRoster.userId })
-    .from(talkRoster)
-    .where(and(eq(talkRoster.talkId, talkId), eq(talkRoster.userId, user.id)))
-    .limit(1);
-  return membership ? { user, talk, access: "member" } : null;
+  return row.memberUserId ? { user, talk, access: "member" } : null;
 }
 
 /** Request-level talk access. Null intentionally hides missing vs inaccessible talks. */
@@ -57,39 +61,31 @@ export const loadTalkAccess = cache(
   },
 );
 
-/** Lists only talks the verified user may access. */
+/** Lists only talks the verified user may access, with owner attribution. */
 export async function listAccessibleTalks(
   user: SessionUser,
-): Promise<TalkRow[]> {
-  const db = getDb();
-  if (user.role === "admin") {
-    return db.select().from(talks).orderBy(desc(talks.createdAt));
-  }
-
-  const rosterRows = await db
+  db: Db = getDb(),
+): Promise<TalkListRow[]> {
+  const rosterTalkIds = db
     .select({ talkId: talkRoster.talkId })
     .from(talkRoster)
     .where(eq(talkRoster.userId, user.id));
-  const rosterTalkIds = rosterRows.map((row) => row.talkId);
 
-  if (user.role === "presenter") {
-    const ownership = eq(talks.createdBy, user.id);
-    return rosterTalkIds.length > 0
-      ? db
-          .select()
-          .from(talks)
-          .where(or(ownership, inArray(talks.id, rosterTalkIds)))
-          .orderBy(desc(talks.createdAt))
-      : db.select().from(talks).where(ownership).orderBy(desc(talks.createdAt));
-  }
+  const accessible =
+    user.role === "admin"
+      ? undefined
+      : user.role === "presenter"
+        ? or(eq(talks.createdBy, user.id), inArray(talks.id, rosterTalkIds))
+        : inArray(talks.id, rosterTalkIds);
 
-  return rosterTalkIds.length > 0
-    ? db
-        .select()
-        .from(talks)
-        .where(inArray(talks.id, rosterTalkIds))
-        .orderBy(desc(talks.createdAt))
-    : [];
+  const rows = await db
+    .select({ talk: talks, ownerEmail: appUsers.email })
+    .from(talks)
+    .leftJoin(appUsers, eq(appUsers.id, talks.createdBy))
+    .where(accessible)
+    .orderBy(desc(talks.createdAt));
+
+  return rows.map(({ talk, ownerEmail }) => ({ ...talk, ownerEmail }));
 }
 
 /** Roster membership is required for attendee actions such as voting. */
@@ -105,22 +101,6 @@ export async function isRosteredAttendee(
     .limit(1);
   const [membership] = tx ? await query.for("share") : await query;
   return Boolean(membership);
-}
-
-/** Owner emails by user id, used for attribution in the admin talk list. */
-export async function loadOwnerEmails(
-  userIds: string[],
-  db: Db = getDb(),
-): Promise<Map<string, string | null>> {
-  const uniqueIds = [...new Set(userIds)];
-  if (uniqueIds.length === 0) {
-    return new Map();
-  }
-  const rows = await db
-    .select({ id: appUsers.id, email: appUsers.email })
-    .from(appUsers)
-    .where(inArray(appUsers.id, uniqueIds));
-  return new Map(rows.map((row) => [row.id, row.email]));
 }
 
 /** Re-checks ownership/role inside every server action that manages a talk. */

@@ -1,15 +1,19 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { drizzle } from "drizzle-orm/pglite";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+import type { Db } from "@/db";
+import * as schema from "@/db/schema";
+import type { SessionUser } from "@/lib/auth";
+import {
+  getTalkAccessForUser,
+  loadTalkAccess,
+  requireTalkManager,
+} from "@/lib/membership";
+import { createDb, exec, makeUser, seedTalk } from "../db/harness";
 
 const mocks = vi.hoisted(() => ({
   getSessionUser: vi.fn(),
-  getDb: vi.fn(),
-  tables: {
-    talks: { id: "talks.id" },
-    talkRoster: {
-      talkId: "talk_roster.talk_id",
-      userId: "talk_roster.user_id",
-    },
-  },
+  db: null as unknown,
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -17,118 +21,183 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/db", () => ({
-  getDb: mocks.getDb,
+  getDb: () => mocks.db,
 }));
 
-vi.mock("@/db/schema", () => ({
-  talks: mocks.tables.talks,
-  talkRoster: mocks.tables.talkRoster,
-}));
+type Setup = {
+  db: Db;
+  talkId: string;
+  owner: { id: string; email: string };
+  invited: { id: string; email: string };
+  attendee: { id: string; email: string };
+  outsider: { id: string; email: string };
+};
 
-vi.mock("drizzle-orm", () => ({
-  eq: (...args: unknown[]) => args,
-  and: (...args: unknown[]) => args,
-  desc: (...args: unknown[]) => args,
-  inArray: (...args: unknown[]) => args,
-  or: (...args: unknown[]) => args,
-}));
-
-import { loadTalkAccess } from "@/lib/membership";
-import * as membership from "@/lib/membership";
-
-function mockDb(...queries: Record<string, unknown>[][]) {
-  let queryIndex = 0;
-  return {
-    select: () => ({
-      from: () => ({
-        where: () => ({
-          limit: async () => queries[queryIndex++] ?? [],
-        }),
-      }),
-    }),
-  };
+function sessionUser(
+  user: { id: string; email: string },
+  role: SessionUser["role"],
+): SessionUser {
+  return { id: user.id, email: user.email, role };
 }
 
-describe("loadTalkAccess", () => {
-  const presenter = {
-    id: "presenter-id",
-    email: "presenter@example.com",
-    role: "presenter",
-  };
+async function setup(): Promise<Setup> {
+  const pglite = await createDb();
+  const db = drizzle(pglite, { schema }) as unknown as Db;
+  mocks.db = db;
 
+  const owner = await makeUser(pglite, "owner@example.com");
+  const invited = await makeUser(pglite, "invited@example.com");
+  const attendee = await makeUser(pglite, "attendee@example.com");
+  const outsider = await makeUser(pglite, "outsider@example.com");
+
+  const talkId = await seedTalk(pglite, "Talk", [attendee.email], owner.id);
+  await exec(
+    pglite,
+    "insert into public.talk_roster (talk_id, user_id) values ($1, $2)",
+    [talkId, invited.id],
+  );
+
+  return { db, talkId, owner, invited, attendee, outsider };
+}
+
+describe("getTalkAccessForUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getSessionUser.mockResolvedValue(presenter);
-    mocks.getDb.mockReturnValue(mockDb());
   });
 
-  test("marks a presenter-owned talk as manageable", async () => {
-    const talk = {
-      id: "talk-1",
-      name: "Owned talk",
-      createdBy: presenter.id,
-      slidesUpdatedAt: null,
-    };
-    mocks.getDb.mockReturnValue(mockDb([talk]));
-
-    const access = await loadTalkAccess("talk-1");
-
-    expect(access?.access).toBe("presenter");
-    expect(access?.talk).toEqual(talk);
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
-  test("keeps a rostered talk as attendee access for a presenter", async () => {
-    const talk = {
-      id: "talk-2",
-      name: "Invited talk",
-      createdBy: "another-presenter",
-      slidesUpdatedAt: null,
+  test("gives admins access to any talk", async () => {
+    const { db, talkId } = await setup();
+    const admin: SessionUser = {
+      id: crypto.randomUUID(),
+      email: "admin@example.com",
+      role: "admin",
     };
-    mocks.getDb.mockReturnValue(mockDb([talk], [{ userId: presenter.id }]));
 
-    const access = await loadTalkAccess("talk-2");
+    const access = await getTalkAccessForUser(admin, talkId, db);
 
-    expect(access?.access).toBe("member");
+    expect(access).toMatchObject({ access: "admin", talk: { id: talkId } });
   });
 
-  test("allows only an owner or admin to manage a talk", async () => {
-    const requireTalkManager = (
-      membership as unknown as {
-        requireTalkManager?: (talkId: string) => Promise<unknown>;
-      }
-    ).requireTalkManager;
-    expect(requireTalkManager).toBeTypeOf("function");
+  test("gives presenters owner access to talks they created", async () => {
+    const { db, talkId, owner } = await setup();
 
-    const ownedTalk = {
-      id: "owned-talk",
-      name: "Owned talk",
-      createdBy: presenter.id,
-      slidesUpdatedAt: null,
-    };
-    mocks.getDb.mockReturnValue(mockDb([ownedTalk]));
-    await expect(requireTalkManager?.("owned-talk")).resolves.toMatchObject({
+    const access = await getTalkAccessForUser(
+      sessionUser(owner, "presenter"),
+      talkId,
+      db,
+    );
+
+    expect(access).toMatchObject({ access: "presenter", talk: { id: talkId } });
+  });
+
+  test("gives rostered presenters member access", async () => {
+    const { db, talkId, invited } = await setup();
+
+    const access = await getTalkAccessForUser(
+      sessionUser(invited, "presenter"),
+      talkId,
+      db,
+    );
+
+    expect(access).toMatchObject({ access: "member", talk: { id: talkId } });
+  });
+
+  test("gives rostered attendees member access", async () => {
+    const { db, talkId, attendee } = await setup();
+
+    const access = await getTalkAccessForUser(
+      sessionUser(attendee, "attendee"),
+      talkId,
+      db,
+    );
+
+    expect(access).toMatchObject({ access: "member", talk: { id: talkId } });
+  });
+
+  test("denies presenters and attendees who are not on the roster", async () => {
+    const { db, talkId, outsider } = await setup();
+
+    await expect(
+      getTalkAccessForUser(sessionUser(outsider, "presenter"), talkId, db),
+    ).resolves.toBeNull();
+    await expect(
+      getTalkAccessForUser(sessionUser(outsider, "attendee"), talkId, db),
+    ).resolves.toBeNull();
+  });
+
+  test("returns null for a missing talk", async () => {
+    const { db, outsider } = await setup();
+
+    await expect(
+      getTalkAccessForUser(
+        sessionUser(outsider, "attendee"),
+        crypto.randomUUID(),
+        db,
+      ),
+    ).resolves.toBeNull();
+  });
+});
+
+describe("loadTalkAccess", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("uses the current session user", async () => {
+    const { talkId, owner } = await setup();
+    mocks.getSessionUser.mockResolvedValue(sessionUser(owner, "presenter"));
+
+    await expect(loadTalkAccess(talkId)).resolves.toMatchObject({
+      access: "presenter",
+      talk: { id: talkId },
+    });
+  });
+
+  test("returns null without a session", async () => {
+    const { talkId } = await setup();
+    mocks.getSessionUser.mockResolvedValue(null);
+
+    await expect(loadTalkAccess(talkId)).resolves.toBeNull();
+  });
+});
+
+describe("requireTalkManager", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("allows owners and admins", async () => {
+    const { talkId, owner } = await setup();
+    mocks.getSessionUser.mockResolvedValue(sessionUser(owner, "presenter"));
+
+    await expect(requireTalkManager(talkId)).resolves.toMatchObject({
       ok: true,
       access: "presenter",
     });
 
-    const invitedTalk = {
-      ...ownedTalk,
-      id: "invited-talk",
-      createdBy: "other",
-    };
-    mocks.getDb.mockReturnValue(
-      mockDb([invitedTalk], [{ userId: presenter.id }]),
-    );
-    await expect(requireTalkManager?.("invited-talk")).resolves.toMatchObject({
-      ok: false,
+    const adminTalkId = (await setup()).talkId;
+    mocks.getSessionUser.mockResolvedValue({
+      id: crypto.randomUUID(),
+      email: "admin@example.com",
+      role: "admin",
     });
 
-    const admin = { ...presenter, id: "admin-id", role: "admin" };
-    mocks.getSessionUser.mockResolvedValue(admin);
-    mocks.getDb.mockReturnValue(mockDb([invitedTalk]));
-    await expect(requireTalkManager?.("invited-talk")).resolves.toMatchObject({
+    await expect(requireTalkManager(adminTalkId)).resolves.toMatchObject({
       ok: true,
       access: "admin",
+    });
+  });
+
+  test("rejects rostered attendees", async () => {
+    const { talkId, attendee } = await setup();
+    mocks.getSessionUser.mockResolvedValue(sessionUser(attendee, "attendee"));
+
+    await expect(requireTalkManager(talkId)).resolves.toMatchObject({
+      ok: false,
     });
   });
 });

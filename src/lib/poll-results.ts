@@ -1,6 +1,6 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
-import { getDb } from "@/db";
+import { getDb, type Db } from "@/db";
 import {
   activities,
   pollOptions,
@@ -9,7 +9,7 @@ import {
   polls,
 } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth";
-import { getTalkAccessForUser } from "@/lib/membership";
+import { getTalkAccessForUser, type TalkAccess } from "@/lib/membership";
 import {
   computeResults,
   type ActivityStatus,
@@ -31,6 +31,69 @@ export type PollResultsSource = {
   counts: { optionId: string; votes: number }[];
   votes?: { optionId: string; email: string }[];
 };
+
+const POLL_RESULTS_CACHE_TTL_MS = 2_000;
+const POLL_RESULTS_CACHE_LIMIT = 200;
+
+type CachedPollResults = {
+  talkId: string;
+  payload: PollResultsPayload;
+  expiresAt: number;
+};
+
+declare global {
+  var __presentaliaPollResults: Map<string, CachedPollResults> | undefined;
+}
+
+/**
+ * Live results are polled by every viewer every five seconds. A very short
+ * in-instance cache absorbs concurrent reads without showing results that are
+ * more than two seconds old. Authorization is still checked before a cached
+ * payload is returned.
+ */
+function pollResultsCache(): Map<string, CachedPollResults> {
+  if (!globalThis.__presentaliaPollResults) {
+    globalThis.__presentaliaPollResults = new Map();
+  }
+  return globalThis.__presentaliaPollResults;
+}
+
+function readCachedPollResults(pollId: string): CachedPollResults | null {
+  const cache = pollResultsCache();
+  const entry = cache.get(pollId);
+  if (!entry) {
+    return null;
+  }
+  if (entry.expiresAt <= Date.now()) {
+    cache.delete(pollId);
+    return null;
+  }
+  return entry;
+}
+
+function writeCachedPollResults(
+  pollId: string,
+  talkId: string,
+  payload: PollResultsPayload,
+): void {
+  const cache = pollResultsCache();
+  cache.set(pollId, {
+    talkId,
+    payload,
+    expiresAt: Date.now() + POLL_RESULTS_CACHE_TTL_MS,
+  });
+  if (cache.size > POLL_RESULTS_CACHE_LIMIT) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) {
+      cache.delete(oldest);
+    }
+  }
+}
+
+/** Test seam: drops every cached result so the next read reaches Postgres. */
+export function clearPollResultsCache(): void {
+  pollResultsCache().clear();
+}
 
 /**
  * Converts query results into the public results shape. Anonymous mode
@@ -62,12 +125,27 @@ export function buildPollResultsPayload(
   };
 }
 
+export type LoadPollResultsOptions = {
+  db?: Db;
+  /** Pass the request's already-loaded talk access to avoid re-checking it. */
+  access?: TalkAccess;
+};
+
 /** Loads results through the owner connection after checking app-layer talk access. */
 export async function loadPollResults(
   pollId: string,
   viewer: SessionUser,
+  { db = getDb(), access: providedAccess }: LoadPollResultsOptions = {},
 ): Promise<PollResultsPayload | null> {
-  const db = getDb();
+  const cached = readCachedPollResults(pollId);
+  if (cached) {
+    const access =
+      providedAccess?.talk.id === cached.talkId
+        ? providedAccess
+        : await getTalkAccessForUser(viewer, cached.talkId, db);
+    return access ? cached.payload : null;
+  }
+
   const pollRows = await db
     .select({
       id: activities.id,
@@ -82,22 +160,44 @@ export async function loadPollResults(
     .where(eq(activities.id, pollId))
     .limit(1);
   const poll = pollRows[0] ?? null;
-  if (!poll || !(await getTalkAccessForUser(viewer, poll.talkId))) {
+  if (!poll) {
     return null;
   }
 
-  const options = await db
-    .select({ id: pollOptions.id, label: pollOptions.label })
-    .from(pollOptions)
-    .where(eq(pollOptions.pollId, pollId))
-    .orderBy(asc(pollOptions.position));
-  const countRows = await db
+  // Access and the option/count rows are independent; fetch them together.
+  const accessPromise =
+    providedAccess?.talk.id === poll.talkId
+      ? Promise.resolve(providedAccess)
+      : getTalkAccessForUser(viewer, poll.talkId, db);
+  const optionRowsPromise = db
     .select({
-      optionId: pollVoteCounts.optionId,
+      id: pollOptions.id,
+      label: pollOptions.label,
       votes: pollVoteCounts.votes,
     })
-    .from(pollVoteCounts)
-    .where(eq(pollVoteCounts.pollId, pollId));
+    .from(pollOptions)
+    .leftJoin(
+      pollVoteCounts,
+      and(
+        eq(pollVoteCounts.pollId, pollOptions.pollId),
+        eq(pollVoteCounts.optionId, pollOptions.id),
+      ),
+    )
+    .where(eq(pollOptions.pollId, pollId))
+    .orderBy(asc(pollOptions.position));
+
+  const [access, optionRows] = await Promise.all([
+    accessPromise,
+    optionRowsPromise,
+  ]);
+  if (!access) {
+    return null;
+  }
+
+  const options = optionRows.map(({ id, label }) => ({ id, label }));
+  const counts = optionRows.flatMap((row) =>
+    row.votes === null ? [] : [{ optionId: row.id, votes: row.votes }],
+  );
 
   // Never query the votes table in anonymous mode: it contains email
   // identities even though the result display omits them.
@@ -108,10 +208,14 @@ export async function loadPollResults(
         .where(eq(pollVotes.pollId, pollId))
     : undefined;
 
-  return buildPollResultsPayload({
+  const payload = buildPollResultsPayload({
     poll,
     options,
-    counts: countRows,
+    counts,
     votes: voteRows,
   });
+  if (payload && payload.poll.status !== "draft") {
+    writeCachedPollResults(pollId, poll.talkId, payload);
+  }
+  return payload;
 }

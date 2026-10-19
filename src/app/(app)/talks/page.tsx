@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { UserIcon } from "@/components/icons";
 import { getSessionUser } from "@/lib/auth";
-import { listAccessibleTalks, loadOwnerEmails } from "@/lib/membership";
+import { listAccessibleTalks } from "@/lib/membership";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +23,6 @@ export default async function TalksPage() {
   }
 
   const rows = await listAccessibleTalks(user);
-  const ownerEmails =
-    user.role === "admin"
-      ? await loadOwnerEmails(
-          rows
-            .map((talk) => talk.createdBy)
-            .filter((id): id is string => id !== null),
-        )
-      : null;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
@@ -65,9 +57,7 @@ export default async function TalksPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {rows.map((talk) => {
-            const ownerEmail = talk.createdBy
-              ? ownerEmails?.get(talk.createdBy)
-              : undefined;
+            const ownerEmail = talk.ownerEmail;
             return (
               <li key={talk.id}>
                 <Link
@@ -85,7 +75,7 @@ export default async function TalksPage() {
                       {talk.description}
                     </span>
                   ) : null}
-                  {ownerEmails && talk.createdBy ? (
+                  {user.role === "admin" && talk.createdBy ? (
                     <span className="text-muted flex items-center gap-1.5 text-xs font-bold">
                       <UserIcon className="size-3.5 shrink-0" />
                       <span className="sr-only">Owner:</span>

@@ -27,17 +27,26 @@ export async function PollActivity({
   const status = activity.status as ActivityStatus;
   const resultsHref = `/talks/${talkId}/activities/${activityId}/results`;
 
-  const [poll] = await db
+  const pollRows = await db
     .select({
       question: polls.question,
       resultsIdentifiable: polls.resultsIdentifiable,
+      optionId: pollOptions.id,
+      optionLabel: pollOptions.label,
     })
     .from(polls)
+    .leftJoin(pollOptions, eq(pollOptions.pollId, polls.activityId))
     .where(eq(polls.activityId, activityId))
-    .limit(1);
+    .orderBy(asc(pollOptions.position));
+  const poll = pollRows[0];
   if (!poll) {
     notFound();
   }
+  const options = pollRows.flatMap((row) =>
+    row.optionId && row.optionLabel
+      ? [{ id: row.optionId, label: row.optionLabel }]
+      : [],
+  );
 
   if (access.access !== "member" && status !== "draft") {
     redirect(resultsHref);
@@ -62,12 +71,6 @@ export async function PollActivity({
       redirect(resultsHref);
     }
   }
-
-  const options = await db
-    .select({ id: pollOptions.id, label: pollOptions.label })
-    .from(pollOptions)
-    .where(eq(pollOptions.pollId, activityId))
-    .orderBy(asc(pollOptions.position));
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
