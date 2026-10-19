@@ -87,8 +87,9 @@ becomes a database admin after its first verified magic-link sign-in.
 Open [http://localhost:3000](http://localhost:3000). Magic-link emails are
 captured by the local mail inbox at [http://127.0.0.1:54324](http://127.0.0.1:54324).
 The first admin signs in with `ADMIN_EMAIL`, creates talks, adds attendees or
-presenters from **Manage users**, and assigns attendees to talks through each
-talk's roster. Attendees can exist and sign in before being assigned to a talk.
+presenters from **Manage users**, filters and removes accounts there, and
+assigns attendees to talks through each talk's roster. Attendees can exist and
+sign in before being assigned to a talk.
 Presenters sign in with their email and manage talks they create. Supabase
 Studio is at
 [http://127.0.0.1:54323](http://127.0.0.1:54323).

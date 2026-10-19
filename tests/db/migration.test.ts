@@ -138,6 +138,25 @@ describe("voting", () => {
     // (the app's computeResults treats a missing count as zero).
     expect(counts.find((r) => r.option_id === f.optionIds[1])).toBeUndefined();
   });
+
+  test("deleting a voter decrements the poll's vote count", async () => {
+    const f = await setup();
+    await setStatus(f.db, f.pollId, "active");
+    await exec(
+      f.db,
+      "insert into public.poll_votes (poll_id, user_id, option_id, voter_email) values ($1, $2, $3, $4)",
+      [f.pollId, f.member.id, f.optionIds[0], f.member.email],
+    );
+
+    await exec(f.db, "delete from auth.users where id = $1", [f.member.id]);
+
+    const counts = await exec(
+      f.db,
+      "select votes from public.poll_vote_counts where poll_id = $1 and option_id = $2",
+      [f.pollId, f.optionIds[0]],
+    );
+    expect(Number(counts[0]?.votes)).toBe(0);
+  });
 });
 
 describe("activity lifecycle", () => {

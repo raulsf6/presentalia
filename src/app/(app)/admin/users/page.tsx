@@ -36,7 +36,8 @@ export default async function AdminUsersPage() {
       <div className="mb-8">
         <h1 className="font-display text-ink text-2xl">Manage users</h1>
         <p className="text-muted mt-1 text-sm font-semibold">
-          Add attendees and presenters, assign roles, and check email status.
+          Search and filter users, assign roles, and remove accounts that no
+          longer need access.
         </p>
       </div>
       <div className="card p-6">
