@@ -1,7 +1,7 @@
 "use server";
 
 import { and, eq, ne } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
@@ -54,6 +54,7 @@ export async function createPollAction(
     );
   });
 
+  updateTag(`activities:${talkId}`);
   revalidatePath(`/talks/${talkId}/activities`);
   redirect(`/talks/${talkId}/activities/${pollId}`);
 }
@@ -126,6 +127,7 @@ export async function launchPollAction(
     throw error;
   }
 
+  updateTag(`activities:${activity.talkId}`);
   revalidatePath(`/talks/${activity.talkId}`);
   revalidatePath(`/talks/${activity.talkId}/activities`);
   revalidatePath(`/talks/${activity.talkId}/activities/${pollId}`);
@@ -166,6 +168,7 @@ export async function closePollAction(
     return { ok: false, error: "This poll is not active." };
   }
 
+  updateTag(`activities:${closedActivity.talkId}`);
   revalidatePath(`/talks/${closedActivity.talkId}`);
   revalidatePath(`/talks/${closedActivity.talkId}/activities`);
   revalidatePath(`/talks/${closedActivity.talkId}/activities/${pollId}`);

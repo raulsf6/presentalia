@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { UserIcon } from "@/components/icons";
 import { getSessionUser } from "@/lib/auth";
-import { listAccessibleTalks } from "@/lib/membership";
-
-export const dynamic = "force-dynamic";
+import { loadTalkList } from "@/lib/membership";
 
 function formatDate(date: Date | null): string {
   if (!date) return "";
@@ -16,13 +16,21 @@ function formatDate(date: Date | null): string {
   });
 }
 
-export default async function TalksPage() {
+export default function TalksPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <TalksContent />
+    </Suspense>
+  );
+}
+
+async function TalksContent() {
   const user = await getSessionUser();
   if (!user) {
     redirect("/login");
   }
 
-  const rows = await listAccessibleTalks(user);
+  const rows = await loadTalkList(user.id, user.role);
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
@@ -62,6 +70,7 @@ export default async function TalksPage() {
               <li key={talk.id}>
                 <Link
                   href={`/talks/${talk.id}`}
+                  prefetch={true}
                   className="card card-hover flex flex-col gap-1 p-4"
                 >
                   <span className="text-ink font-bold">{talk.name}</span>

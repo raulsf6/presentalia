@@ -1,7 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { getDb } from "@/db";
 import { talks } from "@/db/schema";
@@ -73,6 +73,7 @@ export async function completeSlidesUploadAction(
     return { ok: false, error: "Talk not found." };
   }
 
+  updateTag("talks");
   revalidatePath("/talks");
   revalidatePath(`/talks/${talkId}`);
   revalidatePath(`/talks/${talkId}/slides`);

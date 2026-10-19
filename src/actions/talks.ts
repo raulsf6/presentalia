@@ -1,7 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
@@ -42,6 +42,7 @@ export async function createTalkAction(
     .insert(talks)
     .values({ name, description, heldAt, createdBy: presenter.user.id })
     .returning();
+  updateTag("talks");
   revalidatePath("/talks");
   redirect(`/talks/${talk.id}`);
 }
@@ -66,6 +67,7 @@ export async function deleteTalkAction(talkId: string): Promise<ActionResult> {
       .remove(files.map((file) => `${talkId}/${file.name}`));
   }
   await getDb().delete(talks).where(eq(talks.id, guard.talk.id));
+  updateTag("talks");
   revalidatePath("/talks");
   redirect("/talks");
 }

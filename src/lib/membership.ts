@@ -1,9 +1,11 @@
 import { cache } from "react";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { getDb, type Db, type DbTx } from "@/db";
 import { appUsers, talkRoster, talks, type TalkRow } from "@/db/schema";
 import { getSessionUser, type SessionUser } from "@/lib/auth";
+import type { AppRole } from "@/lib/roles";
 
 export type TalkAccess = {
   user: SessionUser;
@@ -61,21 +63,36 @@ export const loadTalkAccess = cache(
   },
 );
 
-/** Lists only talks the verified user may access, with owner attribution. */
+/**
+ * Cached talk list for a user. Keys contain only ids and roles; the owner
+ * email is data, never part of the key. Mutations call updateTag("talks").
+ */
+export async function loadTalkList(
+  userId: string,
+  role: AppRole,
+): Promise<TalkListRow[]> {
+  "use cache";
+  cacheLife({ stale: 30, revalidate: 30, expire: 300 });
+  cacheTag("talks");
+  return listAccessibleTalks(userId, role);
+}
+
+/** Uncached query behind loadTalkList, injectable for database tests. */
 export async function listAccessibleTalks(
-  user: SessionUser,
+  userId: string,
+  role: AppRole,
   db: Db = getDb(),
 ): Promise<TalkListRow[]> {
   const rosterTalkIds = db
     .select({ talkId: talkRoster.talkId })
     .from(talkRoster)
-    .where(eq(talkRoster.userId, user.id));
+    .where(eq(talkRoster.userId, userId));
 
   const accessible =
-    user.role === "admin"
+    role === "admin"
       ? undefined
-      : user.role === "presenter"
-        ? or(eq(talks.createdBy, user.id), inArray(talks.id, rosterTalkIds))
+      : role === "presenter"
+        ? or(eq(talks.createdBy, userId), inArray(talks.id, rosterTalkIds))
         : inArray(talks.id, rosterTalkIds);
 
   const rows = await db

@@ -7,13 +7,6 @@ import type { SessionUser } from "@/lib/auth";
 import { listAccessibleTalks } from "@/lib/membership";
 import { createDb, makeUser, seedTalk } from "../db/harness";
 
-function sessionUser(
-  user: { id: string; email: string },
-  role: SessionUser["role"],
-): SessionUser {
-  return { id: user.id, email: user.email, role };
-}
-
 async function setup() {
   const pglite = await createDb();
   const db = drizzle(pglite, { schema }) as unknown as Db;
@@ -63,7 +56,7 @@ describe("listAccessibleTalks", () => {
       role: "admin",
     };
 
-    const rows = await listAccessibleTalks(admin, db);
+    const rows = await listAccessibleTalks(admin.id, admin.role, db);
     const byId = new Map(rows.map((row) => [row.id, row]));
 
     expect(rows).toHaveLength(5);
@@ -81,10 +74,7 @@ describe("listAccessibleTalks", () => {
   test("returns owned and rostered talks once for presenters", async () => {
     const { db, presenter, owned, invited, other } = await setup();
 
-    const rows = await listAccessibleTalks(
-      sessionUser(presenter, "presenter"),
-      db,
-    );
+    const rows = await listAccessibleTalks(presenter.id, "presenter", db);
     const ids = rows.map((row) => row.id);
 
     expect(ids).toContain(owned);
@@ -99,10 +89,7 @@ describe("listAccessibleTalks", () => {
   test("returns only rostered talks for attendees", async () => {
     const { db, attendee, attended, other } = await setup();
 
-    const rows = await listAccessibleTalks(
-      sessionUser(attendee, "attendee"),
-      db,
-    );
+    const rows = await listAccessibleTalks(attendee.id, "attendee", db);
 
     expect(rows.map((row) => row.id)).toEqual([attended]);
     expect(rows.some((row) => row.id === other)).toBe(false);
@@ -112,7 +99,7 @@ describe("listAccessibleTalks", () => {
     const { db, outsider } = await setup();
 
     await expect(
-      listAccessibleTalks(sessionUser(outsider, "attendee"), db),
+      listAccessibleTalks(outsider.id, "attendee", db),
     ).resolves.toEqual([]);
   });
 });

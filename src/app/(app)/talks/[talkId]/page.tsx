@@ -1,20 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { desc, eq } from "drizzle-orm";
+import { Suspense } from "react";
 
-import { getDb } from "@/db";
-import { activities, polls } from "@/db/schema";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { DeleteTalkButton } from "@/components/DeleteTalkButton";
 import { PollAdminControls } from "@/components/PollAdminControls";
 import { loadTalkAccess } from "@/lib/membership";
-
-export const dynamic = "force-dynamic";
-
-type PollSummary = {
-  id: string;
-  status: string;
-  question: string;
-};
+import {
+  loadTalkActivities,
+  type TalkActivitySummary,
+} from "@/lib/talk-activities";
 
 function formatDate(date: Date | null): string {
   if (!date) return "";
@@ -25,9 +20,19 @@ function formatDate(date: Date | null): string {
   });
 }
 
-export default async function TalkPage({
+export default function TalkPage({ params }: PageProps<"/talks/[talkId]">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <TalkContent params={params} />
+    </Suspense>
+  );
+}
+
+async function TalkContent({
   params,
-}: PageProps<"/talks/[talkId]">) {
+}: {
+  params: PageProps<"/talks/[talkId]">["params"];
+}) {
   const { talkId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {
@@ -35,16 +40,7 @@ export default async function TalkPage({
   }
   const { talk, access: role } = access;
 
-  const pollRows: PollSummary[] = await getDb()
-    .select({
-      id: activities.id,
-      status: activities.status,
-      question: polls.question,
-    })
-    .from(activities)
-    .innerJoin(polls, eq(polls.activityId, activities.id))
-    .where(eq(activities.talkId, talkId))
-    .orderBy(desc(activities.createdAt));
+  const pollRows: TalkActivitySummary[] = await loadTalkActivities(talkId);
 
   const activePoll = pollRows.find((poll) => poll.status === "active");
   const draftPolls = pollRows.filter((poll) => poll.status === "draft");
@@ -77,6 +73,7 @@ export default async function TalkPage({
                 ? `/talks/${talkId}/activities/${activePoll.id}`
                 : `/talks/${talkId}/activities/${activePoll.id}/results`
             }
+            prefetch={true}
             className="card card-hover border-l-green flex flex-col gap-1 border-l-[9px] p-4"
           >
             <span className="flex flex-wrap items-center gap-2">
@@ -153,6 +150,7 @@ export default async function TalkPage({
               <li key={poll.id}>
                 <Link
                   href={`/talks/${talkId}/activities/${poll.id}/results`}
+                  prefetch={true}
                   className="card card-hover flex items-center justify-between gap-4 p-4"
                 >
                   <span className="text-ink font-bold">{poll.question}</span>

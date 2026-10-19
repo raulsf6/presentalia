@@ -1,16 +1,26 @@
 import { notFound } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
+import { Suspense } from "react";
 
-import { getDb } from "@/db";
-import { appUsers, talkRoster } from "@/db/schema";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { RosterManager } from "@/components/RosterManager";
 import { loadTalkAccess } from "@/lib/membership";
+import { loadTalkRoster } from "@/lib/talk-roster";
 
-export const dynamic = "force-dynamic";
-
-export default async function RosterPage({
+export default function RosterPage({
   params,
 }: PageProps<"/talks/[talkId]/roster">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <RosterContent params={params} />
+    </Suspense>
+  );
+}
+
+async function RosterContent({
+  params,
+}: {
+  params: PageProps<"/talks/[talkId]/roster">["params"];
+}) {
   const { talkId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {
@@ -20,28 +30,7 @@ export default async function RosterPage({
     notFound();
   }
 
-  const rows = await getDb()
-    .select({
-      userId: talkRoster.userId,
-      email: appUsers.email,
-      addedAt: talkRoster.addedAt,
-      emailVerifiedAt: appUsers.emailVerifiedAt,
-    })
-    .from(talkRoster)
-    .innerJoin(appUsers, eq(appUsers.id, talkRoster.userId))
-    .where(eq(talkRoster.talkId, talkId))
-    .orderBy(asc(talkRoster.addedAt));
-
-  const roster = rows.map((row) => ({
-    userId: row.userId,
-    email: row.email,
-    addedAtLabel: row.addedAt.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      timeZone: "UTC",
-    }),
-    emailVerifiedAt: row.emailVerifiedAt?.toISOString() ?? null,
-  }));
+  const roster = await loadTalkRoster(talkId);
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">

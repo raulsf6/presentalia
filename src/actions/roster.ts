@@ -1,7 +1,7 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { getDb } from "@/db";
 import { appUsers, talkRoster } from "@/db/schema";
@@ -78,6 +78,8 @@ async function addEmails(
       inviteFailed.push(account.email);
     }
   }
+  updateTag("talks");
+  updateTag("roster");
   revalidatePath(`/talks/${talkId}`);
   revalidatePath(`/talks/${talkId}/roster`);
   return {
@@ -148,6 +150,8 @@ export async function removeRosterEntryAction(
   await getDb()
     .delete(talkRoster)
     .where(and(eq(talkRoster.talkId, talkId), eq(talkRoster.userId, userId)));
+  updateTag("talks");
+  updateTag("roster");
   revalidatePath(`/talks/${talkId}`);
   revalidatePath(`/talks/${talkId}/roster`);
   return { ok: true };

@@ -1,11 +1,19 @@
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { CreateTalkForm } from "@/components/CreateTalkForm";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { getSessionUser } from "@/lib/auth";
 
-export const dynamic = "force-dynamic";
+export default function NewTalkPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <NewTalkContent />
+    </Suspense>
+  );
+}
 
-export default async function NewTalkPage() {
+async function NewTalkContent() {
   const user = await getSessionUser();
   if (!user) {
     redirect("/login");

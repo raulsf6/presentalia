@@ -1,14 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { PollForm } from "@/components/PollForm";
 import { loadTalkAccess } from "@/lib/membership";
 
-export const dynamic = "force-dynamic";
-
-export default async function NewPollPage({
+export default function NewPollPage({
   params,
 }: PageProps<"/talks/[talkId]/activities/new/poll">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <NewPollContent params={params} />
+    </Suspense>
+  );
+}
+
+async function NewPollContent({
+  params,
+}: {
+  params: PageProps<"/talks/[talkId]/activities/new/poll">["params"];
+}) {
   const { talkId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {

@@ -1,8 +1,6 @@
 import { getSessionUser } from "@/lib/auth";
 import { loadPollResults } from "@/lib/poll-results";
 
-export const dynamic = "force-dynamic";
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ pollId: string }> },

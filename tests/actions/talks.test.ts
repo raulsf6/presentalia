@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   requireTalkManager: vi.fn(),
   insertValues: vi.fn(),
   revalidatePath: vi.fn(),
+  updateTag: vi.fn(),
   redirect: vi.fn(),
 }));
 
@@ -41,6 +42,7 @@ vi.mock("@/lib/supabase/service", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath: mocks.revalidatePath,
+  updateTag: mocks.updateTag,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -77,5 +79,6 @@ describe("createTalkAction", () => {
       heldAt: null,
       createdBy: "presenter-1",
     });
+    expect(mocks.updateTag).toHaveBeenCalledWith("talks");
   });
 });

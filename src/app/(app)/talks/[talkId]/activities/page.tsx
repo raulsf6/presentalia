@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { desc, eq } from "drizzle-orm";
+import { Suspense } from "react";
 
-import { getDb } from "@/db";
-import { activities, polls } from "@/db/schema";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { loadTalkAccess } from "@/lib/membership";
-
-export const dynamic = "force-dynamic";
+import { loadTalkActivities } from "@/lib/talk-activities";
 
 const sections = [
   { status: "active", title: "Active" },
@@ -14,9 +12,21 @@ const sections = [
   { status: "closed", title: "Closed" },
 ] as const;
 
-export default async function PollsPage({
+export default function PollsPage({
   params,
 }: PageProps<"/talks/[talkId]/activities">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <PollsContent params={params} />
+    </Suspense>
+  );
+}
+
+async function PollsContent({
+  params,
+}: {
+  params: PageProps<"/talks/[talkId]/activities">["params"];
+}) {
   const { talkId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {
@@ -26,17 +36,7 @@ export default async function PollsPage({
     notFound();
   }
 
-  const pollRows = await getDb()
-    .select({
-      id: activities.id,
-      status: activities.status,
-      question: polls.question,
-      createdAt: activities.createdAt,
-    })
-    .from(activities)
-    .innerJoin(polls, eq(polls.activityId, activities.id))
-    .where(eq(activities.talkId, talkId))
-    .orderBy(desc(activities.createdAt));
+  const pollRows = await loadTalkActivities(talkId);
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">

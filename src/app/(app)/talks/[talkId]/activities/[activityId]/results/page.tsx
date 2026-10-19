@@ -1,17 +1,31 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { LiveResults } from "@/components/LiveResults";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { PollAdminControls } from "@/components/PollAdminControls";
 import { loadTalkAccess } from "@/lib/membership";
 import { loadPollResults } from "@/lib/poll-results";
 
-export const dynamic = "force-dynamic";
-
-export default async function PollResultsPage({
+export default function PollResultsPage({
   params,
   searchParams,
 }: PageProps<"/talks/[talkId]/activities/[activityId]/results">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <PollResultsContent params={params} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function PollResultsContent({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/talks/[talkId]/activities/[activityId]/results">["params"];
+  searchParams: PageProps<"/talks/[talkId]/activities/[activityId]/results">["searchParams"];
+}) {
   const { talkId, activityId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {

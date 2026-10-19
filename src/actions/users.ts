@@ -1,7 +1,7 @@
 "use server";
 
 import { sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { getDb } from "@/db";
 import { requireAdmin } from "@/lib/require-admin";
@@ -86,6 +86,8 @@ export async function addUserAction(
   const inviteSent = appUser.emailVerifiedAt
     ? true
     : await sendAppUserInvite(email);
+  updateTag("users");
+  updateTag("talks");
   revalidatePath("/admin/users");
   revalidatePath("/talks");
   return {
@@ -119,6 +121,8 @@ export async function changeUserRoleAction(
     return { ok: false, error: roleChangeError(error) };
   }
 
+  updateTag("users");
+  updateTag("talks");
   revalidatePath("/admin/users");
   revalidatePath("/talks");
   return { ok: true };
@@ -166,6 +170,9 @@ export async function deleteUserAction(
     return { ok: false, error: "Could not delete that user." };
   }
 
+  updateTag("users");
+  updateTag("talks");
+  updateTag("roster");
   revalidatePath("/admin/users");
   revalidatePath("/talks");
   return { ok: true };

@@ -1,20 +1,32 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { Suspense } from "react";
 
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { getDb } from "@/db";
 import { activities } from "@/db/schema";
 import { loadTalkAccess } from "@/lib/membership";
 import { PollActivity } from "./poll-activity";
 
-export const dynamic = "force-dynamic";
-
 /**
  * Activity detail dispatcher: loads the activity, then renders the controls
  * owned by its type module. Unknown types 404 until they are implemented.
  */
-export default async function ActivityPage({
+export default function ActivityPage({
   params,
 }: PageProps<"/talks/[talkId]/activities/[activityId]">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <ActivityContent params={params} />
+    </Suspense>
+  );
+}
+
+async function ActivityContent({
+  params,
+}: {
+  params: PageProps<"/talks/[talkId]/activities/[activityId]">["params"];
+}) {
   const { talkId, activityId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {

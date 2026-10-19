@@ -1,14 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { ChartIcon } from "@/components/icons";
 import { loadTalkAccess } from "@/lib/membership";
 
-export const dynamic = "force-dynamic";
-
-export default async function NewActivityPage({
+export default function NewActivityPage({
   params,
 }: PageProps<"/talks/[talkId]/activities/new">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <NewActivityContent params={params} />
+    </Suspense>
+  );
+}
+
+async function NewActivityContent({
+  params,
+}: {
+  params: PageProps<"/talks/[talkId]/activities/new">["params"];
+}) {
   const { talkId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {

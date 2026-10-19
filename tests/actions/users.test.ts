@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   sendAppUserInvite: vi.fn(),
   execute: vi.fn(),
   revalidatePath: vi.fn(),
+  updateTag: vi.fn(),
   deleteUser: vi.fn(),
   createSupabaseServiceClient: vi.fn(),
 }));
@@ -34,6 +35,7 @@ vi.mock("@/lib/supabase/service", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath: mocks.revalidatePath,
+  updateTag: mocks.updateTag,
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -249,6 +251,9 @@ describe("user deletion", () => {
     await expect(deleteUserAction(TARGET_ID)).resolves.toEqual({ ok: true });
 
     expect(mocks.deleteUser).toHaveBeenCalledWith(TARGET_ID);
+    expect(mocks.updateTag).toHaveBeenCalledWith("users");
+    expect(mocks.updateTag).toHaveBeenCalledWith("talks");
+    expect(mocks.updateTag).toHaveBeenCalledWith("roster");
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/admin/users");
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/talks");
   });

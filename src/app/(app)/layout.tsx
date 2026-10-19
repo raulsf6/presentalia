@@ -1,25 +1,32 @@
 import { redirect } from "next/navigation";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
-import { AppBar } from "@/components/AppBar";
+import { AppBar, AppBarSkeleton } from "@/components/AppBar";
 import { HideInProjector } from "@/components/HideInProjector";
 import { getSessionUser } from "@/lib/auth";
 
-export const dynamic = "force-dynamic";
+/**
+ * Shell for every signed-in page. The app bar streams behind its own
+ * boundary so the page shell and content are not blocked by the session read.
+ * Each page still enforces its own session and role guard.
+ */
+export default function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <Suspense fallback={<AppBarSkeleton />}>
+        <HideInProjector>
+          <SignedInAppBar />
+        </HideInProjector>
+      </Suspense>
+      <div className="flex flex-1 flex-col">{children}</div>
+    </>
+  );
+}
 
-/** Shell for every signed-in page: session guard plus the persistent app bar. */
-export default async function AppLayout({ children }: { children: ReactNode }) {
+async function SignedInAppBar() {
   const user = await getSessionUser();
   if (!user) {
     redirect("/login");
   }
-
-  return (
-    <>
-      <HideInProjector>
-        <AppBar user={user} />
-      </HideInProjector>
-      <div className="flex flex-1 flex-col">{children}</div>
-    </>
-  );
+  return <AppBar user={user} />;
 }

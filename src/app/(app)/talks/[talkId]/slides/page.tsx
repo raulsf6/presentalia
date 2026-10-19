@@ -1,13 +1,25 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { SlidesManager } from "@/components/SlidesManager";
 import { loadTalkAccess } from "@/lib/membership";
 
-export const dynamic = "force-dynamic";
-
-export default async function SlidesPage({
+export default function SlidesPage({
   params,
 }: PageProps<"/talks/[talkId]/slides">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <SlidesContent params={params} />
+    </Suspense>
+  );
+}
+
+async function SlidesContent({
+  params,
+}: {
+  params: PageProps<"/talks/[talkId]/slides">["params"];
+}) {
   const { talkId } = await params;
   const access = await loadTalkAccess(talkId);
   if (!access) {

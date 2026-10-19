@@ -56,6 +56,7 @@ export function TalkNav({ talkId }: { talkId: string }) {
           <Link
             key={tab}
             href={href(talkId)}
+            prefetch={true}
             className="talk-tab"
             aria-current={active === tab ? "page" : undefined}
           >

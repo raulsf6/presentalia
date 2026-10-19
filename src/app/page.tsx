@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { getSessionUser } from "@/lib/auth";
-
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const user = await getSessionUser();
-  redirect(user ? "/talks" : "/login");
+/**
+ * The proxy sends signed-in visitors to /talks and anonymous visitors to
+ * /login before this page renders. This is the fallback when the proxy did
+ * not run (for example when its Supabase environment is unavailable).
+ */
+export default function Home() {
+  redirect("/login");
 }

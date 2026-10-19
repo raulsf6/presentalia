@@ -1,14 +1,23 @@
 import { notFound, redirect } from "next/navigation";
 import { asc } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
+import { Suspense } from "react";
 
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { getDb } from "@/db";
 import { appUsers } from "@/db/schema";
 import { UserManager } from "@/components/UserManager";
 import { getSessionUser } from "@/lib/auth";
 
-export const dynamic = "force-dynamic";
+export default function AdminUsersPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AdminUsersContent />
+    </Suspense>
+  );
+}
 
-export default async function AdminUsersPage() {
+async function AdminUsersContent() {
   const user = await getSessionUser();
   if (!user) {
     redirect("/login");
@@ -17,19 +26,7 @@ export default async function AdminUsersPage() {
     notFound();
   }
 
-  const userRows = await getDb()
-    .select({
-      id: appUsers.id,
-      email: appUsers.email,
-      role: appUsers.role,
-      emailVerifiedAt: appUsers.emailVerifiedAt,
-    })
-    .from(appUsers)
-    .orderBy(asc(appUsers.email));
-  const users = userRows.map((row) => ({
-    ...row,
-    emailVerifiedAt: row.emailVerifiedAt?.toISOString() ?? null,
-  }));
+  const users = await loadUsers();
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
@@ -45,4 +42,25 @@ export default async function AdminUsersPage() {
       </div>
     </main>
   );
+}
+
+async function loadUsers() {
+  "use cache";
+  cacheLife({ stale: 30, revalidate: 30, expire: 300 });
+  cacheTag("users");
+
+  const rows = await getDb()
+    .select({
+      id: appUsers.id,
+      email: appUsers.email,
+      role: appUsers.role,
+      emailVerifiedAt: appUsers.emailVerifiedAt,
+    })
+    .from(appUsers)
+    .orderBy(asc(appUsers.email));
+
+  return rows.map((row) => ({
+    ...row,
+    emailVerifiedAt: row.emailVerifiedAt?.toISOString() ?? null,
+  }));
 }

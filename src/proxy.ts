@@ -77,7 +77,13 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith(prefix),
   );
 
-  if (!user && (isProtected || pathname === "/")) {
+  if (pathname === "/") {
+    return respond(
+      NextResponse.redirect(new URL(user ? "/talks" : "/login", request.url)),
+    );
+  }
+
+  if (!user && isProtected) {
     const redirectUrl = new URL("/login", request.url);
     return respond(NextResponse.redirect(redirectUrl));
   }
