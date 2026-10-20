@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { useLiveResults } from "@/components/useLiveResults";
 import type { PollResultsPayload } from "@/lib/polls";
+
+const pollIsActive = (payload: PollResultsPayload) =>
+  payload.poll.status === "active";
 
 export function LiveResults({
   initial,
@@ -11,88 +13,11 @@ export function LiveResults({
   initial: PollResultsPayload;
   projector: boolean;
 }) {
-  const [payload, setPayload] = useState<PollResultsPayload | null>(initial);
-  const [accessRevoked, setAccessRevoked] = useState(false);
-  const pollId = initial.poll.id;
-  const isActive = payload?.poll.status === "active";
-
-  useEffect(() => {
-    if (!isActive) return;
-
-    let disposed = false;
-    let timer: number | undefined;
-    let refreshing = false;
-    let failures = 0;
-
-    function schedule(ms: number) {
-      if (disposed) return;
-      timer = window.setTimeout(() => {
-        timer = undefined;
-        void refresh();
-      }, ms);
-    }
-
-    async function refresh() {
-      if (disposed || refreshing) return;
-
-      // Do not spend timers or requests while the tab is in the background;
-      // the visibility listener refreshes immediately when it returns.
-      if (document.visibilityState === "hidden") return;
-
-      refreshing = true;
-      try {
-        const response = await fetch(`/api/polls/${pollId}/results`, {
-          cache: "no-store",
-        });
-        if (disposed) return;
-
-        if (!response.ok) {
-          if (response.status === 401 || response.status === 404) {
-            setPayload(null);
-            setAccessRevoked(true);
-            return;
-          }
-          failures = Math.min(failures + 1, 3);
-          schedule(Math.min(5_000 * 2 ** failures, 30_000));
-          return;
-        }
-
-        const next = (await response.json()) as PollResultsPayload;
-        if (!disposed) {
-          setPayload(next);
-          setAccessRevoked(false);
-          failures = 0;
-        }
-        schedule(5_000);
-      } catch {
-        // Keep the last known result and retry with backoff.
-        failures = Math.min(failures + 1, 3);
-        schedule(Math.min(5_000 * 2 ** failures, 30_000));
-      } finally {
-        refreshing = false;
-      }
-    }
-
-    function handleVisibility() {
-      if (document.visibilityState !== "visible") return;
-      if (timer !== undefined) {
-        window.clearTimeout(timer);
-        timer = undefined;
-      }
-      void refresh();
-    }
-
-    schedule(5_000);
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      disposed = true;
-      if (timer !== undefined) {
-        window.clearTimeout(timer);
-      }
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [isActive, pollId]);
+  const { payload, accessRevoked } = useLiveResults({
+    initial,
+    url: `/api/polls/${initial.poll.id}/results`,
+    isActive: pollIsActive,
+  });
 
   if (!payload) {
     return (

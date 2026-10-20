@@ -48,9 +48,9 @@ async function setupPoll(identifiable = false): Promise<Setup> {
 
   const voter = await makeUser(pglite, "voter@example.com");
   await pglite.query(
-    `insert into public.poll_votes (poll_id, user_id, option_id, voter_email)
-     values ($1, $2, $3, $4)`,
-    [poll.pollId, voter.id, poll.optionIds[0], voter.email],
+    `insert into public.poll_votes (poll_id, user_id, option_id)
+     values ($1, $2, $3)`,
+    [poll.pollId, voter.id, poll.optionIds[0]],
   );
 
   const viewer: SessionUser = {
@@ -140,9 +140,9 @@ describe("loadPollResults", () => {
 
     const secondVoter = await makeUser(pglite, "voter2@example.com");
     await pglite.query(
-      `insert into public.poll_votes (poll_id, user_id, option_id, voter_email)
-       values ($1, $2, $3, $4)`,
-      [pollId, secondVoter.id, optionIds[0], secondVoter.email],
+      `insert into public.poll_votes (poll_id, user_id, option_id)
+       values ($1, $2, $3)`,
+      [pollId, secondVoter.id, optionIds[0]],
     );
 
     const cached = await loadPollResults(pollId, viewer, { db, access });

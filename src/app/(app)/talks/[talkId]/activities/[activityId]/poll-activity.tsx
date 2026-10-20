@@ -4,7 +4,7 @@ import { and, asc, eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { pollOptions, pollVotes, polls, type ActivityRow } from "@/db/schema";
-import { PollAdminControls } from "@/components/PollAdminControls";
+import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { VoteForm } from "@/components/VoteForm";
 import type { TalkAccess } from "@/lib/membership";
 import type { ActivityStatus } from "@/lib/polls";
@@ -110,7 +110,11 @@ export async function PollActivity({
                 : "anonymous — voter identities will not appear in results."}
             </p>
           </div>
-          <PollAdminControls pollId={activityId} status="draft" />
+          <ActivityAdminControls
+            activityId={activityId}
+            kind="poll"
+            status="draft"
+          />
         </section>
       ) : status === "draft" ? (
         <p className="empty">
@@ -119,7 +123,7 @@ export async function PollActivity({
         </p>
       ) : (
         <section className="card p-6">
-          <VoteForm pollId={activityId} options={options} />
+          <VoteForm activityId={activityId} options={options} />
         </section>
       )}
     </main>

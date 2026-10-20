@@ -1,19 +1,21 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { getDb } from "@/db";
-import { activities, polls } from "@/db/schema";
+import { activities, polls, quizzes } from "@/db/schema";
 
 export type TalkActivitySummary = {
   id: string;
+  type: string;
   status: string;
   question: string;
   createdAt: Date;
 };
 
 /**
- * Cached activity summaries for a talk. Poll actions invalidate the talk's
- * tag, so launching, creating, or closing a poll is reflected immediately.
+ * Cached activity summaries for a talk. Activity actions invalidate the
+ * talk's tag, so creating, launching, or closing an activity is reflected
+ * immediately.
  */
 export async function loadTalkActivities(
   talkId: string,
@@ -25,12 +27,14 @@ export async function loadTalkActivities(
   return getDb()
     .select({
       id: activities.id,
+      type: activities.type,
       status: activities.status,
-      question: polls.question,
+      question: sql<string>`coalesce(${polls.question}, ${quizzes.question})`,
       createdAt: activities.createdAt,
     })
     .from(activities)
-    .innerJoin(polls, eq(polls.activityId, activities.id))
+    .leftJoin(polls, eq(polls.activityId, activities.id))
+    .leftJoin(quizzes, eq(quizzes.activityId, activities.id))
     .where(eq(activities.talkId, talkId))
     .orderBy(desc(activities.createdAt));
 }

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { ChartIcon } from "@/components/icons";
+import { ChartIcon, QuizIcon } from "@/components/icons";
 import { loadTalkAccess } from "@/lib/membership";
 
 export default function NewActivityPage({
@@ -51,6 +51,23 @@ async function NewActivityContent({
             <span className="text-ink font-bold">Poll</span>
             <span className="text-muted text-xs font-semibold">
               Ask a multiple-choice question and show the results live.
+            </span>
+          </span>
+          <span className="text-muted ml-auto shrink-0 text-sm font-bold">
+            Create →
+          </span>
+        </Link>
+        <Link
+          href={`/talks/${talkId}/activities/new/quiz`}
+          className="card card-hover flex items-center gap-4 p-4"
+        >
+          <span className="border-ink bg-green shadow-hard-sm flex size-11 shrink-0 items-center justify-center rounded-lg border-[2.5px] text-white">
+            <QuizIcon className="size-5" />
+          </span>
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-ink font-bold">Quiz</span>
+            <span className="text-muted text-xs font-semibold">
+              Ask a question with one correct answer and reveal it at the end.
             </span>
           </span>
           <span className="text-muted ml-auto shrink-0 text-sm font-bold">

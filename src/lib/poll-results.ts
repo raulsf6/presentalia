@@ -3,6 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { getDb, type Db } from "@/db";
 import {
   activities,
+  appUsers,
   pollOptions,
   pollVoteCounts,
   pollVotes,
@@ -196,13 +197,20 @@ export async function loadPollResults(
     row.votes === null ? [] : [{ optionId: row.id, votes: row.votes }],
   );
 
-  // Never query the votes table in anonymous mode: it contains email
-  // identities even though the result display omits them.
+  // Never load voter identities in anonymous mode; the result display would
+  // omit them anyway. Emails come from the app-owned user mirror.
   const votes = poll.resultsIdentifiable
-    ? await db
-        .select({ optionId: pollVotes.optionId, email: pollVotes.voterEmail })
-        .from(pollVotes)
-        .where(eq(pollVotes.pollId, pollId))
+    ? (
+        await db
+          .select({ optionId: pollVotes.optionId, email: appUsers.email })
+          .from(pollVotes)
+          .innerJoin(appUsers, eq(appUsers.id, pollVotes.userId))
+          .where(eq(pollVotes.pollId, pollId))
+      ).flatMap((row) =>
+        row.email === null
+          ? []
+          : [{ optionId: row.optionId, email: row.email }],
+      )
     : undefined;
 
   const data = { options, counts, votes };

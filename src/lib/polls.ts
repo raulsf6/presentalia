@@ -1,13 +1,13 @@
-export type ActivityStatus = "draft" | "active" | "closed";
+import type {
+  ActivityStatus,
+  ActivityType,
+  ChoiceResultsRow,
+} from "@/lib/activities";
 
-export type ActivityType = "poll";
+export type { ActivityStatus, ActivityType };
+export { canClose, canLaunch, canVote, computeResults } from "@/lib/activities";
 
-export type PollResultsRow = {
-  optionId: string;
-  label: string;
-  votes: number;
-  percent: number;
-};
+export type PollResultsRow = ChoiceResultsRow;
 
 export type PollResultsPayload = {
   poll: {
@@ -71,32 +71,4 @@ export function validatePollInput(input: {
     options,
     resultsIdentifiable: input.resultsIdentifiable ?? false,
   };
-}
-
-export function canLaunch(status: ActivityStatus): boolean {
-  return status === "draft";
-}
-
-export function canClose(status: ActivityStatus): boolean {
-  return status === "active";
-}
-
-export function canVote(status: ActivityStatus): boolean {
-  return status === "active";
-}
-
-export function computeResults(
-  options: { id: string; label: string }[],
-  counts: Record<string, number>,
-): { rows: PollResultsRow[]; total: number } {
-  const total = options.reduce(
-    (sum, option) => sum + (counts[option.id] ?? 0),
-    0,
-  );
-  const rows = options.map((option) => {
-    const votes = counts[option.id] ?? 0;
-    const percent = total === 0 ? 0 : Math.round((votes / total) * 100);
-    return { optionId: option.id, label: option.label, votes, percent };
-  });
-  return { rows, total };
 }

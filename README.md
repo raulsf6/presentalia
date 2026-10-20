@@ -5,7 +5,9 @@ invitation; presenters create and manage their own talks; admins manage all
 talks and user roles. Users sign in with email magic links, attendees vote
 once, and everyone with talk access can see live results. Anonymous results
 are the default; voter emails appear only when a presenter or admin explicitly
-chooses identifiable results before launching a poll.
+chooses identifiable results before launching a poll or quiz. Polls show live
+results as votes arrive; quizzes have one correct answer and keep the tally and
+answer hidden from the room until the presenter closes them.
 
 ## Requirements
 
@@ -162,27 +164,34 @@ them with `NEXT_PUBLIC_` or expose them in client components.
 
 - `src/app/` — Next.js App Router pages and route handlers.
 - `src/actions/` — server actions for login links, account provisioning, user
-  roles, talks, rosters, slides, polls, and voting. Privileged actions check the
-  database-backed role and talk ownership before using the owner connection.
+  roles, talks, rosters, slides, polls, quizzes, and voting. Privileged actions
+  check the database-backed role and talk ownership before using the owner
+  connection. `src/actions/activities.ts` owns the shared launch/close
+  lifecycle for every activity type.
 - `src/db/schema.ts` — Drizzle schema and inferred row types; talk roster
   membership references app-user IDs, with email verification mirrored from
   Auth.
 - `src/db/index.ts` — server-only Drizzle connection using `POSTGRES_URL`.
 - `src/lib/membership.ts` — shared server-side talk authorization for admins,
   presenters, and rostered attendees.
-- `src/lib/polls.ts` and `src/lib/poll-results.ts` — poll validation,
-  lifecycle rules, result calculations, and privacy-safe result payloads.
-- `src/components/LiveResults.tsx` — shared attendee/presenter/admin/projector
-  results display, refreshed through the authorized results endpoint every five
-  seconds.
+- `src/lib/activities.ts` — shared activity status and choice-result helpers.
+- `src/lib/polls.ts` and `src/lib/poll-results.ts` — poll validation, lifecycle
+  rules, result calculations, and privacy-safe result payloads.
+- `src/lib/quizzes.ts` and `src/lib/quiz-results.ts` — quiz validation,
+  exactly-one-correct-answer rules, live/closed result visibility, accuracy,
+  and privacy-safe result payloads.
+- `src/components/LiveResults.tsx` and `src/components/QuizLiveResults.tsx` —
+  shared attendee/presenter/admin/projector results displays, refreshed through
+  the authorized results endpoints every five seconds. `useLiveResults` holds
+  the shared polling behavior.
 - `supabase/migrations/` — Postgres schema, private storage bucket, and trigger
   setup.
 
 To add a future activity module, reuse talk membership and the shared
-`activities` lifecycle, add an explicit new `type` and a sibling typed table
-for that module's input/result data, then add its own actions and routes. Polls
-are intentionally implemented as a typed module; there is no generic activity
-builder or configurable form engine.
+`activities` lifecycle, add an explicit new `type` and sibling typed tables for
+that module's input/result data, then add its own actions and routes. Polls and
+quizzes are intentionally implemented as typed modules; there is no generic
+activity builder or configurable form engine.
 
 ## Checks and formatting
 
@@ -194,12 +203,13 @@ npm run format      # Format application, tests, migrations, and root config
 npm run format:check # Verify formatting without changing files
 ```
 
-The PGlite suite applies the initial SQL file against a local Postgres-WASM
+The PGlite suite applies the migration files against a local Postgres-WASM
 database with minimal Supabase `auth` and `storage` stand-ins. It checks
 database constraints, role defaults and bootstrap, last-admin safeguards,
-vote-count and user-sync triggers, and private bucket configuration. Pure tests
-cover role/session loading, login allowlisting, roster parsing, poll rules,
-result privacy/math, upload validation, and Postgres error mapping.
+poll and quiz vote-count triggers, user-sync triggers, and private bucket
+configuration. Pure tests cover role/session loading, login allowlisting,
+roster parsing, poll and quiz rules, result privacy/math, upload validation,
+and Postgres error mapping.
 
 There is no hosted Supabase project in the automated test environment. Before
 launch, verify magic-link delivery/redirects, the signed PDF upload and

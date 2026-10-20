@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { PageSkeleton } from "@/components/PageSkeleton";
+import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { DeleteTalkButton } from "@/components/DeleteTalkButton";
-import { PollAdminControls } from "@/components/PollAdminControls";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { loadTalkAccess } from "@/lib/membership";
 import {
   loadTalkActivities,
@@ -18,6 +18,14 @@ function formatDate(date: Date | null): string {
     month: "long",
     day: "numeric",
   });
+}
+
+function activityKind(type: string): "poll" | "quiz" {
+  return type === "quiz" ? "quiz" : "poll";
+}
+
+function activityLabel(type: string): string {
+  return type === "quiz" ? "Quiz" : "Poll";
 }
 
 export default function TalkPage({ params }: PageProps<"/talks/[talkId]">) {
@@ -40,11 +48,17 @@ async function TalkContent({
   }
   const { talk, access: role } = access;
 
-  const pollRows: TalkActivitySummary[] = await loadTalkActivities(talkId);
+  const activityRows: TalkActivitySummary[] = await loadTalkActivities(talkId);
 
-  const activePoll = pollRows.find((poll) => poll.status === "active");
-  const draftPolls = pollRows.filter((poll) => poll.status === "draft");
-  const closedPolls = pollRows.filter((poll) => poll.status === "closed");
+  const activeActivity = activityRows.find(
+    (activity) => activity.status === "active",
+  );
+  const draftActivities = activityRows.filter(
+    (activity) => activity.status === "draft",
+  );
+  const closedActivities = activityRows.filter(
+    (activity) => activity.status === "closed",
+  );
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
@@ -66,12 +80,12 @@ async function TalkContent({
 
       <section className="mb-8 flex flex-col gap-3">
         <h2 className="section-label">Live now</h2>
-        {activePoll ? (
+        {activeActivity ? (
           <Link
             href={
               role === "member"
-                ? `/talks/${talkId}/activities/${activePoll.id}`
-                : `/talks/${talkId}/activities/${activePoll.id}/results`
+                ? `/talks/${talkId}/activities/${activeActivity.id}`
+                : `/talks/${talkId}/activities/${activeActivity.id}/results`
             }
             prefetch={true}
             className="card card-hover border-l-green flex flex-col gap-1 border-l-[9px] p-4"
@@ -81,38 +95,48 @@ async function TalkContent({
                 <span className="pulse-dot" />
                 LIVE
               </span>
+              <span className="chip chip-soft-amber text-[0.65rem]">
+                {activityLabel(activeActivity.type)}
+              </span>
               <span className="text-ink font-bold">
-                Poll is open: {activePoll.question}
+                {activityLabel(activeActivity.type)} is open:{" "}
+                {activeActivity.question}
               </span>
             </span>
             <span className="text-green text-sm font-bold">
               {role === "member"
                 ? "Tap to vote and see results →"
-                : "Tap to see live results →"}
+                : "Tap to open the live activity →"}
             </span>
           </Link>
         ) : (
-          <p className="empty">No active poll right now.</p>
+          <p className="empty">No active activity right now.</p>
         )}
       </section>
 
-      {role !== "member" && draftPolls.length > 0 ? (
+      {role !== "member" && draftActivities.length > 0 ? (
         <section className="mb-8 flex flex-col gap-3">
           <h2 className="section-label">Pending activities</h2>
           <ul className="flex flex-col gap-3">
-            {draftPolls.map((poll) => (
-              <li key={poll.id}>
+            {draftActivities.map((activity) => (
+              <li key={activity.id}>
                 <div className="card flex flex-col gap-4 p-4">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="chip chip-draft">Draft</span>
-                    <span className="text-ink font-bold">{poll.question}</span>
+                    <span className="chip chip-soft-amber text-[0.65rem]">
+                      {activityLabel(activity.type)}
+                    </span>
+                    <span className="text-ink font-bold">
+                      {activity.question}
+                    </span>
                   </span>
-                  <PollAdminControls
-                    pollId={poll.id}
+                  <ActivityAdminControls
+                    activityId={activity.id}
+                    kind={activityKind(activity.type)}
                     status="draft"
                     launchBlockedReason={
-                      activePoll
-                        ? "Close the live poll before launching another."
+                      activeActivity
+                        ? "Close the live activity before launching another."
                         : null
                     }
                   />
@@ -142,18 +166,25 @@ async function TalkContent({
         )}
       </section>
 
-      {closedPolls.length > 0 ? (
+      {closedActivities.length > 0 ? (
         <section className="mb-8 flex flex-col gap-3">
-          <h2 className="section-label">Past polls</h2>
+          <h2 className="section-label">Past activities</h2>
           <ul className="flex flex-col gap-2">
-            {closedPolls.map((poll) => (
-              <li key={poll.id}>
+            {closedActivities.map((activity) => (
+              <li key={activity.id}>
                 <Link
-                  href={`/talks/${talkId}/activities/${poll.id}/results`}
+                  href={`/talks/${talkId}/activities/${activity.id}/results`}
                   prefetch={true}
                   className="card card-hover flex items-center justify-between gap-4 p-4"
                 >
-                  <span className="text-ink font-bold">{poll.question}</span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="chip chip-soft-amber text-[0.65rem]">
+                      {activityLabel(activity.type)}
+                    </span>
+                    <span className="text-ink font-bold">
+                      {activity.question}
+                    </span>
+                  </span>
                   <span className="text-muted shrink-0 text-sm font-bold">
                     Results →
                   </span>

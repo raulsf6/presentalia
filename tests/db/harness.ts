@@ -183,6 +183,39 @@ export async function seedPoll(
   return { pollId, optionIds };
 }
 
+export async function seedQuiz(
+  db: Db,
+  talkId: string,
+  opts: {
+    identifiable?: boolean;
+    options?: string[];
+    correctIndex?: number;
+  } = {},
+): Promise<{ quizId: string; optionIds: string[] }> {
+  const quizId = crypto.randomUUID();
+  await db.query(
+    "insert into public.activities (id, talk_id, type, status) values ($1, $2, 'quiz', 'draft')",
+    [quizId, talkId],
+  );
+  await db.query(
+    "insert into public.quizzes (activity_id, question, results_identifiable) values ($1, $2, $3)",
+    [quizId, "Which framework is correct?", opts.identifiable ?? false],
+  );
+  const optionIds: string[] = [];
+  const correctIndex = opts.correctIndex ?? 0;
+  for (const [position, label] of (
+    opts.options ?? ["LangGraph", "CrewAI"]
+  ).entries()) {
+    const optionId = crypto.randomUUID();
+    await db.query(
+      "insert into public.quiz_options (id, quiz_id, label, position, is_correct) values ($1, $2, $3, $4, $5)",
+      [optionId, quizId, label, position, position === correctIndex],
+    );
+    optionIds.push(optionId);
+  }
+  return { quizId, optionIds };
+}
+
 export async function setStatus(
   db: Db,
   activityId: string,

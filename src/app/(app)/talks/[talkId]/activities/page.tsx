@@ -12,17 +12,21 @@ const sections = [
   { status: "closed", title: "Closed" },
 ] as const;
 
-export default function PollsPage({
+function activityLabel(type: string): string {
+  return type === "quiz" ? "Quiz" : "Poll";
+}
+
+export default function ActivitiesPage({
   params,
 }: PageProps<"/talks/[talkId]/activities">) {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <PollsContent params={params} />
+      <ActivitiesContent params={params} />
     </Suspense>
   );
 }
 
-async function PollsContent({
+async function ActivitiesContent({
   params,
 }: {
   params: PageProps<"/talks/[talkId]/activities">["params"];
@@ -36,7 +40,7 @@ async function PollsContent({
     notFound();
   }
 
-  const pollRows = await loadTalkActivities(talkId);
+  const activityRows = await loadTalkActivities(talkId);
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
@@ -57,28 +61,33 @@ async function PollsContent({
 
       <div className="flex flex-col gap-8">
         {sections.map((section) => {
-          const items = pollRows.filter(
-            (poll) => poll.status === section.status,
+          const items = activityRows.filter(
+            (activity) => activity.status === section.status,
           );
           if (items.length === 0) return null;
           return (
             <section key={section.status} className="flex flex-col gap-3">
               <h2 className="section-label">{section.title}</h2>
               <ul className="flex flex-col gap-2">
-                {items.map((poll) => {
+                {items.map((activity) => {
                   const isDraft = section.status === "draft";
                   return (
-                    <li key={poll.id}>
+                    <li key={activity.id}>
                       <Link
                         href={
                           isDraft
-                            ? `/talks/${talkId}/activities/${poll.id}`
-                            : `/talks/${talkId}/activities/${poll.id}/results`
+                            ? `/talks/${talkId}/activities/${activity.id}`
+                            : `/talks/${talkId}/activities/${activity.id}/results`
                         }
                         className="card card-hover flex items-center justify-between gap-4 p-4"
                       >
-                        <span className="text-ink font-bold">
-                          {poll.question}
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="chip chip-soft-amber text-[0.65rem]">
+                            {activityLabel(activity.type)}
+                          </span>
+                          <span className="text-ink font-bold">
+                            {activity.question}
+                          </span>
                         </span>
                         <span className="text-muted shrink-0 text-sm font-bold">
                           {isDraft ? "Manage →" : "Results →"}
@@ -91,7 +100,7 @@ async function PollsContent({
             </section>
           );
         })}
-        {pollRows.length === 0 ? (
+        {activityRows.length === 0 ? (
           <p className="empty">
             No activities yet. Create your first activity to get started.
           </p>

@@ -3,13 +3,16 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { submitQuizVoteAction } from "@/actions/quizzes";
 import { submitVoteAction } from "@/actions/vote";
 
 export function VoteForm({
-  pollId,
+  activityId,
+  kind = "poll",
   options,
 }: {
-  pollId: string;
+  activityId: string;
+  kind?: "poll" | "quiz";
   options: { id: string; label: string }[];
 }) {
   const [selected, setSelected] = useState("");
@@ -17,25 +20,26 @@ export function VoteForm({
   const [celebrating, setCelebrating] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const action = kind === "quiz" ? submitQuizVoteAction : submitVoteAction;
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected || pending || celebrating) return;
     setError(null);
     startTransition(async () => {
-      const result = await submitVoteAction(pollId, selected);
+      const result = await action(activityId, selected);
       if (!result.ok) {
         setError(result.error ?? "Your vote was not accepted.");
         return;
       }
       if (!result.talkId) {
-        // Defensive fallback: refreshing the poll page redirects an
+        // Defensive fallback: refreshing the activity page redirects an
         // already-voted member to the results from the server side.
         router.refresh();
         return;
       }
       // The vote is saved. Play the celebration, then move to the results.
-      const resultsHref = `/talks/${result.talkId}/activities/${pollId}/results`;
+      const resultsHref = `/talks/${result.talkId}/activities/${activityId}/results`;
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;

@@ -7,6 +7,7 @@ import { getDb } from "@/db";
 import { activities } from "@/db/schema";
 import { loadTalkAccess } from "@/lib/membership";
 import { PollActivity } from "./poll-activity";
+import { QuizActivity } from "./quiz-activity";
 
 /**
  * Activity detail dispatcher: loads the activity, then renders the controls
@@ -45,6 +46,8 @@ async function ActivityContent({
   switch (activity.type) {
     case "poll":
       return <PollActivity activity={activity} access={access} />;
+    case "quiz":
+      return <QuizActivity activity={activity} access={access} />;
     default:
       notFound();
   }

@@ -54,6 +54,15 @@ export function ChartIcon(props: IconProps) {
   );
 }
 
+export function QuizIcon(props: IconProps) {
+  return (
+    <SvgIcon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m8.4 12.2 2.5 2.5 4.9-5.2" />
+    </SvgIcon>
+  );
+}
+
 export function UsersIcon(props: IconProps) {
   return (
     <SvgIcon {...props}>

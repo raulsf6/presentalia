@@ -21,11 +21,7 @@ export async function submitVoteAction(
   if (!user) {
     return { ok: false, error: "You need to sign in to vote." };
   }
-  if (!user.email) {
-    return { ok: false, error: "Your account has no email address." };
-  }
 
-  const voterEmail = user.email.trim().toLowerCase();
   const db = getDb();
   let outcome: { ok: true; talkId: string } | { ok: false; error: string };
   try {
@@ -63,7 +59,6 @@ export async function submitVoteAction(
         pollId,
         userId: user.id,
         optionId,
-        voterEmail,
       });
       return { ok: true, talkId: poll.talkId };
     });

@@ -115,7 +115,8 @@ export const pollOptions = pgTable("poll_options", {
 
 // One immutable vote per attendee per poll (primary key). user_id's foreign
 // key to auth.users exists in the migration; it is omitted here because the
-// auth schema is not part of this app mapping.
+// auth schema is not part of this app mapping. Voter emails are resolved from
+// app_users by user_id rather than stored on the vote.
 export const pollVotes = pgTable(
   "poll_votes",
   {
@@ -126,7 +127,6 @@ export const pollVotes = pgTable(
     optionId: uuid("option_id")
       .notNull()
       .references(() => pollOptions.id, { onDelete: "cascade" }),
-    voterEmail: text("voter_email").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -149,6 +149,73 @@ export const pollVoteCounts = pgTable(
   (table) => [primaryKey({ columns: [table.pollId, table.optionId] })],
 );
 
+/**
+ * Quiz activity module. Like a poll, but exactly one option is correct and the
+ * answer is only revealed once the activity is closed. The app enforces
+ * exactly one correct option; the partial unique index enforces at most one.
+ */
+export const quizzes = pgTable("quizzes", {
+  activityId: uuid("activity_id")
+    .primaryKey()
+    .references(() => activities.id, { onDelete: "cascade" }),
+  question: text("question").notNull(),
+  resultsIdentifiable: boolean("results_identifiable").notNull().default(false),
+});
+
+export const quizOptions = pgTable(
+  "quiz_options",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    quizId: uuid("quiz_id")
+      .notNull()
+      .references(() => quizzes.activityId, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    position: integer("position").notNull().default(0),
+    isCorrect: boolean("is_correct").notNull().default(false),
+  },
+  (table) => [
+    uniqueIndex("quiz_options_one_correct")
+      .on(table.quizId)
+      .where(sql`is_correct`),
+  ],
+);
+
+// One immutable vote per attendee per quiz (primary key). user_id's foreign
+// key to auth.users exists in the migration; it is omitted here because the
+// auth schema is not part of this app mapping. Voter emails are resolved from
+// app_users by user_id rather than stored on the vote.
+export const quizVotes = pgTable(
+  "quiz_votes",
+  {
+    quizId: uuid("quiz_id")
+      .notNull()
+      .references(() => quizzes.activityId, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(),
+    optionId: uuid("option_id")
+      .notNull()
+      .references(() => quizOptions.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.quizId, table.userId] })],
+);
+
+// Pre-aggregated counts maintained by a trigger in the migration.
+export const quizVoteCounts = pgTable(
+  "quiz_vote_counts",
+  {
+    quizId: uuid("quiz_id")
+      .notNull()
+      .references(() => quizzes.activityId, { onDelete: "cascade" }),
+    optionId: uuid("option_id")
+      .notNull()
+      .references(() => quizOptions.id, { onDelete: "cascade" }),
+    votes: bigint("votes", { mode: "number" }).notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.quizId, table.optionId] })],
+);
+
 export type TalkRow = typeof talks.$inferSelect;
 export type TalkRosterRow = typeof talkRoster.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
@@ -156,4 +223,8 @@ export type PollRow = typeof polls.$inferSelect;
 export type PollOptionRow = typeof pollOptions.$inferSelect;
 export type PollVoteRow = typeof pollVotes.$inferSelect;
 export type PollVoteCountRow = typeof pollVoteCounts.$inferSelect;
+export type QuizRow = typeof quizzes.$inferSelect;
+export type QuizOptionRow = typeof quizOptions.$inferSelect;
+export type QuizVoteRow = typeof quizVotes.$inferSelect;
+export type QuizVoteCountRow = typeof quizVoteCounts.$inferSelect;
 export type AppUserRow = typeof appUsers.$inferSelect;

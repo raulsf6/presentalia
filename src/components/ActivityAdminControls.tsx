@@ -3,15 +3,20 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { closePollAction, launchPollAction } from "@/actions/polls";
+import {
+  closeActivityAction,
+  launchActivityAction,
+} from "@/actions/activities";
 import { LoadingDots } from "@/components/LoadingDots";
 
-export function PollAdminControls({
-  pollId,
+export function ActivityAdminControls({
+  activityId,
+  kind,
   status,
   launchBlockedReason,
 }: {
-  pollId: string;
+  activityId: string;
+  kind: "poll" | "quiz";
   status: "draft" | "active" | "closed";
   /** When set on a draft, launching is unavailable and this explains why. */
   launchBlockedReason?: string | null;
@@ -21,14 +26,15 @@ export function PollAdminControls({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
-  const action = status === "draft" ? launchPollAction : closePollAction;
+  const action =
+    status === "draft" ? launchActivityAction : closeActivityAction;
 
   function runAction() {
     setError(null);
     startTransition(async () => {
-      const result = await action(pollId);
+      const result = await action(activityId);
       if (!result.ok) {
-        setError(result.error ?? "Could not update the poll.");
+        setError(result.error ?? `Could not update the ${kind}.`);
         return;
       }
       setConfirming(false);
@@ -39,8 +45,9 @@ export function PollAdminControls({
   if (status === "closed") {
     return (
       <p className="text-muted text-sm font-semibold">
-        This poll is closed. Its question, options, and results setting are
+        This {kind} is closed. Its question, options, and results setting are
         read-only.
+        {kind === "quiz" ? " The correct answer is now visible." : ""}
       </p>
     );
   }
@@ -49,7 +56,7 @@ export function PollAdminControls({
     return (
       <div className="flex flex-col gap-2">
         <button type="button" disabled className="btn w-fit">
-          Launch poll…
+          Launch {kind}…
         </button>
         <p className="text-muted text-xs font-semibold">
           {launchBlockedReason}
@@ -60,8 +67,10 @@ export function PollAdminControls({
 
   const launch = status === "draft";
   const prompt = launch
-    ? "Launch this poll now? Attendees will be able to vote, and the question, options, and results identity setting will be locked."
-    : "Close voting now? Attendees will no longer be able to submit votes, but everyone authorized can still see the final results.";
+    ? `Launch this ${kind} now? Attendees will be able to vote, and the question, options, and results identity setting will be locked.`
+    : kind === "quiz"
+      ? "Close this quiz now? Attendees will no longer be able to submit votes, and the correct answer will be revealed to everyone with access."
+      : "Close voting now? Attendees will no longer be able to submit votes, but everyone authorized can still see the final results.";
 
   return (
     <div className="flex flex-col gap-3">
@@ -71,7 +80,7 @@ export function PollAdminControls({
           onClick={() => setConfirming(true)}
           className={`btn w-fit ${launch ? "btn-green" : "btn-ink"}`}
         >
-          {launch ? "Launch poll…" : "Close poll…"}
+          {launch ? `Launch ${kind}…` : `Close ${kind}…`}
         </button>
       ) : (
         <div className="border-amber bg-ambersoft flex flex-col gap-3 rounded-lg border-[2.5px] p-4">
@@ -88,7 +97,7 @@ export function PollAdminControls({
                   {launch ? "Launching…" : "Closing…"} <LoadingDots />
                 </>
               ) : launch ? (
-                "Yes, launch poll 🎉"
+                `Yes, launch ${kind} 🎉`
               ) : (
                 "Yes, close voting"
               )}

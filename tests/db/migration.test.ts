@@ -81,8 +81,8 @@ describe("voting", () => {
     await setStatus(f.db, f.pollId, "active");
     await exec(
       f.db,
-      "insert into public.poll_votes (poll_id, user_id, option_id, voter_email) values ($1, $2, $3, $4)",
-      [f.pollId, f.member.id, f.optionIds[0], f.member.email],
+      "insert into public.poll_votes (poll_id, user_id, option_id) values ($1, $2, $3)",
+      [f.pollId, f.member.id, f.optionIds[0]],
     );
 
     const counts = await exec(
@@ -100,13 +100,13 @@ describe("voting", () => {
     await setStatus(f.db, f.pollId, "active");
     await exec(
       f.db,
-      "insert into public.poll_votes (poll_id, user_id, option_id, voter_email) values ($1, $2, $3, $4)",
-      [f.pollId, f.member.id, f.optionIds[0], f.member.email],
+      "insert into public.poll_votes (poll_id, user_id, option_id) values ($1, $2, $3)",
+      [f.pollId, f.member.id, f.optionIds[0]],
     );
     const error = await attempt(
       f.db,
-      "insert into public.poll_votes (poll_id, user_id, option_id, voter_email) values ($1, $2, $3, $4)",
-      [f.pollId, f.member.id, f.optionIds[1], f.member.email],
+      "insert into public.poll_votes (poll_id, user_id, option_id) values ($1, $2, $3)",
+      [f.pollId, f.member.id, f.optionIds[1]],
     );
     expect(error?.message).toMatch(
       /duplicate key value violates unique constraint/,
@@ -118,13 +118,13 @@ describe("voting", () => {
     await setStatus(f.db, f.pollId, "active");
     await exec(
       f.db,
-      "insert into public.poll_votes (poll_id, user_id, option_id, voter_email) values ($1, $2, $3, $4)",
-      [f.pollId, f.member.id, f.optionIds[0], f.member.email],
+      "insert into public.poll_votes (poll_id, user_id, option_id) values ($1, $2, $3)",
+      [f.pollId, f.member.id, f.optionIds[0]],
     );
     await exec(
       f.db,
-      "insert into public.poll_votes (poll_id, user_id, option_id, voter_email) values ($1, $2, $3, $4)",
-      [f.pollId, f.member2.id, f.optionIds[0], f.member2.email],
+      "insert into public.poll_votes (poll_id, user_id, option_id) values ($1, $2, $3)",
+      [f.pollId, f.member2.id, f.optionIds[0]],
     );
     const counts = await exec(
       f.db,
@@ -144,8 +144,8 @@ describe("voting", () => {
     await setStatus(f.db, f.pollId, "active");
     await exec(
       f.db,
-      "insert into public.poll_votes (poll_id, user_id, option_id, voter_email) values ($1, $2, $3, $4)",
-      [f.pollId, f.member.id, f.optionIds[0], f.member.email],
+      "insert into public.poll_votes (poll_id, user_id, option_id) values ($1, $2, $3)",
+      [f.pollId, f.member.id, f.optionIds[0]],
     );
 
     await exec(f.db, "delete from auth.users where id = $1", [f.member.id]);
