@@ -8,6 +8,7 @@ import { activities } from "@/db/schema";
 import { loadTalkAccess } from "@/lib/membership";
 import { PollActivity } from "./poll-activity";
 import { QuizActivity } from "./quiz-activity";
+import { TextActivity } from "./text-activity";
 
 /**
  * Activity detail dispatcher: loads the activity, then renders the controls
@@ -48,6 +49,8 @@ async function ActivityContent({
       return <PollActivity activity={activity} access={access} />;
     case "quiz":
       return <QuizActivity activity={activity} access={access} />;
+    case "text":
+      return <TextActivity activity={activity} access={access} />;
     default:
       notFound();
   }

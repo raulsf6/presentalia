@@ -20,12 +20,16 @@ function formatDate(date: Date | null): string {
   });
 }
 
-function activityKind(type: string): "poll" | "quiz" {
-  return type === "quiz" ? "quiz" : "poll";
+function activityKind(type: string): "poll" | "quiz" | "text" {
+  if (type === "quiz") return "quiz";
+  if (type === "text") return "text";
+  return "poll";
 }
 
 function activityLabel(type: string): string {
-  return type === "quiz" ? "Quiz" : "Poll";
+  if (type === "quiz") return "Quiz";
+  if (type === "text") return "Text prompt";
+  return "Poll";
 }
 
 export default function TalkPage({ params }: PageProps<"/talks/[talkId]">) {
@@ -50,9 +54,10 @@ async function TalkContent({
 
   const activityRows: TalkActivitySummary[] = await loadTalkActivities(talkId);
 
-  const activeActivity = activityRows.find(
-    (activity) => activity.status === "active",
+  const currentActivity = activityRows.find(
+    (activity) => activity.status === "active" || activity.status === "locked",
   );
+  const rankingInProgress = currentActivity?.status === "locked";
   const draftActivities = activityRows.filter(
     (activity) => activity.status === "draft",
   );
@@ -80,33 +85,42 @@ async function TalkContent({
 
       <section className="mb-8 flex flex-col gap-3">
         <h2 className="section-label">Live now</h2>
-        {activeActivity ? (
+        {currentActivity ? (
           <Link
             href={
-              role === "member"
-                ? `/talks/${talkId}/activities/${activeActivity.id}`
-                : `/talks/${talkId}/activities/${activeActivity.id}/results`
+              role === "member" && !rankingInProgress
+                ? `/talks/${talkId}/activities/${currentActivity.id}`
+                : `/talks/${talkId}/activities/${currentActivity.id}/results`
             }
             prefetch={true}
             className="card card-hover border-l-green flex flex-col gap-1 border-l-[9px] p-4"
           >
             <span className="flex flex-wrap items-center gap-2">
-              <span className="chip chip-live">
-                <span className="pulse-dot" />
-                LIVE
-              </span>
+              {rankingInProgress ? (
+                <span className="chip chip-draft">RANKING</span>
+              ) : (
+                <span className="chip chip-live">
+                  <span className="pulse-dot" />
+                  LIVE
+                </span>
+              )}
               <span className="chip chip-soft-amber text-[0.65rem]">
-                {activityLabel(activeActivity.type)}
+                {activityLabel(currentActivity.type)}
               </span>
               <span className="text-ink font-bold">
-                {activityLabel(activeActivity.type)} is open:{" "}
-                {activeActivity.question}
+                {rankingInProgress
+                  ? `${activityLabel(currentActivity.type)} is being ranked: ${currentActivity.question}`
+                  : `${activityLabel(currentActivity.type)} is open: ${currentActivity.question}`}
               </span>
             </span>
             <span className="text-green text-sm font-bold">
-              {role === "member"
-                ? "Tap to vote and see results →"
-                : "Tap to open the live activity →"}
+              {rankingInProgress
+                ? "Results are being prepared →"
+                : role === "member"
+                  ? currentActivity.type === "text"
+                    ? "Tap to answer →"
+                    : "Tap to vote and see results →"
+                  : "Tap to open the live activity →"}
             </span>
           </Link>
         ) : (
@@ -135,8 +149,10 @@ async function TalkContent({
                     kind={activityKind(activity.type)}
                     status="draft"
                     launchBlockedReason={
-                      activeActivity
-                        ? "Close the live activity before launching another."
+                      currentActivity
+                        ? rankingInProgress
+                          ? "Results are being prepared for the current activity. Wait for it to close before launching another."
+                          : "Close the live activity before launching another."
                         : null
                     }
                   />

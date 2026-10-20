@@ -2,7 +2,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { getDb } from "@/db";
-import { activities, polls, quizzes } from "@/db/schema";
+import { activities, polls, quizzes, textActivities } from "@/db/schema";
 
 export type TalkActivitySummary = {
   id: string;
@@ -29,12 +29,13 @@ export async function loadTalkActivities(
       id: activities.id,
       type: activities.type,
       status: activities.status,
-      question: sql<string>`coalesce(${polls.question}, ${quizzes.question})`,
+      question: sql<string>`coalesce(${polls.question}, ${quizzes.question}, ${textActivities.prompt})`,
       createdAt: activities.createdAt,
     })
     .from(activities)
     .leftJoin(polls, eq(polls.activityId, activities.id))
     .leftJoin(quizzes, eq(quizzes.activityId, activities.id))
+    .leftJoin(textActivities, eq(textActivities.activityId, activities.id))
     .where(eq(activities.talkId, talkId))
     .orderBy(desc(activities.createdAt));
 }

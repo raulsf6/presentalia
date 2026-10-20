@@ -7,12 +7,15 @@ import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { LiveResults } from "@/components/LiveResults";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { QuizLiveResults } from "@/components/QuizLiveResults";
+import { TextActivityControls } from "@/components/TextActivityControls";
+import { TextLiveResults } from "@/components/TextLiveResults";
 import { getDb } from "@/db";
 import { activities } from "@/db/schema";
 import { loadTalkAccess } from "@/lib/membership";
 import { loadPollResults } from "@/lib/poll-results";
 import type { PollResultsPayload } from "@/lib/polls";
 import { loadQuizResults, type QuizResultsPayload } from "@/lib/quiz-results";
+import { loadTextResults, type TextResultsPayload } from "@/lib/text-results";
 
 export default function ActivityResultsPage({
   params,
@@ -24,6 +27,9 @@ export default function ActivityResultsPage({
     </Suspense>
   );
 }
+
+/** The rank action calls the model; give it the full route budget. */
+export const maxDuration = 60;
 
 async function ActivityResultsContent({
   params,
@@ -63,6 +69,7 @@ async function ActivityResultsContent({
 
   let poll: PollResultsPayload | null = null;
   let quiz: QuizResultsPayload | null = null;
+  let text: TextResultsPayload | null = null;
 
   if (activity.type === "poll") {
     poll = await loadPollResults(activityId, access.user, { access });
@@ -86,12 +93,29 @@ async function ActivityResultsContent({
     if (quiz.quiz.status === "draft") {
       redirect(activityHref);
     }
+  } else if (activity.type === "text") {
+    text = await loadTextResults(activityId, access.user, {
+      access,
+      projector,
+    });
+    if (!text || text.activity.talkId !== talkId) {
+      notFound();
+    }
+    if (text.needsVote) {
+      redirect(activityHref);
+    }
+    if (text.activity.status === "draft") {
+      redirect(activityHref);
+    }
   } else {
     notFound();
   }
 
   const kind = activity.type === "quiz" ? "quiz" : "poll";
   const active = activity.status === "active";
+  const manager = access.access !== "member";
+  const textControls =
+    text && manager && !projector && activity.status !== "closed";
 
   return (
     <main
@@ -107,7 +131,16 @@ async function ActivityResultsContent({
           {projector ? "Attendee view" : "Projector view"}
         </Link>
       </div>
-      {!projector && access.access !== "member" && active ? (
+      {text && textControls ? (
+        <div className="mb-6">
+          <TextActivityControls
+            activityId={activityId}
+            status={activity.status as "active" | "locked"}
+            runStatus={text.run?.status ?? null}
+            answerCount={text.activity.totalAnswers}
+          />
+        </div>
+      ) : !projector && manager && active ? (
         <div className="mb-6">
           <ActivityAdminControls
             activityId={activityId}
@@ -126,6 +159,12 @@ async function ActivityResultsContent({
         <QuizLiveResults
           key={`${quiz.quiz.id}-${quiz.quiz.status}-${projector ? "projector" : "attendee"}`}
           initial={quiz}
+          projector={projector}
+        />
+      ) : text ? (
+        <TextLiveResults
+          key={`${text.activity.id}-${text.activity.status}-${projector ? "projector" : "attendee"}`}
+          initial={text}
           projector={projector}
         />
       ) : null}

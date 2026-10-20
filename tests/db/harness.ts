@@ -216,11 +216,48 @@ export async function seedQuiz(
   return { quizId, optionIds };
 }
 
+export async function seedTextActivity(
+  db: Db,
+  talkId: string,
+  opts: {
+    status?: "draft" | "active" | "locked" | "closed";
+    identifiable?: boolean;
+    prompt?: string;
+    criteria?: string;
+  } = {},
+): Promise<string> {
+  const activityId = crypto.randomUUID();
+  await db.query(
+    "insert into public.activities (id, talk_id, type, status) values ($1, $2, 'text', $3)",
+    [activityId, talkId, opts.status ?? "draft"],
+  );
+  await db.query(
+    "insert into public.text_activities (activity_id, prompt, criteria, results_identifiable) values ($1, $2, $3, $4)",
+    [
+      activityId,
+      opts.prompt ?? "What is the best next step?",
+      opts.criteria ?? "Most actionable",
+      opts.identifiable ?? false,
+    ],
+  );
+  return activityId;
+}
+
 export async function setStatus(
   db: Db,
   activityId: string,
-  status: "draft" | "active" | "closed",
+  status: "draft" | "active" | "locked" | "closed",
 ): Promise<void> {
+  // The lifecycle trigger only allows draft -> active -> locked -> closed.
+  // Tests routinely jump straight to a later state, so walk the path.
+  if (status === "locked" || status === "closed") {
+    await db.query(
+      `update public.activities
+       set status = 'active', launched_at = coalesce(launched_at, now())
+       where id = $1 and status = 'draft'`,
+      [activityId],
+    );
+  }
   const now = new Date().toISOString();
   await db.query(
     `update public.activities

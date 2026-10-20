@@ -8,12 +8,15 @@ import { loadTalkActivities } from "@/lib/talk-activities";
 
 const sections = [
   { status: "active", title: "Active" },
+  { status: "locked", title: "Ranking" },
   { status: "draft", title: "Drafts" },
   { status: "closed", title: "Closed" },
 ] as const;
 
 function activityLabel(type: string): string {
-  return type === "quiz" ? "Quiz" : "Poll";
+  if (type === "quiz") return "Quiz";
+  if (type === "text") return "Text prompt";
+  return "Poll";
 }
 
 export default function ActivitiesPage({

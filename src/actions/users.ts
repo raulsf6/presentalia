@@ -130,8 +130,10 @@ export async function changeUserRoleAction(
 
 /**
  * Deletes an Auth user, cascading through app_users, talk rosters and votes.
- * The service-role Auth admin call removes the identity; database cascades and
- * the final-admin guard run on the same delete.
+ * Text answers survive as GDPR tombstones (`ON DELETE SET NULL` plus a removal
+ * notice), so a published ranking keeps its shape. The service-role Auth admin
+ * call removes the identity; database cascades and the final-admin guard run on
+ * the same delete.
  */
 export async function deleteUserAction(
   userId: string,

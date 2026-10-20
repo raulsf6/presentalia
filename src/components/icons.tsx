@@ -63,6 +63,16 @@ export function QuizIcon(props: IconProps) {
   );
 }
 
+export function TextIcon(props: IconProps) {
+  return (
+    <SvgIcon {...props}>
+      <path d="M4 5.5h16v10.5H9.5L5 20v-4H4z" />
+      <path d="M8 9h8" />
+      <path d="M8 12.5h5" />
+    </SvgIcon>
+  );
+}
+
 export function UsersIcon(props: IconProps) {
   return (
     <SvgIcon {...props}>

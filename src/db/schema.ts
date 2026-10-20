@@ -216,6 +216,103 @@ export const quizVoteCounts = pgTable(
   (table) => [primaryKey({ columns: [table.quizId, table.optionId] })],
 );
 
+/**
+ * Free-text activity module. Attendees submit one immutable answer while the
+ * activity is active; a ranking run stores the model's scores and the published
+ * result. The migration owns the lifecycle and immutability guards.
+ */
+export const textActivities = pgTable("text_activities", {
+  activityId: uuid("activity_id")
+    .primaryKey()
+    .references(() => activities.id, { onDelete: "cascade" }),
+  prompt: text("prompt").notNull(),
+  criteria: text("criteria").notNull(),
+  resultsIdentifiable: boolean("results_identifiable").notNull().default(false),
+});
+
+// user_id is nullable only for GDPR deletion; the write guard forces the body
+// to "[answer removed]". The auth-schema FK lives in the migration.
+export const textAnswers = pgTable(
+  "text_answers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => textActivities.activityId, { onDelete: "cascade" }),
+    userId: uuid("user_id"),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("text_answers_activity_user_unique").on(
+      table.activityId,
+      table.userId,
+    ),
+    index("text_answers_activity_idx").on(
+      table.activityId,
+      table.createdAt,
+      table.id,
+    ),
+  ],
+);
+
+export const textRankingRuns = pgTable(
+  "text_ranking_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => textActivities.activityId, { onDelete: "cascade" }),
+    status: text("status").notNull().default("running"),
+    model: text("model"),
+    promptVersion: text("prompt_version").notNull(),
+    criteriaSnapshot: text("criteria_snapshot").notNull(),
+    answerCount: integer("answer_count").notNull(),
+    error: text("error"),
+    summary: text("summary"),
+    generationId: text("generation_id"),
+    promptTokens: integer("prompt_tokens"),
+    completionTokens: integer("completion_tokens"),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("text_ranking_runs_one_running")
+      .on(table.activityId)
+      .where(sql`status = 'running'`),
+    uniqueIndex("text_ranking_runs_one_published")
+      .on(table.activityId)
+      .where(sql`published_at IS NOT NULL`),
+  ],
+);
+
+export const textRankings = pgTable(
+  "text_rankings",
+  {
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => textRankingRuns.id, { onDelete: "cascade" }),
+    answerId: uuid("answer_id")
+      .notNull()
+      .references(() => textAnswers.id, { onDelete: "cascade" }),
+    rank: integer("rank"),
+    score: integer("score"),
+    rationale: text("rationale"),
+    dropReason: text("drop_reason"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.runId, table.answerId] }),
+    uniqueIndex("text_rankings_one_per_rank")
+      .on(table.runId, table.rank)
+      .where(sql`rank IS NOT NULL`),
+  ],
+);
+
 export type TalkRow = typeof talks.$inferSelect;
 export type TalkRosterRow = typeof talkRoster.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
@@ -227,4 +324,8 @@ export type QuizRow = typeof quizzes.$inferSelect;
 export type QuizOptionRow = typeof quizOptions.$inferSelect;
 export type QuizVoteRow = typeof quizVotes.$inferSelect;
 export type QuizVoteCountRow = typeof quizVoteCounts.$inferSelect;
+export type TextActivityRow = typeof textActivities.$inferSelect;
+export type TextAnswerRow = typeof textAnswers.$inferSelect;
+export type TextRankingRunRow = typeof textRankingRuns.$inferSelect;
+export type TextRankingRow = typeof textRankings.$inferSelect;
 export type AppUserRow = typeof appUsers.$inferSelect;

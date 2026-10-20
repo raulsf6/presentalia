@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 
 import { getDb } from "@/db";
@@ -49,7 +49,7 @@ export async function launchActivityAction(
     .where(
       and(
         eq(activities.talkId, activity.talkId),
-        eq(activities.status, "active"),
+        inArray(activities.status, ["active", "locked"]),
         ne(activities.id, activityId),
       ),
     )
@@ -57,7 +57,7 @@ export async function launchActivityAction(
   if (otherActive) {
     return {
       ok: false,
-      error: "Another activity is already active for this talk.",
+      error: "Another activity is already live for this talk.",
     };
   }
 
@@ -77,7 +77,7 @@ export async function launchActivityAction(
     if (isUniqueViolation(error)) {
       return {
         ok: false,
-        error: "Another activity is already active for this talk.",
+        error: "Another activity is already live for this talk.",
       };
     }
     throw error;

@@ -16,7 +16,7 @@ export function ActivityAdminControls({
   launchBlockedReason,
 }: {
   activityId: string;
-  kind: "poll" | "quiz";
+  kind: "poll" | "quiz" | "text";
   status: "draft" | "active" | "closed";
   /** When set on a draft, launching is unavailable and this explains why. */
   launchBlockedReason?: string | null;
@@ -48,6 +48,7 @@ export function ActivityAdminControls({
         This {kind} is closed. Its question, options, and results setting are
         read-only.
         {kind === "quiz" ? " The correct answer is now visible." : ""}
+        {kind === "text" ? " Its ranking is final." : ""}
       </p>
     );
   }
@@ -67,10 +68,14 @@ export function ActivityAdminControls({
 
   const launch = status === "draft";
   const prompt = launch
-    ? `Launch this ${kind} now? Attendees will be able to vote, and the question, options, and results identity setting will be locked.`
+    ? kind === "text"
+      ? "Launch this text prompt now? Attendees will be able to submit one answer each, and the prompt and criterion will be locked."
+      : `Launch this ${kind} now? Attendees will be able to vote, and the question, options, and results identity setting will be locked.`
     : kind === "quiz"
       ? "Close this quiz now? Attendees will no longer be able to submit votes, and the correct answer will be revealed to everyone with access."
-      : "Close voting now? Attendees will no longer be able to submit votes, but everyone authorized can still see the final results.";
+      : kind === "text"
+        ? "Close this text prompt now? Attendees will no longer be able to submit answers, and every answer will be published unranked."
+        : "Close voting now? Attendees will no longer be able to submit votes, but everyone authorized can still see the final results.";
 
   return (
     <div className="flex flex-col gap-3">

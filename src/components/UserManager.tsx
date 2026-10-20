@@ -358,7 +358,9 @@ export function UserManager({
                           {user.email ?? "this user"}
                         </span>
                         ? They lose access immediately, are removed from talk
-                        rosters, and their poll votes are deleted. Talks they
+                        rosters, and their poll and quiz votes are deleted. Text
+                        answers are kept in place but replaced with a removal
+                        notice, so published rankings do not change. Talks they
                         created stay in the library, without an owner. This
                         cannot be undone.
                       </p>
