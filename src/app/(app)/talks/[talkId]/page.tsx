@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { DeleteTalkButton } from "@/components/DeleteTalkButton";
+import { LiveActivityRefresh } from "@/components/LiveActivityRefresh";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { loadTalkAccess } from "@/lib/membership";
 import {
@@ -67,6 +68,7 @@ async function TalkContent({
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
+      <LiveActivityRefresh />
       <div className="mb-2">
         <h1 className="font-display text-ink text-2xl">{talk.name}</h1>
         {talk.heldAt ? (
