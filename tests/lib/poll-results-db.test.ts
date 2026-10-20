@@ -132,19 +132,46 @@ describe("loadPollResults", () => {
     await expect(loadPollResults(pollId, viewer, { db })).resolves.toBeNull();
   });
 
-  test("serves a cached payload for the TTL, then reloads it", async () => {
-    const { pglite, db, pollId, viewer, access } = await setupPoll(false);
+  test("caches counts for the TTL and reloads after clearing", async () => {
+    const { pglite, db, pollId, optionIds, viewer, access } =
+      await setupPoll(false);
     const first = await loadPollResults(pollId, viewer, { db, access });
     expect(first?.total).toBe(1);
 
-    await pglite.query("delete from public.activities where id = $1", [pollId]);
+    const secondVoter = await makeUser(pglite, "voter2@example.com");
+    await pglite.query(
+      `insert into public.poll_votes (poll_id, user_id, option_id, voter_email)
+       values ($1, $2, $3, $4)`,
+      [pollId, secondVoter.id, optionIds[0], secondVoter.email],
+    );
 
     const cached = await loadPollResults(pollId, viewer, { db, access });
     expect(cached?.total).toBe(1);
 
     clearPollResultsCache();
+    const fresh = await loadPollResults(pollId, viewer, { db, access });
+    expect(fresh?.total).toBe(2);
+  });
+
+  test("does not serve a deleted poll from cache", async () => {
+    const { pglite, db, pollId, viewer, access } = await setupPoll(false);
+    await loadPollResults(pollId, viewer, { db, access });
+
+    await pglite.query("delete from public.activities where id = $1", [pollId]);
+
     await expect(
       loadPollResults(pollId, viewer, { db, access }),
     ).resolves.toBeNull();
+  });
+
+  test("reads the poll status fresh even when counts are cached", async () => {
+    const { pglite, db, pollId, viewer, access } = await setupPoll(false);
+    const first = await loadPollResults(pollId, viewer, { db, access });
+    expect(first?.poll.status).toBe("active");
+
+    await setStatus(pglite, pollId, "closed");
+
+    const second = await loadPollResults(pollId, viewer, { db, access });
+    expect(second?.poll.status).toBe("closed");
   });
 });

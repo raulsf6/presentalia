@@ -35,30 +35,29 @@ export type PollResultsSource = {
 const POLL_RESULTS_CACHE_TTL_MS = 2_000;
 const POLL_RESULTS_CACHE_LIMIT = 200;
 
-type CachedPollResults = {
-  talkId: string;
-  payload: PollResultsPayload;
+type CachedPollData = {
+  data: Pick<PollResultsSource, "options" | "counts" | "votes">;
   expiresAt: number;
 };
 
 declare global {
-  var __presentaliaPollResults: Map<string, CachedPollResults> | undefined;
+  var __presentaliaPollResults: Map<string, CachedPollData> | undefined;
 }
 
 /**
  * Live results are polled by every viewer every five seconds. A very short
- * in-instance cache absorbs concurrent reads without showing results that are
- * more than two seconds old. Authorization is still checked before a cached
- * payload is returned.
+ * in-instance cache absorbs concurrent reads of the option/count/vote data.
+ * The poll row itself is always read fresh so launching or closing a poll is
+ * reflected immediately; only vote totals may trail by up to two seconds.
  */
-function pollResultsCache(): Map<string, CachedPollResults> {
+function pollResultsCache(): Map<string, CachedPollData> {
   if (!globalThis.__presentaliaPollResults) {
     globalThis.__presentaliaPollResults = new Map();
   }
   return globalThis.__presentaliaPollResults;
 }
 
-function readCachedPollResults(pollId: string): CachedPollResults | null {
+function readCachedPollData(pollId: string): CachedPollData | null {
   const cache = pollResultsCache();
   const entry = cache.get(pollId);
   if (!entry) {
@@ -71,15 +70,13 @@ function readCachedPollResults(pollId: string): CachedPollResults | null {
   return entry;
 }
 
-function writeCachedPollResults(
+function writeCachedPollData(
   pollId: string,
-  talkId: string,
-  payload: PollResultsPayload,
+  data: Pick<PollResultsSource, "options" | "counts" | "votes">,
 ): void {
   const cache = pollResultsCache();
   cache.set(pollId, {
-    talkId,
-    payload,
+    data,
     expiresAt: Date.now() + POLL_RESULTS_CACHE_TTL_MS,
   });
   if (cache.size > POLL_RESULTS_CACHE_LIMIT) {
@@ -137,15 +134,8 @@ export async function loadPollResults(
   viewer: SessionUser,
   { db = getDb(), access: providedAccess }: LoadPollResultsOptions = {},
 ): Promise<PollResultsPayload | null> {
-  const cached = readCachedPollResults(pollId);
-  if (cached) {
-    const access =
-      providedAccess?.talk.id === cached.talkId
-        ? providedAccess
-        : await getTalkAccessForUser(viewer, cached.talkId, db);
-    return access ? cached.payload : null;
-  }
-
+  // Always read the poll itself. Status changes (launch/close) must be
+  // immediate even if the option/count data is still cached.
   const pollRows = await db
     .select({
       id: activities.id,
@@ -164,11 +154,18 @@ export async function loadPollResults(
     return null;
   }
 
-  // Access and the option/count rows are independent; fetch them together.
   const accessPromise =
     providedAccess?.talk.id === poll.talkId
       ? Promise.resolve(providedAccess)
       : getTalkAccessForUser(viewer, poll.talkId, db);
+
+  const cached = readCachedPollData(pollId);
+  if (cached) {
+    const access = await accessPromise;
+    return access ? buildPollResultsPayload({ poll, ...cached.data }) : null;
+  }
+
+  // Access and the option/count rows are independent; fetch them together.
   const optionRowsPromise = db
     .select({
       id: pollOptions.id,
@@ -201,21 +198,14 @@ export async function loadPollResults(
 
   // Never query the votes table in anonymous mode: it contains email
   // identities even though the result display omits them.
-  const voteRows = poll.resultsIdentifiable
+  const votes = poll.resultsIdentifiable
     ? await db
         .select({ optionId: pollVotes.optionId, email: pollVotes.voterEmail })
         .from(pollVotes)
         .where(eq(pollVotes.pollId, pollId))
     : undefined;
 
-  const payload = buildPollResultsPayload({
-    poll,
-    options,
-    counts,
-    votes: voteRows,
-  });
-  if (payload && payload.poll.status !== "draft") {
-    writeCachedPollResults(pollId, poll.talkId, payload);
-  }
-  return payload;
+  const data = { options, counts, votes };
+  writeCachedPollData(pollId, data);
+  return buildPollResultsPayload({ poll, ...data });
 }

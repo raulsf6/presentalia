@@ -70,7 +70,11 @@ async function PollResultsContent({
           <PollAdminControls pollId={activityId} status="active" />
         </div>
       ) : null}
-      <LiveResults initial={initial} projector={projector} />
+      <LiveResults
+        key={`${initial.poll.id}-${initial.poll.status}`}
+        initial={initial}
+        projector={projector}
+      />
     </main>
   );
 }
