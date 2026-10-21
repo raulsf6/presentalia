@@ -12,10 +12,13 @@ export function useLiveResults<T>({
   initial,
   url,
   isActive,
+  intervalMs = 5_000,
 }: {
   initial: T;
   url: string;
   isActive: (payload: T) => boolean;
+  /** Polling cadence while visible; also the base for failure backoff. */
+  intervalMs?: number;
 }) {
   const [payload, setPayload] = useState<T | null>(initial);
   const [accessRevoked, setAccessRevoked] = useState(false);
@@ -56,7 +59,7 @@ export function useLiveResults<T>({
             return;
           }
           failures = Math.min(failures + 1, 3);
-          schedule(Math.min(5_000 * 2 ** failures, 30_000));
+          schedule(Math.min(intervalMs * 2 ** failures, 30_000));
           return;
         }
 
@@ -66,11 +69,11 @@ export function useLiveResults<T>({
           setAccessRevoked(false);
           failures = 0;
         }
-        schedule(5_000);
+        schedule(intervalMs);
       } catch {
         // Keep the last known result and retry with backoff.
         failures = Math.min(failures + 1, 3);
-        schedule(Math.min(5_000 * 2 ** failures, 30_000));
+        schedule(Math.min(intervalMs * 2 ** failures, 30_000));
       } finally {
         refreshing = false;
       }
@@ -85,7 +88,7 @@ export function useLiveResults<T>({
       void refresh();
     }
 
-    schedule(5_000);
+    schedule(intervalMs);
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
@@ -95,7 +98,7 @@ export function useLiveResults<T>({
       }
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [active, url]);
+  }, [active, url, intervalMs]);
 
   return { payload, accessRevoked };
 }

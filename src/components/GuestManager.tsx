@@ -30,6 +30,7 @@ export function GuestManager({
     initial: { guests: initialGuests },
     url: `/api/talks/${talkId}/guests`,
     isActive: () => true,
+    intervalMs: 2_000,
   });
 
   const guests = (payload?.guests ?? initialGuests).filter(
