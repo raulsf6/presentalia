@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { SlidesManager } from "@/components/SlidesManager";
-import { loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/membership";
 
 export default function SlidesPage({
   params,
@@ -25,7 +25,7 @@ async function SlidesContent({
   if (!access) {
     notFound();
   }
-  if (access.access === "member") {
+  if (!isManager(access)) {
     notFound();
   }
 

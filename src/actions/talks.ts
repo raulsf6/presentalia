@@ -38,9 +38,17 @@ export async function createTalkAction(
       return { ok: false, error: "That date could not be read." };
     }
   }
+  const isPublic = formData.get("isPublic") !== null;
   const [talk] = await getDb()
     .insert(talks)
-    .values({ name, description, heldAt, createdBy: presenter.user.id })
+    .values({
+      name,
+      description,
+      heldAt,
+      createdBy: presenter.user.id,
+      isPublic,
+      anonymousJoinOpen: true,
+    })
     .returning();
   updateTag("talks");
   revalidatePath("/talks");

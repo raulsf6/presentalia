@@ -25,7 +25,7 @@ describe("buildPollResultsPayload", () => {
         { optionId: "option-a", votes: 1 },
         { optionId: "option-b", votes: 1 },
       ],
-      votes: [{ optionId: "option-a", email: "private@example.com" }],
+      votes: [{ optionId: "option-a", name: "private@example.com" }],
     });
 
     expect(payload?.total).toBe(2);
@@ -38,11 +38,11 @@ describe("buildPollResultsPayload", () => {
       poll: { ...poll, resultsIdentifiable: true },
       options,
       counts: [{ optionId: "option-a", votes: 1 }],
-      votes: [{ optionId: "option-a", email: "voter@example.com" }],
+      votes: [{ optionId: "option-a", name: "voter@example.com" }],
     });
 
     expect(payload?.voters).toEqual([
-      { optionId: "option-a", email: "voter@example.com" },
+      { optionId: "option-a", name: "voter@example.com" },
     ]);
   });
 

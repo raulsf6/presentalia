@@ -88,7 +88,7 @@ export function PollForm({ talkId }: { talkId: string }) {
         />
         <span className="flex flex-col gap-0.5">
           <span className="text-ink text-sm font-bold">
-            Show voter email addresses in results
+            Show voter names in results
           </span>
           <span className="text-muted text-xs font-semibold">
             Off by default. This choice cannot be changed after you launch the

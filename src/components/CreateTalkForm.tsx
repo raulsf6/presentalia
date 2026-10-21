@@ -49,6 +49,22 @@ export function CreateTalkForm() {
           className="input"
         />
       </div>
+      <label className="border-ink bg-cream flex cursor-pointer items-start gap-3 rounded-xl border-2 px-3.5 py-3">
+        <input
+          type="checkbox"
+          name="isPublic"
+          className="accent-coral mt-0.5 size-4"
+        />
+        <span className="flex flex-col gap-0.5">
+          <span className="text-ink text-sm font-bold">
+            Public talk (anonymous joining)
+          </span>
+          <span className="text-muted text-xs font-semibold">
+            Anyone with the join QR can enter a username and take part. You can
+            stop new joins at any time from the talk&apos;s access page.
+          </span>
+        </span>
+      </label>
       {state && !state.ok && state.error ? (
         <p role="alert" className="text-red text-sm font-bold">
           {state.error}

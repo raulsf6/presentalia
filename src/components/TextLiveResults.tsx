@@ -134,13 +134,15 @@ export function TextLiveResults({
                     <div className="flex flex-col gap-2">
                       <p
                         className={`text-ink font-bold ${
-                          large ? "text-2xl md:text-3xl" : "text-base md:text-lg"
+                          large
+                            ? "text-2xl md:text-3xl"
+                            : "text-base md:text-lg"
                         }`}
                       >
                         {row.body}
-                        {row.email ? (
+                        {row.name ? (
                           <span className="text-muted ml-2 text-xs font-semibold">
-                            {row.email}
+                            {row.name}
                           </span>
                         ) : null}
                       </p>
@@ -171,9 +173,9 @@ export function TextLiveResults({
                     }`}
                   >
                     {row.body}
-                    {row.email ? (
+                    {row.name ? (
                       <span className="text-muted ml-2 text-xs font-semibold">
-                        {row.email}
+                        {row.name}
                       </span>
                     ) : null}
                   </p>
@@ -193,7 +195,9 @@ export function TextLiveResults({
 
           {dropped && dropped.length > 0 ? (
             <section className="card flex flex-col gap-3 p-4">
-              <h2 className="section-label">Omitted answers (presenter only)</h2>
+              <h2 className="section-label">
+                Omitted answers (presenter only)
+              </h2>
               <ul className="flex flex-col gap-2">
                 {dropped.map((row) => (
                   <li key={row.answerId} className="text-sm">
@@ -210,8 +214,8 @@ export function TextLiveResults({
           {activity.resultsIdentifiable ? (
             <p className="text-muted text-xs font-semibold">
               {projector
-                ? "Results are identifiable. Email addresses are hidden on the projector."
-                : "Results are identifiable. Attendee email addresses appear next to their answers."}
+                ? "Results are identifiable. Names are hidden on the projector."
+                : "Results are identifiable. Attendee names appear next to their answers."}
             </p>
           ) : (
             <p className="text-muted text-xs font-semibold">

@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { TextForm } from "@/components/TextForm";
-import { loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/membership";
 
 export default function NewTextActivityPage({
   params,
@@ -26,7 +26,7 @@ async function NewTextActivityContent({
   if (!access) {
     notFound();
   }
-  if (access.access === "member") {
+  if (!isManager(access)) {
     notFound();
   }
 

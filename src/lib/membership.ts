@@ -5,13 +5,30 @@ import { cacheLife, cacheTag } from "next/cache";
 import { getDb, type Db, type DbTx } from "@/db";
 import { appUsers, talkRoster, talks, type TalkRow } from "@/db/schema";
 import { getSessionUser, type SessionUser } from "@/lib/auth";
+import { readGuestSession, type GuestSession } from "@/lib/guest-session";
 import type { AppRole } from "@/lib/roles";
 
-export type TalkAccess = {
+export type ManagerTalkAccess = {
   user: SessionUser;
   talk: TalkRow;
-  access: "admin" | "presenter" | "member";
+  access: "admin" | "presenter";
 };
+
+export type MemberTalkAccess = {
+  user: SessionUser;
+  talk: TalkRow;
+  access: "member";
+};
+
+export type UserTalkAccess = ManagerTalkAccess | MemberTalkAccess;
+
+export type GuestTalkAccess = {
+  guest: GuestSession;
+  talk: TalkRow;
+  access: "guest";
+};
+
+export type TalkAccess = UserTalkAccess | GuestTalkAccess;
 
 export type TalkManagerGuard =
   | {
@@ -21,6 +38,25 @@ export type TalkManagerGuard =
       access: "admin" | "presenter";
     }
   | { ok: false; error: string };
+
+/** True for the talk's owner or an admin; false for members and guests. */
+export function isManager(access: TalkAccess): access is ManagerTalkAccess {
+  return access.access === "admin" || access.access === "presenter";
+}
+
+/** True for both rostered members and anonymous guests. */
+export function isAttendee(access: TalkAccess): boolean {
+  return access.access === "member" || access.access === "guest";
+}
+
+/** The identity columns to use when reading or writing an attendee's row. */
+export function attendeeVoteKey(
+  access: TalkAccess,
+): { userId: string } | { guestId: string } {
+  return access.access === "guest"
+    ? { guestId: access.guest.id }
+    : { userId: access.user.id };
+}
 
 export type TalkListRow = TalkRow & {
   ownerEmail: string | null;
@@ -55,11 +91,35 @@ export async function getTalkAccessForUser(
   return row.memberUserId ? { user, talk, access: "member" } : null;
 }
 
+/** Checks guest access against the talk's public flag. */
+export async function getTalkAccessForGuest(
+  talkId: string,
+  guest: GuestSession,
+  db: Db = getDb(),
+): Promise<GuestTalkAccess | null> {
+  const [talk] = await db
+    .select()
+    .from(talks)
+    .where(eq(talks.id, talkId))
+    .limit(1);
+  if (!talk || !talk.isPublic || guest.talkId !== talk.id) {
+    return null;
+  }
+  return { guest, talk, access: "guest" };
+}
+
 /** Request-level talk access. Null intentionally hides missing vs inaccessible talks. */
 export const loadTalkAccess = cache(
-  async (talkId: string): Promise<TalkAccess | null> => {
+  async (talkId: string, db: Db = getDb()): Promise<TalkAccess | null> => {
     const user = await getSessionUser();
-    return user ? getTalkAccessForUser(user, talkId) : null;
+    if (user) {
+      const access = await getTalkAccessForUser(user, talkId, db);
+      if (access) {
+        return access;
+      }
+    }
+    const guest = await readGuestSession(talkId, db);
+    return guest ? getTalkAccessForGuest(talkId, guest, db) : null;
   },
 );
 
@@ -105,6 +165,23 @@ export async function listAccessibleTalks(
   return rows.map(({ talk, ownerEmail }) => ({ ...talk, ownerEmail }));
 }
 
+export type TalkAttendee =
+  | { kind: "member"; user: SessionUser }
+  | { kind: "guest"; guest: GuestSession };
+
+/** The identity allowed to vote or answer in a talk: a member or a guest. */
+export async function resolveTalkAttendee(
+  talkId: string,
+  tx?: DbTx,
+): Promise<TalkAttendee | null> {
+  const user = await getSessionUser();
+  if (user && (await isRosteredAttendee(user, talkId, tx))) {
+    return { kind: "member", user };
+  }
+  const guest = await readGuestSession(talkId, tx ?? getDb());
+  return guest ? { kind: "guest", guest } : null;
+}
+
 /** Roster membership is required for attendee actions such as voting. */
 export async function isRosteredAttendee(
   user: SessionUser,
@@ -128,7 +205,7 @@ export async function requireTalkManager(
   if (!access) {
     return { ok: false, error: "You don't have access to this talk." };
   }
-  if (access.access === "member") {
+  if (!isManager(access)) {
     return { ok: false, error: "You can't manage this talk." };
   }
   return {

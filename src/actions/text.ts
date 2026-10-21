@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, eq, isNotNull, lt } from "drizzle-orm";
+import { and, asc, eq, isNotNull, lt, or } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -18,9 +18,8 @@ import {
   canRank,
   type ActivityStatus,
 } from "@/lib/activities";
-import { getSessionUser } from "@/lib/auth";
 import { isUniqueViolation } from "@/lib/db-errors";
-import { isRosteredAttendee, requireTalkManager } from "@/lib/membership";
+import { requireTalkManager, resolveTalkAttendee } from "@/lib/membership";
 import { logServerError } from "@/lib/server-log";
 import {
   RANKED_ANSWER_LIMIT,
@@ -92,17 +91,26 @@ export async function submitTextAnswerAction(
   activityId: string,
   rawBody: string,
 ): Promise<TextAnswerResult> {
-  const user = await getSessionUser();
-  if (!user) {
-    return { ok: false, error: "You need to sign in to answer." };
-  }
-
   const validation = validateTextAnswer(rawBody);
   if (!validation.ok) {
     return validation;
   }
 
   const db = getDb();
+  const [activityRef] = await db
+    .select({ talkId: activities.talkId })
+    .from(activities)
+    .where(eq(activities.id, activityId))
+    .limit(1);
+  if (!activityRef) {
+    return { ok: false, error: "You don't have access to this activity." };
+  }
+
+  const attendee = await resolveTalkAttendee(activityRef.talkId);
+  if (!attendee) {
+    return { ok: false, error: "You don't have access to this activity." };
+  }
+
   let outcome: { ok: true; talkId: string } | { ok: false; error: string };
   try {
     outcome = await db.transaction(async (tx) => {
@@ -115,9 +123,6 @@ export async function submitTextAnswerAction(
       if (!activity) {
         return { ok: false, error: "You don't have access to this activity." };
       }
-      if (!(await isRosteredAttendee(user, activity.talkId, tx))) {
-        return { ok: false, error: "You don't have access to this activity." };
-      }
       if (!canAcceptAnswers(activity.status as ActivityStatus)) {
         return {
           ok: false,
@@ -127,7 +132,8 @@ export async function submitTextAnswerAction(
 
       await tx.insert(textAnswers).values({
         activityId,
-        userId: user.id,
+        userId: attendee.kind === "member" ? attendee.user.id : null,
+        guestId: attendee.kind === "guest" ? attendee.guest.id : null,
         body: validation.body,
       });
       return { ok: true, talkId: activity.talkId };
@@ -220,7 +226,7 @@ export async function rankTextActivityAction(
         .where(
           and(
             eq(textAnswers.activityId, activityId),
-            isNotNull(textAnswers.userId),
+            or(isNotNull(textAnswers.userId), isNotNull(textAnswers.guestId)),
           ),
         )
         .orderBy(asc(textAnswers.createdAt), asc(textAnswers.id));
@@ -287,8 +293,7 @@ export async function rankTextActivityAction(
       generateRankingWithGateway,
     );
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Ranking failed.";
+    const message = error instanceof Error ? error.message : "Ranking failed.";
     await db
       .update(textRankingRuns)
       .set({ status: "failed", finishedAt: new Date(), error: message })

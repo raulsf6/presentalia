@@ -7,9 +7,8 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { activities, quizOptions, quizVotes, quizzes } from "@/db/schema";
 import { canVote, type ActivityStatus } from "@/lib/activities";
-import { getSessionUser } from "@/lib/auth";
 import { isUniqueViolation } from "@/lib/db-errors";
-import { isRosteredAttendee, requireTalkManager } from "@/lib/membership";
+import { requireTalkManager, resolveTalkAttendee } from "@/lib/membership";
 import { clearQuizResultsCache } from "@/lib/quiz-results";
 import { validateQuizInput } from "@/lib/quizzes";
 
@@ -74,12 +73,22 @@ export async function submitQuizVoteAction(
   quizId: string,
   optionId: string,
 ): Promise<QuizVoteResult> {
-  const user = await getSessionUser();
-  if (!user) {
-    return { ok: false, error: "You need to sign in to vote." };
+  const db = getDb();
+  const [quizRef] = await db
+    .select({ talkId: activities.talkId })
+    .from(activities)
+    .innerJoin(quizzes, eq(quizzes.activityId, activities.id))
+    .where(eq(activities.id, quizId))
+    .limit(1);
+  if (!quizRef) {
+    return { ok: false, error: "You don't have access to this quiz." };
   }
 
-  const db = getDb();
+  const attendee = await resolveTalkAttendee(quizRef.talkId);
+  if (!attendee) {
+    return { ok: false, error: "You don't have access to this quiz." };
+  }
+
   let outcome: { ok: true; talkId: string } | { ok: false; error: string };
   try {
     outcome = await db.transaction(async (tx) => {
@@ -91,9 +100,6 @@ export async function submitQuizVoteAction(
         .limit(1)
         .for("share", { of: activities });
       if (!quiz) {
-        return { ok: false, error: "You don't have access to this quiz." };
-      }
-      if (!(await isRosteredAttendee(user, quiz.talkId, tx))) {
         return { ok: false, error: "You don't have access to this quiz." };
       }
       if (!canVote(quiz.status as ActivityStatus)) {
@@ -114,7 +120,8 @@ export async function submitQuizVoteAction(
 
       await tx.insert(quizVotes).values({
         quizId,
-        userId: user.id,
+        userId: attendee.kind === "member" ? attendee.user.id : null,
+        guestId: attendee.kind === "guest" ? attendee.guest.id : null,
         optionId,
       });
       return { ok: true, talkId: quiz.talkId };

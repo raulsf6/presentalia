@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/membership";
 import { loadTalkActivities } from "@/lib/talk-activities";
 
 const sections = [
@@ -39,7 +39,7 @@ async function ActivitiesContent({
   if (!access) {
     notFound();
   }
-  if (access.access === "member") {
+  if (!isManager(access)) {
     notFound();
   }
 

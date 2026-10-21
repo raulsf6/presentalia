@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/pglite";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Db } from "@/db";
 import * as schema from "@/db/schema";
@@ -15,14 +15,6 @@ import {
   setStatus,
 } from "../db/harness";
 
-const mocks = vi.hoisted(() => ({
-  getTalkAccessForUser: vi.fn(),
-}));
-
-vi.mock("@/lib/membership", () => ({
-  getTalkAccessForUser: mocks.getTalkAccessForUser,
-}));
-
 type Setup = {
   pglite: Awaited<ReturnType<typeof createDb>>;
   db: Db;
@@ -30,7 +22,6 @@ type Setup = {
   pollId: string;
   optionIds: string[];
   voter: { id: string; email: string };
-  viewer: SessionUser;
   access: TalkAccess;
 };
 
@@ -71,21 +62,19 @@ async function setupPoll(identifiable = false): Promise<Setup> {
     pollId: poll.pollId,
     optionIds: poll.optionIds,
     voter,
-    viewer,
     access,
   };
 }
 
 beforeEach(() => {
   clearPollResultsCache();
-  vi.clearAllMocks();
 });
 
 describe("loadPollResults", () => {
   test("returns aggregated counts without voter emails for anonymous polls", async () => {
-    const { db, pollId, optionIds, viewer, access } = await setupPoll(false);
+    const { db, pollId, optionIds, access } = await setupPoll(false);
 
-    const payload = await loadPollResults(pollId, viewer, { db, access });
+    const payload = await loadPollResults(pollId, access, { db });
 
     expect(payload?.total).toBe(1);
     expect(payload?.voters).toBeNull();
@@ -106,36 +95,43 @@ describe("loadPollResults", () => {
   });
 
   test("returns voter emails only for identifiable polls", async () => {
-    const { db, pollId, optionIds, voter, viewer, access } =
-      await setupPoll(true);
+    const { db, pollId, optionIds, voter, access } = await setupPoll(true);
 
-    const payload = await loadPollResults(pollId, viewer, { db, access });
+    const payload = await loadPollResults(pollId, access, { db });
 
     expect(payload?.voters).toEqual([
-      { optionId: optionIds[0], email: voter.email },
+      { optionId: optionIds[0], name: voter.email },
     ]);
   });
 
-  test("returns null when the viewer cannot access the poll's talk", async () => {
-    const { db, pollId, viewer } = await setupPoll(false);
-    mocks.getTalkAccessForUser.mockResolvedValue(null);
+  test("returns null when the access belongs to another talk", async () => {
+    const { db, pollId, access } = await setupPoll(false);
+    const otherAccess: TalkAccess = {
+      ...access,
+      talk: { id: crypto.randomUUID() } as TalkRow,
+    };
 
-    await expect(loadPollResults(pollId, viewer, { db })).resolves.toBeNull();
+    await expect(
+      loadPollResults(pollId, otherAccess, { db }),
+    ).resolves.toBeNull();
   });
 
   test("checks access before returning a cached payload", async () => {
-    const { db, pollId, viewer, access } = await setupPoll(false);
-    await loadPollResults(pollId, viewer, { db, access });
+    const { db, pollId, access } = await setupPoll(false);
+    await loadPollResults(pollId, access, { db });
+    const otherAccess: TalkAccess = {
+      ...access,
+      talk: { id: crypto.randomUUID() } as TalkRow,
+    };
 
-    mocks.getTalkAccessForUser.mockResolvedValue(null);
-
-    await expect(loadPollResults(pollId, viewer, { db })).resolves.toBeNull();
+    await expect(
+      loadPollResults(pollId, otherAccess, { db }),
+    ).resolves.toBeNull();
   });
 
   test("caches counts for the TTL and reloads after clearing", async () => {
-    const { pglite, db, pollId, optionIds, viewer, access } =
-      await setupPoll(false);
-    const first = await loadPollResults(pollId, viewer, { db, access });
+    const { pglite, db, pollId, optionIds, access } = await setupPoll(false);
+    const first = await loadPollResults(pollId, access, { db });
     expect(first?.total).toBe(1);
 
     const secondVoter = await makeUser(pglite, "voter2@example.com");
@@ -145,33 +141,31 @@ describe("loadPollResults", () => {
       [pollId, secondVoter.id, optionIds[0]],
     );
 
-    const cached = await loadPollResults(pollId, viewer, { db, access });
+    const cached = await loadPollResults(pollId, access, { db });
     expect(cached?.total).toBe(1);
 
     clearPollResultsCache();
-    const fresh = await loadPollResults(pollId, viewer, { db, access });
+    const fresh = await loadPollResults(pollId, access, { db });
     expect(fresh?.total).toBe(2);
   });
 
   test("does not serve a deleted poll from cache", async () => {
-    const { pglite, db, pollId, viewer, access } = await setupPoll(false);
-    await loadPollResults(pollId, viewer, { db, access });
+    const { pglite, db, pollId, access } = await setupPoll(false);
+    await loadPollResults(pollId, access, { db });
 
     await pglite.query("delete from public.activities where id = $1", [pollId]);
 
-    await expect(
-      loadPollResults(pollId, viewer, { db, access }),
-    ).resolves.toBeNull();
+    await expect(loadPollResults(pollId, access, { db })).resolves.toBeNull();
   });
 
   test("reads the poll status fresh even when counts are cached", async () => {
-    const { pglite, db, pollId, viewer, access } = await setupPoll(false);
-    const first = await loadPollResults(pollId, viewer, { db, access });
+    const { pglite, db, pollId, access } = await setupPoll(false);
+    const first = await loadPollResults(pollId, access, { db });
     expect(first?.poll.status).toBe("active");
 
     await setStatus(pglite, pollId, "closed");
 
-    const second = await loadPollResults(pollId, viewer, { db, access });
+    const second = await loadPollResults(pollId, access, { db });
     expect(second?.poll.status).toBe("closed");
   });
 });

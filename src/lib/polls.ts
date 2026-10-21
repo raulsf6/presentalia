@@ -20,7 +20,7 @@ export type PollResultsPayload = {
   };
   rows: PollResultsRow[];
   total: number;
-  voters: { optionId: string; email: string }[] | null;
+  voters: { optionId: string; name: string }[] | null;
 };
 
 const QUESTION_MAX_LENGTH = 500;

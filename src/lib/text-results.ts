@@ -4,20 +4,20 @@ import { getDb, type Db } from "@/db";
 import {
   activities,
   appUsers,
+  talkGuests,
   textActivities,
   textAnswers,
   textRankingRuns,
   textRankings,
 } from "@/db/schema";
 import type { ActivityStatus } from "@/lib/activities";
-import type { SessionUser } from "@/lib/auth";
-import { getTalkAccessForUser, type TalkAccess } from "@/lib/membership";
+import { attendeeVoteKey, type TalkAccess } from "@/lib/membership";
 export type TextResultsMode = "waiting" | "ranking" | "ranked" | "unranked";
 
 export type TextResultsAnswer = {
   id: string;
   body: string;
-  email: string | null;
+  name: string | null;
   createdAt: Date;
 };
 
@@ -50,7 +50,7 @@ export type TextResultsSource = {
   answers: TextResultsAnswer[];
   run: TextResultsRun;
   rankings: TextResultsRanking[];
-  viewer: { isMember: boolean; hasAnswered: boolean };
+  viewer: { isAttendee: boolean; hasAnswered: boolean };
   projector: boolean;
 };
 
@@ -59,7 +59,7 @@ export type TextResultsRow = {
   rank: number | null;
   body: string;
   rationale: string | null;
-  email: string | null;
+  name: string | null;
 };
 
 export type TextResultsPayload = {
@@ -102,7 +102,7 @@ export function buildTextResultsPayload(
 ): TextResultsPayload {
   const { activity, viewer, projector } = source;
   const closed = activity.status === "closed";
-  const isManager = !viewer.isMember;
+  const isManager = !viewer.isAttendee;
   const publishedRun =
     closed && source.run?.status === "succeeded" ? source.run : null;
 
@@ -114,10 +114,9 @@ export function buildTextResultsPayload(
       ? "ranking"
       : "waiting";
 
-  const showEmails =
-    closed && activity.resultsIdentifiable && !projector;
-  const emailFor = (answer: TextResultsAnswer): string | null =>
-    showEmails ? answer.email : null;
+  const showNames = closed && activity.resultsIdentifiable && !projector;
+  const nameFor = (answer: TextResultsAnswer): string | null =>
+    showNames ? answer.name : null;
 
   const byId = new Map(source.answers.map((answer) => [answer.id, answer]));
   let rows: TextResultsRow[];
@@ -135,12 +134,15 @@ export function buildTextResultsPayload(
                 rank: ranking.rank,
                 body: answer.body,
                 rationale: ranking.rationale,
-                email: emailFor(answer),
+                name: nameFor(answer),
               },
             ]
           : [];
       });
-  } else if (closed || (activity.status === "locked" && isManager && !projector)) {
+  } else if (
+    closed ||
+    (activity.status === "locked" && isManager && !projector)
+  ) {
     rows = [...source.answers]
       .sort(
         (left, right) =>
@@ -152,7 +154,7 @@ export function buildTextResultsPayload(
         rank: null,
         body: answer.body,
         rationale: null,
-        email: emailFor(answer),
+        name: nameFor(answer),
       }));
   } else {
     rows = [];
@@ -187,9 +189,7 @@ export function buildTextResultsPayload(
     },
     mode,
     needsVote:
-      viewer.isMember &&
-      activity.status === "active" &&
-      !viewer.hasAnswered,
+      viewer.isAttendee && activity.status === "active" && !viewer.hasAnswered,
     run:
       isManager && !projector && activity.status !== "draft" && source.run
         ? {
@@ -212,21 +212,15 @@ export function buildTextResultsPayload(
 
 export type LoadTextResultsOptions = {
   db?: Db;
-  /** Pass the request's already-loaded talk access to avoid re-checking it. */
-  access?: TalkAccess;
-  /** Projector views never receive emails or manager metadata. */
+  /** Projector views never receive names or manager metadata. */
   projector?: boolean;
 };
 
-/** Loads results through the owner connection after checking talk access. */
+/** Loads results after the caller has authorized access to the activity's talk. */
 export async function loadTextResults(
   activityId: string,
-  viewer: SessionUser,
-  {
-    db = getDb(),
-    access: providedAccess,
-    projector = false,
-  }: LoadTextResultsOptions = {},
+  access: TalkAccess,
+  { db = getDb(), projector = false }: LoadTextResultsOptions = {},
 ): Promise<TextResultsPayload | null> {
   const [activity] = await db
     .select({
@@ -239,21 +233,10 @@ export async function loadTextResults(
       resultsIdentifiable: textActivities.resultsIdentifiable,
     })
     .from(activities)
-    .innerJoin(
-      textActivities,
-      eq(textActivities.activityId, activities.id),
-    )
+    .innerJoin(textActivities, eq(textActivities.activityId, activities.id))
     .where(eq(activities.id, activityId))
     .limit(1);
-  if (!activity) {
-    return null;
-  }
-
-  const access =
-    providedAccess?.talk.id === activity.talkId
-      ? providedAccess
-      : await getTalkAccessForUser(viewer, activity.talkId, db);
-  if (!access) {
+  if (!activity || access.talk.id !== activity.talkId) {
     return null;
   }
 
@@ -263,11 +246,14 @@ export async function loadTextResults(
         id: textAnswers.id,
         body: textAnswers.body,
         userId: textAnswers.userId,
+        guestId: textAnswers.guestId,
         email: appUsers.email,
+        guestName: talkGuests.username,
         createdAt: textAnswers.createdAt,
       })
       .from(textAnswers)
       .leftJoin(appUsers, eq(appUsers.id, textAnswers.userId))
+      .leftJoin(talkGuests, eq(talkGuests.id, textAnswers.guestId))
       .where(eq(textAnswers.activityId, activityId))
       .orderBy(asc(textAnswers.createdAt), asc(textAnswers.id)),
     db
@@ -289,8 +275,7 @@ export async function loadTextResults(
   const published = runRows.find((run) => run.publishedAt !== null) ?? null;
   // A closed activity publishes exactly one run; a live one shows its latest
   // attempt so the presenter can see a failure.
-  const run =
-    activity.status === "closed" ? published : (runRows[0] ?? null);
+  const run = activity.status === "closed" ? published : (runRows[0] ?? null);
 
   const rankingRows =
     run && run.status === "succeeded"
@@ -318,7 +303,7 @@ export async function loadTextResults(
     answers: answerRows.map((answer) => ({
       id: answer.id,
       body: answer.body,
-      email: answer.email,
+      name: answer.email ?? answer.guestName,
       createdAt: answer.createdAt,
     })),
     run: run
@@ -333,8 +318,13 @@ export async function loadTextResults(
       : null,
     rankings: rankingRows,
     viewer: {
-      isMember: access.access === "member",
-      hasAnswered: answerRows.some((answer) => answer.userId === viewer.id),
+      isAttendee: access.access === "member" || access.access === "guest",
+      hasAnswered: answerRows.some((answer) => {
+        const key = attendeeVoteKey(access);
+        return "userId" in key
+          ? answer.userId === key.userId
+          : answer.guestId === key.guestId;
+      }),
     },
     projector,
   });

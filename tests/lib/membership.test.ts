@@ -5,19 +5,35 @@ import type { Db } from "@/db";
 import * as schema from "@/db/schema";
 import type { SessionUser } from "@/lib/auth";
 import {
+  attendeeVoteKey,
+  getTalkAccessForGuest,
   getTalkAccessForUser,
+  isAttendee,
+  isManager,
   loadTalkAccess,
   requireTalkManager,
+  resolveTalkAttendee,
 } from "@/lib/membership";
-import { createDb, exec, makeUser, seedTalk } from "../db/harness";
+import {
+  createDb,
+  exec,
+  makeUser,
+  seedTalk,
+  type Db as TestDb,
+} from "../db/harness";
 
 const mocks = vi.hoisted(() => ({
   getSessionUser: vi.fn(),
+  readGuestSession: vi.fn(),
   db: null as unknown,
 }));
 
 vi.mock("@/lib/auth", () => ({
   getSessionUser: mocks.getSessionUser,
+}));
+
+vi.mock("@/lib/guest-session", () => ({
+  readGuestSession: mocks.readGuestSession,
 }));
 
 vi.mock("@/db", () => ({
@@ -26,6 +42,7 @@ vi.mock("@/db", () => ({
 
 type Setup = {
   db: Db;
+  pglite: TestDb;
   talkId: string;
   owner: { id: string; email: string };
   invited: { id: string; email: string };
@@ -57,7 +74,7 @@ async function setup(): Promise<Setup> {
     [talkId, invited.id],
   );
 
-  return { db, talkId, owner, invited, attendee, outsider };
+  return { db, pglite, talkId, owner, invited, attendee, outsider };
 }
 
 describe("getTalkAccessForUser", () => {
@@ -162,6 +179,109 @@ describe("loadTalkAccess", () => {
     mocks.getSessionUser.mockResolvedValue(null);
 
     await expect(loadTalkAccess(talkId)).resolves.toBeNull();
+  });
+});
+
+describe("guest access", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function guestSession(talkId: string) {
+    return { id: crypto.randomUUID(), talkId, username: "Sam" };
+  }
+
+  test("gives a guest access to a public talk only", async () => {
+    const { db, pglite, talkId } = await setup();
+    await exec(
+      pglite,
+      "update public.talks set is_public = true where id = $1",
+      [talkId],
+    );
+    const guest = guestSession(talkId);
+
+    await expect(
+      getTalkAccessForGuest(talkId, guest, db),
+    ).resolves.toMatchObject({
+      access: "guest",
+      talk: { id: talkId },
+      guest: { username: "Sam" },
+    });
+
+    await exec(
+      pglite,
+      "update public.talks set is_public = false where id = $1",
+      [talkId],
+    );
+    await expect(getTalkAccessForGuest(talkId, guest, db)).resolves.toBeNull();
+  });
+
+  test("loadTalkAccess falls back to a guest session when there is no user", async () => {
+    const { db, pglite, talkId } = await setup();
+    await exec(
+      pglite,
+      "update public.talks set is_public = true where id = $1",
+      [talkId],
+    );
+    mocks.getSessionUser.mockResolvedValue(null);
+    mocks.readGuestSession.mockResolvedValue(guestSession(talkId));
+
+    const access = await loadTalkAccess(talkId, db);
+
+    expect(access).toMatchObject({ access: "guest", talk: { id: talkId } });
+    expect(isAttendee(access!)).toBe(true);
+    expect(isManager(access!)).toBe(false);
+    expect(attendeeVoteKey(access!)).toEqual({
+      guestId: expect.any(String),
+    });
+  });
+
+  test("loadTalkAccess still requires guest access when a signed-in user has none", async () => {
+    const { talkId, outsider } = await setup();
+    mocks.getSessionUser.mockResolvedValue(sessionUser(outsider, "attendee"));
+    mocks.readGuestSession.mockResolvedValue(null);
+
+    await expect(loadTalkAccess(talkId)).resolves.toBeNull();
+  });
+
+  test("requireTalkManager rejects guests", async () => {
+    const { talkId } = await setup();
+    mocks.getSessionUser.mockResolvedValue(null);
+    mocks.readGuestSession.mockResolvedValue(guestSession(talkId));
+
+    await expect(requireTalkManager(talkId)).resolves.toMatchObject({
+      ok: false,
+    });
+  });
+
+  test("resolveTalkAttendee prefers a rostered member", async () => {
+    const { talkId, attendee } = await setup();
+    mocks.getSessionUser.mockResolvedValue(sessionUser(attendee, "attendee"));
+
+    await expect(resolveTalkAttendee(talkId)).resolves.toMatchObject({
+      kind: "member",
+      user: { id: attendee.id },
+    });
+    expect(mocks.readGuestSession).not.toHaveBeenCalled();
+  });
+
+  test("resolveTalkAttendee falls back to a guest for a non-member", async () => {
+    const { talkId, outsider } = await setup();
+    mocks.getSessionUser.mockResolvedValue(sessionUser(outsider, "attendee"));
+    mocks.readGuestSession.mockResolvedValue(guestSession(talkId));
+
+    await expect(resolveTalkAttendee(talkId)).resolves.toMatchObject({
+      kind: "guest",
+      guest: { username: "Sam" },
+    });
+  });
+
+  test("resolveTalkAttendee returns null without a member or guest", async () => {
+    const { talkId, outsider } = await setup();
+    mocks.getSessionUser.mockResolvedValue(sessionUser(outsider, "attendee"));
+    mocks.readGuestSession.mockResolvedValue(null);
+
+    await expect(resolveTalkAttendee(talkId)).resolves.toBeNull();
   });
 });
 

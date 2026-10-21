@@ -110,10 +110,10 @@ export function LiveResults({
                 >
                   {optionVoters?.map((voter, voterIndex) => (
                     <span
-                      key={`${voter.email}-${voterIndex}`}
+                      key={`${voter.name}-${voterIndex}`}
                       className="border-ink/15 bg-cream2 text-ink/80 rounded-md border-[2.5px] px-3 py-1 font-medium"
                     >
-                      {voter.email}
+                      {voter.name}
                     </span>
                   ))}
                 </div>

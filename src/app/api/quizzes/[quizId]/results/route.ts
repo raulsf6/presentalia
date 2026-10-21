@@ -1,22 +1,24 @@
-import { getSessionUser } from "@/lib/auth";
 import { loadQuizResults } from "@/lib/quiz-results";
+import { getActivityTalkAccess } from "@/lib/results-access";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ quizId: string }> },
 ) {
-  const user = await getSessionUser();
-  if (!user) {
+  const { quizId } = await params;
+  const access = await getActivityTalkAccess(quizId);
+  if (!access) {
     return Response.json(
-      { error: "Sign in to view quiz results." },
+      { error: "Join this talk to view quiz results." },
       { status: 401, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  const { quizId } = await params;
   const projector =
     new URL(request.url).searchParams.get("display") === "projector";
-  const results = await loadQuizResults(quizId, user, { projector });
+  const results = await loadQuizResults(quizId, access, {
+    projector,
+  });
   if (!results || results.quiz.status === "draft") {
     return Response.json(
       { error: "Quiz not found." },

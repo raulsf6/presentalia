@@ -2,7 +2,10 @@
 
 import { useActionState } from "react";
 
-import { createTextActivityAction, type TextActionResult } from "@/actions/text";
+import {
+  createTextActivityAction,
+  type TextActionResult,
+} from "@/actions/text";
 import { LoadingDots } from "@/components/LoadingDots";
 
 const initial: TextActionResult = { ok: true };
@@ -62,7 +65,7 @@ export function TextForm({ talkId }: { talkId: string }) {
         />
         <span className="flex flex-col gap-0.5">
           <span className="text-ink text-sm font-bold">
-            Show attendee email addresses with answers
+            Show attendee names with answers
           </span>
           <span className="text-muted text-xs font-semibold">
             Off by default. This choice cannot be changed after you launch.

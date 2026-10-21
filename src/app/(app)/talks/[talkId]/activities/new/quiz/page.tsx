@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { QuizForm } from "@/components/QuizForm";
-import { loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/membership";
 
 export default function NewQuizPage({
   params,
@@ -26,7 +26,7 @@ async function NewQuizContent({
   if (!access) {
     notFound();
   }
-  if (access.access === "member") {
+  if (!isManager(access)) {
     notFound();
   }
 

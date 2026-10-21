@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 
 import { AppBar, AppBarSkeleton } from "@/components/AppBar";
@@ -26,7 +25,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 async function SignedInAppBar() {
   const user = await getSessionUser();
   if (!user) {
-    redirect("/login");
+    return null;
   }
   return <AppBar user={user} />;
 }

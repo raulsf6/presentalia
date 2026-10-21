@@ -125,9 +125,8 @@ describe("loadTextResults", () => {
   test("an active member sees the waiting state for the real activity", async () => {
     await answer(f, f.other, "Talk to users first.");
 
-    const payload = await loadTextResults(f.activityId, f.memberAccess.user, {
+    const payload = await loadTextResults(f.activityId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
 
     expect(payload?.mode).toBe("waiting");
@@ -147,13 +146,11 @@ describe("loadTextResults", () => {
       [f.activityId],
     );
 
-    const manager = await loadTextResults(f.activityId, f.managerAccess.user, {
+    const manager = await loadTextResults(f.activityId, f.managerAccess, {
       db: f.db,
-      access: f.managerAccess,
     });
-    const member = await loadTextResults(f.activityId, f.memberAccess.user, {
+    const member = await loadTextResults(f.activityId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
 
     expect(manager?.mode).toBe("ranking");
@@ -174,13 +171,11 @@ describe("loadTextResults", () => {
       { answerId: second, rank: null, dropReason: "Off-topic" },
     ]);
 
-    const member = await loadTextResults(f.activityId, f.memberAccess.user, {
+    const member = await loadTextResults(f.activityId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
-    const manager = await loadTextResults(f.activityId, f.managerAccess.user, {
+    const manager = await loadTextResults(f.activityId, f.managerAccess, {
       db: f.db,
-      access: f.managerAccess,
     });
 
     expect(member?.mode).toBe("ranked");
@@ -190,7 +185,7 @@ describe("loadTextResults", () => {
         rank: 1,
         body: "Ship the small thing.",
         rationale: "Small and concrete.",
-        email: null,
+        name: null,
       },
     ]);
     expect(member?.summary).toBe("Ship the small thing first.");
@@ -210,9 +205,8 @@ describe("loadTextResults", () => {
     const second = await answer(f, f.other, "Talk to users first.");
     await setStatus(f.pglite, f.activityId, "closed");
 
-    const payload = await loadTextResults(f.activityId, f.memberAccess.user, {
+    const payload = await loadTextResults(f.activityId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
 
     expect(payload?.mode).toBe("unranked");

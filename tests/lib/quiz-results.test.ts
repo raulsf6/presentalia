@@ -25,7 +25,7 @@ const counts = [
 ];
 
 const votedViewer = {
-  isMember: true,
+  isAttendee: true,
   hasVoted: true,
   optionId: "option-a",
 };
@@ -35,7 +35,7 @@ describe("getQuizResultsVisibility", () => {
     expect(
       getQuizResultsVisibility({
         status: "active",
-        viewer: { isMember: true, hasVoted: false, optionId: null },
+        viewer: { isAttendee: true, hasVoted: false, optionId: null },
         projector: false,
       }),
     ).toEqual({ needsVote: true, showResults: false });
@@ -55,7 +55,7 @@ describe("getQuizResultsVisibility", () => {
     expect(
       getQuizResultsVisibility({
         status: "active",
-        viewer: { isMember: false, hasVoted: false, optionId: null },
+        viewer: { isAttendee: false, hasVoted: false, optionId: null },
         projector: false,
       }),
     ).toEqual({ needsVote: false, showResults: false });
@@ -72,7 +72,7 @@ describe("getQuizResultsVisibility", () => {
     expect(
       getQuizResultsVisibility({
         status: "closed",
-        viewer: { isMember: true, hasVoted: false, optionId: null },
+        viewer: { isAttendee: true, hasVoted: false, optionId: null },
         projector: true,
       }),
     ).toEqual({ needsVote: false, showResults: true });
@@ -85,7 +85,7 @@ describe("buildQuizResultsPayload", () => {
       quiz,
       options,
       counts,
-      viewer: { isMember: false, hasVoted: false, optionId: null },
+      viewer: { isAttendee: false, hasVoted: false, optionId: null },
       projector: false,
     });
 
@@ -108,7 +108,7 @@ describe("buildQuizResultsPayload", () => {
       quiz,
       options,
       counts,
-      viewer: { isMember: true, hasVoted: false, optionId: null },
+      viewer: { isAttendee: true, hasVoted: false, optionId: null },
       projector: false,
     });
 
@@ -175,7 +175,7 @@ describe("buildQuizResultsPayload", () => {
       quiz: { ...quiz, status: "closed" },
       options,
       counts,
-      viewer: { isMember: true, hasVoted: true, optionId: "option-b" },
+      viewer: { isAttendee: true, hasVoted: true, optionId: "option-b" },
       projector: false,
     });
 
@@ -183,7 +183,7 @@ describe("buildQuizResultsPayload", () => {
   });
 
   test("includes voter emails only when results are visible and identifiable", () => {
-    const votes = [{ optionId: "option-b", email: "voter@example.com" }];
+    const votes = [{ optionId: "option-b", name: "voter@example.com" }];
     const live = buildQuizResultsPayload({
       quiz: { ...quiz, resultsIdentifiable: true },
       options,
@@ -197,7 +197,7 @@ describe("buildQuizResultsPayload", () => {
       options,
       counts,
       votes,
-      viewer: { isMember: false, hasVoted: false, optionId: null },
+      viewer: { isAttendee: false, hasVoted: false, optionId: null },
       projector: false,
     });
 
@@ -210,7 +210,7 @@ describe("buildQuizResultsPayload", () => {
       quiz,
       options,
       counts,
-      votes: [{ optionId: "option-b", email: "private@example.com" }],
+      votes: [{ optionId: "option-b", name: "private@example.com" }],
       viewer: votedViewer,
       projector: false,
     });

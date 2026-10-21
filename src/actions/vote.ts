@@ -6,8 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/db";
 import { activities, pollOptions, pollVotes, polls } from "@/db/schema";
 import { isUniqueViolation } from "@/lib/db-errors";
-import { getSessionUser } from "@/lib/auth";
-import { isRosteredAttendee } from "@/lib/membership";
+import { resolveTalkAttendee } from "@/lib/membership";
 import { canVote } from "@/lib/polls";
 
 export type VoteResult = { ok: boolean; error?: string; talkId?: string };
@@ -17,12 +16,22 @@ export async function submitVoteAction(
   pollId: string,
   optionId: string,
 ): Promise<VoteResult> {
-  const user = await getSessionUser();
-  if (!user) {
-    return { ok: false, error: "You need to sign in to vote." };
+  const db = getDb();
+  const [pollRef] = await db
+    .select({ talkId: activities.talkId })
+    .from(activities)
+    .innerJoin(polls, eq(polls.activityId, activities.id))
+    .where(eq(activities.id, pollId))
+    .limit(1);
+  if (!pollRef) {
+    return { ok: false, error: "You don't have access to this poll." };
   }
 
-  const db = getDb();
+  const attendee = await resolveTalkAttendee(pollRef.talkId);
+  if (!attendee) {
+    return { ok: false, error: "You don't have access to this poll." };
+  }
+
   let outcome: { ok: true; talkId: string } | { ok: false; error: string };
   try {
     outcome = await db.transaction(async (tx) => {
@@ -34,9 +43,6 @@ export async function submitVoteAction(
         .limit(1)
         .for("share", { of: activities });
       if (!poll) {
-        return { ok: false, error: "You don't have access to this poll." };
-      }
-      if (!(await isRosteredAttendee(user, poll.talkId, tx))) {
         return { ok: false, error: "You don't have access to this poll." };
       }
       if (!canVote(poll.status as "draft" | "active" | "closed")) {
@@ -57,7 +63,8 @@ export async function submitVoteAction(
 
       await tx.insert(pollVotes).values({
         pollId,
-        userId: user.id,
+        userId: attendee.kind === "member" ? attendee.user.id : null,
+        guestId: attendee.kind === "guest" ? attendee.guest.id : null,
         optionId,
       });
       return { ok: true, talkId: poll.talkId };

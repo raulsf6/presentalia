@@ -6,7 +6,7 @@ import { getDb } from "@/db";
 import { pollOptions, pollVotes, polls, type ActivityRow } from "@/db/schema";
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { VoteForm } from "@/components/VoteForm";
-import type { TalkAccess } from "@/lib/membership";
+import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
 import type { ActivityStatus } from "@/lib/polls";
 
 /**
@@ -48,22 +48,25 @@ export async function PollActivity({
       : [],
   );
 
-  if (access.access !== "member" && status !== "draft") {
+  if (!isAttendee(access) && status !== "draft") {
     redirect(resultsHref);
   }
 
-  if (access.access === "member" && status === "closed") {
+  if (isAttendee(access) && status === "closed") {
     redirect(resultsHref);
   }
 
-  if (access.access === "member" && status === "active") {
+  if (isAttendee(access) && status === "active") {
+    const key = attendeeVoteKey(access);
     const ownVotes = await db
       .select({ optionId: pollVotes.optionId })
       .from(pollVotes)
       .where(
         and(
           eq(pollVotes.pollId, activityId),
-          eq(pollVotes.userId, access.user.id),
+          "userId" in key
+            ? eq(pollVotes.userId, key.userId)
+            : eq(pollVotes.guestId, key.guestId),
         ),
       )
       .limit(1);
@@ -75,7 +78,7 @@ export async function PollActivity({
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-center justify-between gap-4">
-        {access.access === "member" ? (
+        {isAttendee(access) ? (
           <Link href={`/talks/${talkId}`} className="linky">
             ← {access.talk.name}
           </Link>
@@ -94,7 +97,7 @@ export async function PollActivity({
 
       <h1 className="font-display text-ink mb-8 text-2xl">{poll.question}</h1>
 
-      {access.access !== "member" ? (
+      {!isAttendee(access) ? (
         <section className="card flex flex-col gap-6 p-6">
           <div className="flex flex-col gap-3">
             <h2 className="section-label">Answer options</h2>
@@ -106,7 +109,7 @@ export async function PollActivity({
             <p className="text-ink/75 text-sm font-semibold">
               Results are{" "}
               {poll.resultsIdentifiable
-                ? "identifiable — voter email addresses will be shown to all results viewers."
+                ? "identifiable — voter names will be shown to all results viewers."
                 : "anonymous — voter identities will not appear in results."}
             </p>
           </div>

@@ -3,15 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import {
-  textActivities,
-  textAnswers,
-  type ActivityRow,
-} from "@/db/schema";
+import { textActivities, textAnswers, type ActivityRow } from "@/db/schema";
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { TextAnswerForm } from "@/components/TextAnswerForm";
 import type { ActivityStatus } from "@/lib/activities";
-import type { TalkAccess } from "@/lib/membership";
+import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
 
 /**
  * Text-type activity: the draft workspace for managers and the answer form for
@@ -44,23 +40,23 @@ export async function TextActivity({
     notFound();
   }
 
-  if (access.access !== "member" && status !== "draft") {
+  if (!isAttendee(access) && status !== "draft") {
     redirect(resultsHref);
   }
-  if (
-    access.access === "member" &&
-    (status === "locked" || status === "closed")
-  ) {
+  if (isAttendee(access) && (status === "locked" || status === "closed")) {
     redirect(resultsHref);
   }
-  if (access.access === "member" && status === "active") {
+  if (isAttendee(access) && status === "active") {
+    const key = attendeeVoteKey(access);
     const [own] = await db
       .select({ id: textAnswers.id })
       .from(textAnswers)
       .where(
         and(
           eq(textAnswers.activityId, activityId),
-          eq(textAnswers.userId, access.user.id),
+          "userId" in key
+            ? eq(textAnswers.userId, key.userId)
+            : eq(textAnswers.guestId, key.guestId),
         ),
       )
       .limit(1);
@@ -72,7 +68,7 @@ export async function TextActivity({
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-center justify-between gap-4">
-        {access.access === "member" ? (
+        {isAttendee(access) ? (
           <Link href={`/talks/${talkId}`} className="linky">
             ← {access.talk.name}
           </Link>
@@ -94,7 +90,7 @@ export async function TextActivity({
         Ranked for: {config.criteria}
       </p>
 
-      {access.access !== "member" ? (
+      {!isAttendee(access) ? (
         <section className="card flex flex-col gap-6 p-6">
           <div className="flex flex-col gap-2">
             <h2 className="section-label">How it works</h2>
@@ -107,11 +103,11 @@ export async function TextActivity({
             <p className="text-ink/75 text-sm font-semibold">
               Results are{" "}
               {config.resultsIdentifiable
-                ? "identifiable — attendee email addresses will be shown with their answers."
+                ? "identifiable — attendee names will be shown with their answers."
                 : "anonymous — attendee identities will not appear in results."}
             </p>
             <p className="text-ink/75 text-sm font-semibold">
-              Answers are sent to the AI model without attendee emails.
+              Answers are sent to the AI model without attendee identities.
             </p>
           </div>
           <ActivityAdminControls

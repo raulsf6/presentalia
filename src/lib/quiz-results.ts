@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import { getDb, type Db } from "@/db";
 import {
@@ -8,14 +8,14 @@ import {
   quizVoteCounts,
   quizVotes,
   quizzes,
+  talkGuests,
 } from "@/db/schema";
-import type { SessionUser } from "@/lib/auth";
 import {
   computeResults,
   type ActivityStatus,
   type ChoiceResultsRow,
 } from "@/lib/activities";
-import { getTalkAccessForUser, type TalkAccess } from "@/lib/membership";
+import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
 
 export type QuizResultsRow = ChoiceResultsRow;
 
@@ -36,13 +36,13 @@ export type QuizResultsPayload = {
   options: { optionId: string; label: string }[];
   rows: QuizResultsRow[];
   total: number | null;
-  voters: { optionId: string; email: string }[] | null;
+  voters: { optionId: string; name: string }[] | null;
   viewer: { optionId: string; correct: boolean } | null;
 };
 
 export type QuizViewer = {
-  /** True only for rostered attendees; managers never see live quiz results. */
-  isMember: boolean;
+  /** True for rostered attendees and guests; managers never see live results. */
+  isAttendee: boolean;
   hasVoted: boolean;
   optionId: string | null;
 };
@@ -60,7 +60,7 @@ export type QuizResultsSource = {
   quiz: QuizSource | null;
   options: { id: string; label: string; isCorrect: boolean }[];
   counts: { optionId: string; votes: number }[];
-  votes?: { optionId: string; email: string }[];
+  votes?: { optionId: string; name: string }[];
   viewer: QuizViewer;
   projector: boolean;
 };
@@ -86,9 +86,9 @@ export function getQuizResultsVisibility(input: {
   if (input.status === "draft") {
     return { needsVote: false, showResults: false };
   }
-  const needsVote = input.viewer.isMember && !input.viewer.hasVoted;
+  const needsVote = input.viewer.isAttendee && !input.viewer.hasVoted;
   const showResults =
-    input.viewer.isMember && input.viewer.hasVoted && !input.projector;
+    input.viewer.isAttendee && input.viewer.hasVoted && !input.projector;
   return { needsVote, showResults };
 }
 
@@ -220,8 +220,6 @@ export function clearQuizResultsCache(quizId?: string): void {
 
 export type LoadQuizResultsOptions = {
   db?: Db;
-  /** Pass the request's already-loaded talk access to avoid re-checking it. */
-  access?: TalkAccess;
   /** Projector views never receive live percentages or response counts. */
   projector?: boolean;
 };
@@ -231,7 +229,7 @@ function viewerState(
   vote: { optionId: string } | undefined,
 ): QuizViewer {
   return {
-    isMember: access.access === "member",
+    isAttendee: isAttendee(access),
     hasVoted: Boolean(vote),
     optionId: vote?.optionId ?? null,
   };
@@ -239,13 +237,21 @@ function viewerState(
 
 async function loadViewerVote(
   quizId: string,
-  viewer: SessionUser,
+  access: TalkAccess,
   db: Db,
 ): Promise<{ optionId: string } | undefined> {
+  const key = attendeeVoteKey(access);
   const [vote] = await db
     .select({ optionId: quizVotes.optionId })
     .from(quizVotes)
-    .where(and(eq(quizVotes.quizId, quizId), eq(quizVotes.userId, viewer.id)))
+    .where(
+      and(
+        eq(quizVotes.quizId, quizId),
+        "userId" in key
+          ? eq(quizVotes.userId, key.userId)
+          : eq(quizVotes.guestId, key.guestId),
+      ),
+    )
     .limit(1);
   return vote;
 }
@@ -253,12 +259,8 @@ async function loadViewerVote(
 /** Loads results through the owner connection after checking app-layer talk access. */
 export async function loadQuizResults(
   quizId: string,
-  viewer: SessionUser,
-  {
-    db = getDb(),
-    access: providedAccess,
-    projector = false,
-  }: LoadQuizResultsOptions = {},
+  access: TalkAccess,
+  { db = getDb(), projector = false }: LoadQuizResultsOptions = {},
 ): Promise<QuizResultsPayload | null> {
   // Always read the quiz itself. Status changes (launch/close) must be
   // immediate even if the option/count data is still cached.
@@ -276,24 +278,13 @@ export async function loadQuizResults(
     .where(eq(activities.id, quizId))
     .limit(1);
   const quiz = quizRows[0] ?? null;
-  if (!quiz) {
+  if (!quiz || access.talk.id !== quiz.talkId) {
     return null;
   }
 
-  const accessPromise =
-    providedAccess?.talk.id === quiz.talkId
-      ? Promise.resolve(providedAccess)
-      : getTalkAccessForUser(viewer, quiz.talkId, db);
-
   const cached = readCachedQuizData(quizId);
   if (cached) {
-    const [access, vote] = await Promise.all([
-      accessPromise,
-      loadViewerVote(quizId, viewer, db),
-    ]);
-    if (!access) {
-      return null;
-    }
+    const vote = await loadViewerVote(quizId, access, db);
     return buildQuizResultsPayload({
       quiz,
       ...cached,
@@ -302,7 +293,7 @@ export async function loadQuizResults(
     });
   }
 
-  // Access, options, and the viewer's own vote are independent; fetch them
+  // The options and the viewer's own vote are independent; fetch them
   // together.
   const optionRowsPromise = db
     .select({
@@ -321,16 +312,12 @@ export async function loadQuizResults(
     )
     .where(eq(quizOptions.quizId, quizId))
     .orderBy(asc(quizOptions.position));
-  const votePromise = loadViewerVote(quizId, viewer, db);
+  const votePromise = loadViewerVote(quizId, access, db);
 
-  const [access, optionRows, vote] = await Promise.all([
-    accessPromise,
+  const [optionRows, vote] = await Promise.all([
     optionRowsPromise,
     votePromise,
   ]);
-  if (!access) {
-    return null;
-  }
 
   const options = optionRows.map(({ id, label, isCorrect }) => ({
     id,
@@ -344,22 +331,23 @@ export async function loadQuizResults(
   // Identities are only part of the public payload when the quiz is
   // identifiable. Query them for every non-draft state so the short cache can
   // serve both manager and attendee requests without exposing them early.
-  // Emails come from the app-owned user mirror.
+  // Names come from the app-owned user mirror or the guest row.
   const votes =
     quiz.resultsIdentifiable && quiz.status !== "draft"
       ? (
           await db
             .select({
               optionId: quizVotes.optionId,
-              email: appUsers.email,
+              name: sql<
+                string | null
+              >`coalesce(${appUsers.email}, ${talkGuests.username})`,
             })
             .from(quizVotes)
-            .innerJoin(appUsers, eq(appUsers.id, quizVotes.userId))
+            .leftJoin(appUsers, eq(appUsers.id, quizVotes.userId))
+            .leftJoin(talkGuests, eq(talkGuests.id, quizVotes.guestId))
             .where(eq(quizVotes.quizId, quizId))
         ).flatMap((row) =>
-          row.email === null
-            ? []
-            : [{ optionId: row.optionId, email: row.email }],
+          row.name === null ? [] : [{ optionId: row.optionId, name: row.name }],
         )
       : undefined;
 

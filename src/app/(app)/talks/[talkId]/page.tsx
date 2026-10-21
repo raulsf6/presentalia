@@ -6,7 +6,7 @@ import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { DeleteTalkButton } from "@/components/DeleteTalkButton";
 import { LiveActivityRefresh } from "@/components/LiveActivityRefresh";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { loadTalkAccess } from "@/lib/membership";
+import { isAttendee, isManager, loadTalkAccess } from "@/lib/membership";
 import {
   loadTalkActivities,
   type TalkActivitySummary,
@@ -51,7 +51,9 @@ async function TalkContent({
   if (!access) {
     notFound();
   }
-  const { talk, access: role } = access;
+  const { talk } = access;
+  const manager = isManager(access);
+  const attendee = isAttendee(access);
 
   const activityRows: TalkActivitySummary[] = await loadTalkActivities(talkId);
 
@@ -69,12 +71,28 @@ async function TalkContent({
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <LiveActivityRefresh />
-      <div className="mb-2">
-        <h1 className="font-display text-ink text-2xl">{talk.name}</h1>
-        {talk.heldAt ? (
-          <p className="text-muted mt-1 text-sm font-semibold">
-            {formatDate(talk.heldAt)}
-          </p>
+      <div className="mb-2 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-ink text-2xl">{talk.name}</h1>
+          {talk.heldAt ? (
+            <p className="text-muted mt-1 text-sm font-semibold">
+              {formatDate(talk.heldAt)}
+            </p>
+          ) : null}
+          {access.access === "guest" ? (
+            <p className="text-muted mt-1 text-xs font-semibold">
+              Joined as{" "}
+              <span className="text-ink">{access.guest.username}</span>
+            </p>
+          ) : null}
+        </div>
+        {manager && talk.isPublic ? (
+          <Link
+            href={`/talks/${talkId}/join-qr`}
+            className="btn btn-ghost btn-small shrink-0"
+          >
+            Join QR
+          </Link>
         ) : null}
       </div>
       {talk.description ? (
@@ -90,7 +108,7 @@ async function TalkContent({
         {currentActivity ? (
           <Link
             href={
-              role === "member" && !rankingInProgress
+              attendee && !rankingInProgress
                 ? `/talks/${talkId}/activities/${currentActivity.id}`
                 : `/talks/${talkId}/activities/${currentActivity.id}/results`
             }
@@ -118,7 +136,7 @@ async function TalkContent({
             <span className="text-green text-sm font-bold">
               {rankingInProgress
                 ? "Results are being prepared →"
-                : role === "member"
+                : attendee
                   ? currentActivity.type === "text"
                     ? "Tap to answer →"
                     : "Tap to vote and see results →"
@@ -130,7 +148,7 @@ async function TalkContent({
         )}
       </section>
 
-      {role !== "member" && draftActivities.length > 0 ? (
+      {manager && draftActivities.length > 0 ? (
         <section className="mb-8 flex flex-col gap-3">
           <h2 className="section-label">Pending activities</h2>
           <ul className="flex flex-col gap-3">
@@ -213,7 +231,7 @@ async function TalkContent({
         </section>
       ) : null}
 
-      {role !== "member" ? (
+      {manager ? (
         <section className="border-ink/25 flex flex-col gap-3 border-t-[3px] border-dashed pt-8">
           <h2 className="section-label section-label-danger">Danger zone</h2>
           <div className="flex flex-wrap items-center gap-2">

@@ -1,6 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { isAllowedLoginEmail } from "@/lib/login-gate";
@@ -8,6 +7,7 @@ import { waitForMinimumDuration } from "@/lib/auth-timing";
 import { normalizeEmail, validateEmail } from "@/lib/roster";
 import { ensureAppUser, sendAppUserInvite } from "@/lib/provision-user";
 import { logServerError, logServerWarning, maskEmail } from "@/lib/server-log";
+import { getSiteUrl } from "@/lib/site-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type MagicLinkState = {
@@ -31,16 +31,7 @@ async function genericResponse(startedAt: number): Promise<MagicLinkState> {
 }
 
 async function requestOrigin(): Promise<string> {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL;
-  }
-  const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
-  if (!host) {
-    return "http://localhost:3000";
-  }
-  const proto = headerList.get("x-forwarded-proto") ?? "http";
-  return `${proto}://${host}`;
+  return getSiteUrl();
 }
 
 /**

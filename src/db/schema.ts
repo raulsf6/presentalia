@@ -44,10 +44,39 @@ export const talks = pgTable("talks", {
   heldAt: timestamp("held_at", { withTimezone: true }),
   slidesUpdatedAt: timestamp("slides_updated_at", { withTimezone: true }),
   createdBy: uuid("created_by"),
+  isPublic: boolean("is_public").notNull().default(false),
+  anonymousJoinOpen: boolean("anonymous_join_open").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * Anonymous attendee identity scoped to one talk. The browser holds the
+ * plaintext token in an HttpOnly cookie; only its hash is stored here.
+ */
+export const talkGuests = pgTable(
+  "talk_guests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    talkId: uuid("talk_id")
+      .notNull()
+      .references(() => talks.id, { onDelete: "cascade" }),
+    username: text("username").notNull(),
+    usernameNormalized: text("username_normalized").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("talk_guests_talk_username_unique").on(
+      table.talkId,
+      table.usernameNormalized,
+    ),
+    index("talk_guests_talk_idx").on(table.talkId),
+  ],
+);
 
 export const talkRoster = pgTable(
   "talk_roster",
@@ -123,7 +152,13 @@ export const pollVotes = pgTable(
     pollId: uuid("poll_id")
       .notNull()
       .references(() => polls.activityId, { onDelete: "cascade" }),
-    userId: uuid("user_id").notNull(),
+    userId: uuid("user_id"),
+    guestId: uuid("guest_id").references(() => talkGuests.id, {
+      onDelete: "cascade",
+    }),
+    voterKey: uuid("voter_key").generatedAlwaysAs(
+      sql`coalesce(user_id, guest_id)`,
+    ),
     optionId: uuid("option_id")
       .notNull()
       .references(() => pollOptions.id, { onDelete: "cascade" }),
@@ -131,7 +166,7 @@ export const pollVotes = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [primaryKey({ columns: [table.pollId, table.userId] })],
+  (table) => [primaryKey({ columns: [table.pollId, table.voterKey] })],
 );
 
 // Pre-aggregated counts maintained by a trigger in the migration.
@@ -190,7 +225,13 @@ export const quizVotes = pgTable(
     quizId: uuid("quiz_id")
       .notNull()
       .references(() => quizzes.activityId, { onDelete: "cascade" }),
-    userId: uuid("user_id").notNull(),
+    userId: uuid("user_id"),
+    guestId: uuid("guest_id").references(() => talkGuests.id, {
+      onDelete: "cascade",
+    }),
+    voterKey: uuid("voter_key").generatedAlwaysAs(
+      sql`coalesce(user_id, guest_id)`,
+    ),
     optionId: uuid("option_id")
       .notNull()
       .references(() => quizOptions.id, { onDelete: "cascade" }),
@@ -198,7 +239,7 @@ export const quizVotes = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [primaryKey({ columns: [table.quizId, table.userId] })],
+  (table) => [primaryKey({ columns: [table.quizId, table.voterKey] })],
 );
 
 // Pre-aggregated counts maintained by a trigger in the migration.
@@ -240,6 +281,9 @@ export const textAnswers = pgTable(
       .notNull()
       .references(() => textActivities.activityId, { onDelete: "cascade" }),
     userId: uuid("user_id"),
+    guestId: uuid("guest_id").references(() => talkGuests.id, {
+      onDelete: "cascade",
+    }),
     body: text("body").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -250,6 +294,9 @@ export const textAnswers = pgTable(
       table.activityId,
       table.userId,
     ),
+    uniqueIndex("text_answers_activity_guest_unique")
+      .on(table.activityId, table.guestId)
+      .where(sql`guest_id IS NOT NULL`),
     index("text_answers_activity_idx").on(
       table.activityId,
       table.createdAt,
@@ -314,6 +361,7 @@ export const textRankings = pgTable(
 );
 
 export type TalkRow = typeof talks.$inferSelect;
+export type TalkGuestRow = typeof talkGuests.$inferSelect;
 export type TalkRosterRow = typeof talkRoster.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
 export type PollRow = typeof polls.$inferSelect;

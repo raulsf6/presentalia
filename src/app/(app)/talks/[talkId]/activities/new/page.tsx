@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { ChartIcon, QuizIcon, TextIcon } from "@/components/icons";
-import { loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/membership";
 
 export default function NewActivityPage({
   params,
@@ -26,7 +26,7 @@ async function NewActivityContent({
   if (!access) {
     notFound();
   }
-  if (access.access === "member") {
+  if (!isManager(access)) {
     notFound();
   }
 

@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   pglite: undefined as unknown,
   getSessionUser: vi.fn(),
   requireTalkManager: vi.fn(),
-  isRosteredAttendee: vi.fn(),
+  resolveTalkAttendee: vi.fn(),
   generate: vi.fn(),
   updateTag: vi.fn(),
   revalidatePath: vi.fn(),
@@ -24,7 +24,7 @@ vi.mock("@/db", () => ({ getDb: () => mocks.db }));
 vi.mock("@/lib/auth", () => ({ getSessionUser: mocks.getSessionUser }));
 vi.mock("@/lib/membership", () => ({
   requireTalkManager: mocks.requireTalkManager,
-  isRosteredAttendee: mocks.isRosteredAttendee,
+  resolveTalkAttendee: mocks.resolveTalkAttendee,
 }));
 vi.mock("@/lib/text-ranking", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/text-ranking")>();
@@ -46,7 +46,13 @@ import {
   rankTextActivityAction,
   submitTextAnswerAction,
 } from "@/actions/text";
-import { createDb, exec, makeUser, seedTalk, seedTextActivity } from "../db/harness";
+import {
+  createDb,
+  exec,
+  makeUser,
+  seedTalk,
+  seedTextActivity,
+} from "../db/harness";
 
 type Setup = {
   pglite: Awaited<ReturnType<typeof createDb>>;
@@ -58,7 +64,9 @@ type Setup = {
   memberAccess: TalkAccess;
 };
 
-async function setup(status: "draft" | "active" | "locked" | "closed" = "active") {
+async function setup(
+  status: "draft" | "active" | "locked" | "closed" = "active",
+) {
   const pglite = await createDb();
   const db = drizzle(pglite, { schema }) as unknown as Db;
   mocks.db = db;
@@ -88,7 +96,10 @@ async function setup(status: "draft" | "active" | "locked" | "closed" = "active"
   };
 
   mocks.getSessionUser.mockResolvedValue(memberViewer);
-  mocks.isRosteredAttendee.mockResolvedValue(true);
+  mocks.resolveTalkAttendee.mockResolvedValue({
+    kind: "member",
+    user: memberViewer,
+  });
   mocks.requireTalkManager.mockResolvedValue({
     ok: true,
     user: managerViewer,
@@ -227,7 +238,9 @@ describe("rankTextActivityAction", () => {
     const f = await setup();
     const first = await addAnswer(f, f.member, "Ship the small thing.");
     const second = await addAnswer(f, f.other, "Talk to users first.");
-    mocks.generate.mockResolvedValue({ output: validOutput({ first, second }) });
+    mocks.generate.mockResolvedValue({
+      output: validOutput({ first, second }),
+    });
 
     const result = await rankTextActivityAction(f.activityId);
 
@@ -235,7 +248,8 @@ describe("rankTextActivityAction", () => {
       "select status from public.activities where id = $1",
       [f.activityId],
     );
-    const runs = await exec(f.pglite,
+    const runs = await exec(
+      f.pglite,
       "select status, published_at, summary from public.text_ranking_runs where activity_id = $1",
       [f.activityId],
     );
@@ -257,6 +271,39 @@ describe("rankTextActivityAction", () => {
     ]);
   });
 
+  test("ranks guest answers alongside member answers", async () => {
+    const f = await setup();
+    const first = await addAnswer(f, f.member, "Ship the small thing.");
+    const guestId = crypto.randomUUID();
+    await f.pglite.query(
+      `insert into public.talk_guests
+         (id, talk_id, username, username_normalized, token_hash)
+       values ($1, $2, 'Sam', 'sam', 'hash')`,
+      [guestId, f.talkId],
+    );
+    const second = crypto.randomUUID();
+    await f.pglite.query(
+      "insert into public.text_answers (id, activity_id, guest_id, body) values ($1, $2, $3, 'Guest idea')",
+      [second, f.activityId, guestId],
+    );
+    mocks.generate.mockResolvedValue({
+      output: validOutput({ first, second }),
+    });
+
+    const result = await rankTextActivityAction(f.activityId);
+
+    const rankings = await f.pglite.query(
+      "select answer_id from public.text_rankings order by rank",
+      [],
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(rankings.rows).toEqual([
+      { answer_id: first },
+      { answer_id: second },
+    ]);
+  });
+
   test("leaves the activity locked when the model fails", async () => {
     const f = await setup();
     await addAnswer(f, f.member, "Ship the small thing.");
@@ -268,7 +315,8 @@ describe("rankTextActivityAction", () => {
       "select status from public.activities where id = $1",
       [f.activityId],
     );
-    const runs = await exec(f.pglite,
+    const runs = await exec(
+      f.pglite,
       "select status, error from public.text_ranking_runs where activity_id = $1",
       [f.activityId],
     );
@@ -298,7 +346,8 @@ describe("rankTextActivityAction", () => {
       "select status from public.activities where id = $1",
       [f.activityId],
     );
-    const runs = await exec(f.pglite,
+    const runs = await exec(
+      f.pglite,
       "select count(*)::int as count from public.text_ranking_runs where activity_id = $1",
       [f.activityId],
     );
@@ -325,11 +374,14 @@ describe("rankTextActivityAction", () => {
        values ($1, 'running', 'text-ranking-v1', 'Most actionable', 2, now() - interval '5 minutes')`,
       [f.activityId],
     );
-    mocks.generate.mockResolvedValue({ output: validOutput({ first, second }) });
+    mocks.generate.mockResolvedValue({
+      output: validOutput({ first, second }),
+    });
 
     const result = await rankTextActivityAction(f.activityId);
 
-    const runs = await exec(f.pglite,
+    const runs = await exec(
+      f.pglite,
       "select status from public.text_ranking_runs where activity_id = $1 order by started_at",
       [f.activityId],
     );
@@ -350,7 +402,8 @@ describe("publishTextUnrankedAction", () => {
       "select status from public.activities where id = $1",
       [f.activityId],
     );
-    const runs = await exec(f.pglite,
+    const runs = await exec(
+      f.pglite,
       "select count(*)::int as count from public.text_ranking_runs where activity_id = $1",
       [f.activityId],
     );

@@ -19,13 +19,28 @@ function source(overrides: Partial<TextResultsSource> = {}): TextResultsSource {
       closedAt: null,
     },
     answers: [
-      { id: "a", body: "Ship the small thing.", email: "a@example.com", createdAt: at(1) },
-      { id: "b", body: "Talk to users first.", email: "b@example.com", createdAt: at(2) },
-      { id: "c", body: "Rewrite the roadmap.", email: "c@example.com", createdAt: at(3) },
+      {
+        id: "a",
+        body: "Ship the small thing.",
+        name: "a@example.com",
+        createdAt: at(1),
+      },
+      {
+        id: "b",
+        body: "Talk to users first.",
+        name: "b@example.com",
+        createdAt: at(2),
+      },
+      {
+        id: "c",
+        body: "Rewrite the roadmap.",
+        name: "c@example.com",
+        createdAt: at(3),
+      },
     ],
     run: null,
     rankings: [],
-    viewer: { isMember: true, hasAnswered: false },
+    viewer: { isAttendee: true, hasAnswered: false },
     projector: false,
     ...overrides,
   };
@@ -54,7 +69,7 @@ describe("buildTextResultsPayload", () => {
 
   test("a member who answered is not asked again", () => {
     const payload = buildTextResultsPayload(
-      source({ viewer: { isMember: true, hasAnswered: true } }),
+      source({ viewer: { isAttendee: true, hasAnswered: true } }),
     );
 
     expect(payload.needsVote).toBe(false);
@@ -64,7 +79,7 @@ describe("buildTextResultsPayload", () => {
     const payload = buildTextResultsPayload(
       source({
         activity: { ...source().activity, status: "locked" },
-        viewer: { isMember: false, hasAnswered: false },
+        viewer: { isAttendee: false, hasAnswered: false },
         run: {
           status: "running",
           error: null,
@@ -108,7 +123,7 @@ describe("buildTextResultsPayload", () => {
     const payload = buildTextResultsPayload(
       source({
         activity: { ...source().activity, status: "locked" },
-        viewer: { isMember: false, hasAnswered: false },
+        viewer: { isAttendee: false, hasAnswered: false },
         projector: true,
       }),
     );
@@ -124,9 +139,19 @@ describe("buildTextResultsPayload", () => {
         activity: { ...source().activity, status: "closed", closedAt: at(5) },
         run: rankedRun,
         rankings: [
-          { answerId: "a", rank: 1, rationale: "Small and concrete.", dropReason: null },
+          {
+            answerId: "a",
+            rank: 1,
+            rationale: "Small and concrete.",
+            dropReason: null,
+          },
           { answerId: "b", rank: 2, rationale: null, dropReason: null },
-          { answerId: "c", rank: null, rationale: null, dropReason: "Off-topic" },
+          {
+            answerId: "c",
+            rank: null,
+            rationale: null,
+            dropReason: "Off-topic",
+          },
         ],
       }),
     );
@@ -138,14 +163,14 @@ describe("buildTextResultsPayload", () => {
         rank: 1,
         body: "Ship the small thing.",
         rationale: "Small and concrete.",
-        email: null,
+        name: null,
       },
       {
         answerId: "b",
         rank: 2,
         body: "Talk to users first.",
         rationale: null,
-        email: null,
+        name: null,
       },
     ]);
     expect(payload.dropped).toBeNull();
@@ -157,12 +182,17 @@ describe("buildTextResultsPayload", () => {
     const payload = buildTextResultsPayload(
       source({
         activity: { ...source().activity, status: "closed", closedAt: at(5) },
-        viewer: { isMember: false, hasAnswered: false },
+        viewer: { isAttendee: false, hasAnswered: false },
         run: rankedRun,
         rankings: [
           { answerId: "a", rank: 1, rationale: null, dropReason: null },
           { answerId: "b", rank: 2, rationale: null, dropReason: null },
-          { answerId: "c", rank: null, rationale: null, dropReason: "Off-topic" },
+          {
+            answerId: "c",
+            rank: null,
+            rationale: null,
+            dropReason: "Off-topic",
+          },
         ],
       }),
     );
@@ -191,8 +221,8 @@ describe("buildTextResultsPayload", () => {
     const attendee = buildTextResultsPayload(base);
     const projector = buildTextResultsPayload({ ...base, projector: true });
 
-    expect(attendee.rows[0]?.email).toBe("a@example.com");
-    expect(projector.rows[0]?.email).toBeNull();
+    expect(attendee.rows[0]?.name).toBe("a@example.com");
+    expect(projector.rows[0]?.name).toBeNull();
   });
 
   test("closing without a ranking publishes every answer in submission order", () => {
@@ -222,7 +252,7 @@ describe("buildTextResultsPayload", () => {
           {
             id: "a",
             body: "[answer removed]",
-            email: null,
+            name: null,
             createdAt: at(1),
           },
         ],
@@ -235,7 +265,7 @@ describe("buildTextResultsPayload", () => {
         rank: null,
         body: "[answer removed]",
         rationale: null,
-        email: null,
+        name: null,
       },
     ]);
   });

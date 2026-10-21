@@ -1,20 +1,20 @@
-import { getSessionUser } from "@/lib/auth";
 import { loadPollResults } from "@/lib/poll-results";
+import { getActivityTalkAccess } from "@/lib/results-access";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ pollId: string }> },
 ) {
-  const user = await getSessionUser();
-  if (!user) {
+  const { pollId } = await params;
+  const access = await getActivityTalkAccess(pollId);
+  if (!access) {
     return Response.json(
-      { error: "Sign in to view poll results." },
+      { error: "Join this talk to view poll results." },
       { status: 401, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  const { pollId } = await params;
-  const results = await loadPollResults(pollId, user);
+  const results = await loadPollResults(pollId, access);
   if (!results) {
     return Response.json(
       { error: "Poll not found." },

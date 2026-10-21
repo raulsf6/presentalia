@@ -11,7 +11,7 @@ import { TextActivityControls } from "@/components/TextActivityControls";
 import { TextLiveResults } from "@/components/TextLiveResults";
 import { getDb } from "@/db";
 import { activities } from "@/db/schema";
-import { loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/membership";
 import { loadPollResults } from "@/lib/poll-results";
 import type { PollResultsPayload } from "@/lib/polls";
 import { loadQuizResults, type QuizResultsPayload } from "@/lib/quiz-results";
@@ -72,7 +72,7 @@ async function ActivityResultsContent({
   let text: TextResultsPayload | null = null;
 
   if (activity.type === "poll") {
-    poll = await loadPollResults(activityId, access.user, { access });
+    poll = await loadPollResults(activityId, access);
     if (!poll || poll.poll.talkId !== talkId) {
       notFound();
     }
@@ -80,8 +80,7 @@ async function ActivityResultsContent({
       redirect(activityHref);
     }
   } else if (activity.type === "quiz") {
-    quiz = await loadQuizResults(activityId, access.user, {
-      access,
+    quiz = await loadQuizResults(activityId, access, {
       projector,
     });
     if (!quiz || quiz.quiz.talkId !== talkId) {
@@ -94,8 +93,7 @@ async function ActivityResultsContent({
       redirect(activityHref);
     }
   } else if (activity.type === "text") {
-    text = await loadTextResults(activityId, access.user, {
-      access,
+    text = await loadTextResults(activityId, access, {
       projector,
     });
     if (!text || text.activity.talkId !== talkId) {
@@ -113,7 +111,7 @@ async function ActivityResultsContent({
 
   const kind = activity.type === "quiz" ? "quiz" : "poll";
   const active = activity.status === "active";
-  const manager = access.access !== "member";
+  const manager = isManager(access);
   const textControls =
     text && manager && !projector && activity.status !== "closed";
 

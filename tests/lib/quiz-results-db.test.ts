@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/pglite";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Db } from "@/db";
 import * as schema from "@/db/schema";
@@ -14,14 +14,6 @@ import {
   seedTalk,
   setStatus,
 } from "../db/harness";
-
-const mocks = vi.hoisted(() => ({
-  getTalkAccessForUser: vi.fn(),
-}));
-
-vi.mock("@/lib/membership", () => ({
-  getTalkAccessForUser: mocks.getTalkAccessForUser,
-}));
 
 type Setup = {
   pglite: Awaited<ReturnType<typeof createDb>>;
@@ -102,7 +94,6 @@ async function vote(
 
 beforeEach(() => {
   clearQuizResultsCache();
-  vi.clearAllMocks();
 });
 
 describe("loadQuizResults", () => {
@@ -110,9 +101,8 @@ describe("loadQuizResults", () => {
     const f = await setup();
     await vote(f, f.member, f.optionIds[0]);
 
-    const payload = await loadQuizResults(f.quizId, f.managerViewer, {
+    const payload = await loadQuizResults(f.quizId, f.managerAccess, {
       db: f.db,
-      access: f.managerAccess,
     });
 
     expect(payload?.showResults).toBe(false);
@@ -125,9 +115,8 @@ describe("loadQuizResults", () => {
   test("asks an unvoted member to vote before showing results", async () => {
     const f = await setup();
 
-    const payload = await loadQuizResults(f.quizId, f.memberViewer, {
+    const payload = await loadQuizResults(f.quizId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
 
     expect(payload?.needsVote).toBe(true);
@@ -139,9 +128,8 @@ describe("loadQuizResults", () => {
     const f = await setup();
     await vote(f, f.member, f.optionIds[0]);
 
-    const payload = await loadQuizResults(f.quizId, f.memberViewer, {
+    const payload = await loadQuizResults(f.quizId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
 
     expect(payload?.needsVote).toBe(false);
@@ -169,9 +157,8 @@ describe("loadQuizResults", () => {
     const f = await setup();
     await vote(f, f.member, f.optionIds[0]);
 
-    const payload = await loadQuizResults(f.quizId, f.memberViewer, {
+    const payload = await loadQuizResults(f.quizId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
       projector: true,
     });
 
@@ -185,9 +172,8 @@ describe("loadQuizResults", () => {
     await vote(f, f.member, f.optionIds[0]);
     await vote(f, f.other, f.optionIds[1]);
 
-    const payload = await loadQuizResults(f.quizId, f.memberViewer, {
+    const payload = await loadQuizResults(f.quizId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
 
     expect(payload?.showResults).toBe(true);
@@ -205,106 +191,93 @@ describe("loadQuizResults", () => {
     await vote(f, f.member, f.optionIds[0]);
     await vote(f, f.other, f.optionIds[1]);
 
-    const memberPayload = await loadQuizResults(f.quizId, f.memberViewer, {
+    const memberPayload = await loadQuizResults(f.quizId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
-    const managerPayload = await loadQuizResults(f.quizId, f.managerViewer, {
+    const managerPayload = await loadQuizResults(f.quizId, f.managerAccess, {
       db: f.db,
-      access: f.managerAccess,
     });
 
     expect(memberPayload?.voters).toEqual(
       expect.arrayContaining([
-        { optionId: f.optionIds[0], email: f.member.email },
-        { optionId: f.optionIds[1], email: f.other.email },
+        { optionId: f.optionIds[0], name: f.member.email },
+        { optionId: f.optionIds[1], name: f.other.email },
       ]),
     );
     expect(managerPayload?.voters).toBeNull();
   });
 
-  test("returns null when the viewer cannot access the quiz's talk", async () => {
+  test("returns null when the access belongs to another talk", async () => {
     const f = await setup();
-    mocks.getTalkAccessForUser.mockResolvedValue(null);
+    const otherAccess: TalkAccess = {
+      ...f.memberAccess,
+      talk: { id: crypto.randomUUID() } as TalkRow,
+    };
 
     await expect(
-      loadQuizResults(f.quizId, f.memberViewer, { db: f.db }),
+      loadQuizResults(f.quizId, otherAccess, { db: f.db }),
     ).resolves.toBeNull();
   });
 
   test("checks access before returning a cached payload", async () => {
     const f = await setup();
-    await loadQuizResults(f.quizId, f.managerViewer, {
-      db: f.db,
-      access: f.managerAccess,
-    });
-
-    mocks.getTalkAccessForUser.mockResolvedValue(null);
+    await loadQuizResults(f.quizId, f.managerAccess, { db: f.db });
+    const otherAccess: TalkAccess = {
+      ...f.managerAccess,
+      talk: { id: crypto.randomUUID() } as TalkRow,
+    };
 
     await expect(
-      loadQuizResults(f.quizId, f.managerViewer, { db: f.db }),
+      loadQuizResults(f.quizId, otherAccess, { db: f.db }),
     ).resolves.toBeNull();
   });
 
   test("caches counts for the TTL and reloads them after clearing", async () => {
     const f = await setup({ status: "closed" });
     await vote(f, f.member, f.optionIds[0]);
-    const first = await loadQuizResults(f.quizId, f.managerViewer, {
+    const first = await loadQuizResults(f.quizId, f.managerAccess, {
       db: f.db,
-      access: f.managerAccess,
     });
     expect(first?.total).toBe(1);
 
     await vote(f, f.other, f.optionIds[1]);
 
-    const cached = await loadQuizResults(f.quizId, f.managerViewer, {
+    const cached = await loadQuizResults(f.quizId, f.managerAccess, {
       db: f.db,
-      access: f.managerAccess,
     });
     expect(cached?.total).toBe(1);
 
     clearQuizResultsCache();
-    const fresh = await loadQuizResults(f.quizId, f.managerViewer, {
+    const fresh = await loadQuizResults(f.quizId, f.managerAccess, {
       db: f.db,
-      access: f.managerAccess,
     });
     expect(fresh?.total).toBe(2);
   });
 
   test("does not serve a deleted quiz from cache", async () => {
     const f = await setup();
-    await loadQuizResults(f.quizId, f.managerViewer, {
-      db: f.db,
-      access: f.managerAccess,
-    });
+    await loadQuizResults(f.quizId, f.managerAccess, { db: f.db });
 
     await f.pglite.query("delete from public.activities where id = $1", [
       f.quizId,
     ]);
 
     await expect(
-      loadQuizResults(f.quizId, f.managerViewer, {
-        db: f.db,
-        access: f.managerAccess,
-      }),
+      loadQuizResults(f.quizId, f.managerAccess, { db: f.db }),
     ).resolves.toBeNull();
   });
 
   test("reads the quiz status fresh even when counts are cached", async () => {
     const f = await setup();
     await vote(f, f.member, f.optionIds[0]);
-    const first = await loadQuizResults(f.quizId, f.memberViewer, {
-      db: f.db,
-      access: f.memberAccess,
-    });
+    const first = await loadQuizResults(f.quizId, f.memberAccess, { db: f.db });
     expect(first?.quiz.status).toBe("active");
     expect(first?.quiz.correctOptionId).toBeNull();
 
     await setStatus(f.pglite, f.quizId, "closed");
 
-    const second = await loadQuizResults(f.quizId, f.memberViewer, {
+    const second = await loadQuizResults(f.quizId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
     expect(second?.quiz.status).toBe("closed");
     expect(second?.quiz.correctOptionId).toBe(f.optionIds[1]);
@@ -312,18 +285,14 @@ describe("loadQuizResults", () => {
 
   test("does not cache the vote-first state", async () => {
     const f = await setup();
-    const before = await loadQuizResults(f.quizId, f.memberViewer, {
+    const before = await loadQuizResults(f.quizId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
     expect(before?.needsVote).toBe(true);
 
     await vote(f, f.member, f.optionIds[0]);
 
-    const after = await loadQuizResults(f.quizId, f.memberViewer, {
-      db: f.db,
-      access: f.memberAccess,
-    });
+    const after = await loadQuizResults(f.quizId, f.memberAccess, { db: f.db });
     expect(after?.needsVote).toBe(false);
     expect(after?.showResults).toBe(true);
   });
@@ -332,13 +301,11 @@ describe("loadQuizResults", () => {
     const f = await setup();
     await vote(f, f.member, f.optionIds[0]);
 
-    const normal = await loadQuizResults(f.quizId, f.memberViewer, {
+    const normal = await loadQuizResults(f.quizId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
     });
-    const projector = await loadQuizResults(f.quizId, f.memberViewer, {
+    const projector = await loadQuizResults(f.quizId, f.memberAccess, {
       db: f.db,
-      access: f.memberAccess,
       projector: true,
     });
 

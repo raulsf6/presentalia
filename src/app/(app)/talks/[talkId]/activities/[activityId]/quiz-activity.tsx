@@ -7,7 +7,7 @@ import { quizOptions, quizVotes, quizzes, type ActivityRow } from "@/db/schema";
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { VoteForm } from "@/components/VoteForm";
 import type { ActivityStatus } from "@/lib/activities";
-import type { TalkAccess } from "@/lib/membership";
+import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
 
 /**
  * Quiz-type activity: the draft workspace for managers, the vote page for
@@ -58,22 +58,25 @@ export async function QuizActivity({
   // the attendee payload and would reveal the answer.
   const voteOptions = options.map(({ id, label }) => ({ id, label }));
 
-  if (access.access !== "member" && status !== "draft") {
+  if (!isAttendee(access) && status !== "draft") {
     redirect(resultsHref);
   }
 
-  if (access.access === "member" && status === "closed") {
+  if (isAttendee(access) && status === "closed") {
     redirect(resultsHref);
   }
 
-  if (access.access === "member" && status === "active") {
+  if (isAttendee(access) && status === "active") {
+    const key = attendeeVoteKey(access);
     const ownVotes = await db
       .select({ optionId: quizVotes.optionId })
       .from(quizVotes)
       .where(
         and(
           eq(quizVotes.quizId, activityId),
-          eq(quizVotes.userId, access.user.id),
+          "userId" in key
+            ? eq(quizVotes.userId, key.userId)
+            : eq(quizVotes.guestId, key.guestId),
         ),
       )
       .limit(1);
@@ -85,7 +88,7 @@ export async function QuizActivity({
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
       <div className="mb-8 flex items-center justify-between gap-4">
-        {access.access === "member" ? (
+        {isAttendee(access) ? (
           <Link href={`/talks/${talkId}`} className="linky">
             ← {access.talk.name}
           </Link>
@@ -104,7 +107,7 @@ export async function QuizActivity({
 
       <h1 className="font-display text-ink mb-8 text-2xl">{quiz.question}</h1>
 
-      {access.access !== "member" ? (
+      {!isAttendee(access) ? (
         <section className="card flex flex-col gap-6 p-6">
           <div className="flex flex-col gap-3">
             <h2 className="section-label">Answer options</h2>
@@ -125,7 +128,7 @@ export async function QuizActivity({
             <p className="text-ink/75 text-sm font-semibold">
               Results are{" "}
               {quiz.resultsIdentifiable
-                ? "identifiable — voter email addresses will be shown to all results viewers."
+                ? "identifiable — voter names will be shown to all results viewers."
                 : "anonymous — voter identities will not appear in results."}
             </p>
             <p className="text-ink/75 text-sm font-semibold">

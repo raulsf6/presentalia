@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { withVerifiedIdentity } from "@/lib/session-headers";
+import { GUEST_COOKIE_PREFIX } from "@/lib/talk-guests";
 
 const PROTECTED_PREFIXES = ["/talks"];
 
@@ -76,6 +77,11 @@ export async function proxy(request: NextRequest) {
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix),
   );
+  // Guest sessions are talk-scoped cookies with no Supabase user. This is only
+  // an optimistic gate; pages and actions validate the guest every time.
+  const hasGuestCookie = request.cookies
+    .getAll()
+    .some((cookie) => cookie.name.startsWith(GUEST_COOKIE_PREFIX));
 
   if (pathname === "/") {
     return respond(
@@ -83,7 +89,7 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  if (!user && isProtected) {
+  if (!user && isProtected && !hasGuestCookie) {
     const redirectUrl = new URL("/login", request.url);
     return respond(NextResponse.redirect(redirectUrl));
   }

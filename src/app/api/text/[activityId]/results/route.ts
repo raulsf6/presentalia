@@ -1,22 +1,24 @@
-import { getSessionUser } from "@/lib/auth";
+import { getActivityTalkAccess } from "@/lib/results-access";
 import { loadTextResults } from "@/lib/text-results";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ activityId: string }> },
 ) {
-  const user = await getSessionUser();
-  if (!user) {
+  const { activityId } = await params;
+  const access = await getActivityTalkAccess(activityId);
+  if (!access) {
     return Response.json(
-      { error: "Sign in to view results." },
+      { error: "Join this talk to view results." },
       { status: 401, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  const { activityId } = await params;
   const projector =
     new URL(request.url).searchParams.get("display") === "projector";
-  const results = await loadTextResults(activityId, user, { projector });
+  const results = await loadTextResults(activityId, access, {
+    projector,
+  });
   if (!results || results.activity.status === "draft") {
     return Response.json(
       { error: "Activity not found." },

@@ -9,6 +9,11 @@ chooses identifiable results before launching a poll or quiz. Polls show live
 results as votes arrive; quizzes have one correct answer and keep the tally and
 answer hidden from the room until the presenter closes them.
 
+A talk can also be made public. Anonymous attendees scan its join QR code,
+choose a username that is unique inside that talk, and take part without an
+account. Their browser remembers them as that guest; the presenter can stop new
+joins at any time without removing anyone already in the room.
+
 ## Requirements
 
 - Node.js 24 (or newer supported by the installed Next.js release) and npm.
@@ -173,7 +178,11 @@ them with `NEXT_PUBLIC_` or expose them in client components.
   Auth.
 - `src/db/index.ts` — server-only Drizzle connection using `POSTGRES_URL`.
 - `src/lib/membership.ts` — shared server-side talk authorization for admins,
-  presenters, and rostered attendees.
+  presenters, rostered attendees, and talk-scoped anonymous guests.
+- `src/lib/guest-session.ts` and `src/lib/talk-guests.ts` — the guest cookie,
+  token validation, and username rules behind public talk access.
+- `src/lib/results-access.ts` — resolves a session user, guest, or already
+  loaded talk access into the shared results shape.
 - `src/lib/activities.ts` — shared activity status and choice-result helpers.
 - `src/lib/polls.ts` and `src/lib/poll-results.ts` — poll validation, lifecycle
   rules, result calculations, and privacy-safe result payloads.

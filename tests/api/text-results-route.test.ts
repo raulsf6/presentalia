@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getSessionUser: vi.fn(),
+  getActivityTalkAccess: vi.fn(),
   loadTextResults: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({ getSessionUser: mocks.getSessionUser }));
+vi.mock("@/lib/results-access", () => ({
+  getActivityTalkAccess: mocks.getActivityTalkAccess,
+}));
 vi.mock("@/lib/text-results", () => ({
   loadTextResults: mocks.loadTextResults,
 }));
@@ -13,6 +15,16 @@ vi.mock("@/lib/text-results", () => ({
 import { GET } from "@/app/api/text/[activityId]/results/route";
 
 const params = Promise.resolve({ activityId: "activity-1" });
+
+const memberAccess = {
+  access: "member" as const,
+  user: {
+    id: "user-1",
+    email: "member@example.com",
+    role: "attendee" as const,
+  },
+  talk: { id: "talk-1" },
+};
 
 function request(url = "http://localhost/api/text/activity-1/results") {
   return new Request(url);
@@ -34,25 +46,42 @@ function payload(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.getSessionUser.mockResolvedValue({
-    id: "user-1",
-    email: "member@example.com",
-    role: "attendee",
-  });
+  mocks.getActivityTalkAccess.mockResolvedValue(memberAccess);
 });
 
 describe("GET /api/text/[activityId]/results", () => {
-  test("requires a session", async () => {
-    mocks.getSessionUser.mockResolvedValue(null);
+  test("requires talk access", async () => {
+    mocks.getActivityTalkAccess.mockResolvedValue(null);
 
     const response = await GET(request(), { params });
 
     expect(response.status).toBe(401);
   });
 
+  test("serves a guest with access to the talk", async () => {
+    const guestAccess = {
+      access: "guest" as const,
+      guest: { id: "guest-1", talkId: "talk-1", username: "Sam" },
+      talk: { id: "talk-1" },
+    };
+    mocks.getActivityTalkAccess.mockResolvedValue(guestAccess);
+    mocks.loadTextResults.mockResolvedValue(payload());
+
+    const response = await GET(request(), { params });
+
+    expect(response.status).toBe(200);
+    expect(mocks.loadTextResults).toHaveBeenCalledWith(
+      "activity-1",
+      guestAccess,
+      { projector: false },
+    );
+  });
+
   test("hides a missing or draft activity", async () => {
     mocks.loadTextResults.mockResolvedValue(
-      payload({ activity: { id: "activity-1", talkId: "talk-1", status: "draft" } }),
+      payload({
+        activity: { id: "activity-1", talkId: "talk-1", status: "draft" },
+      }),
     );
 
     const response = await GET(request(), { params });

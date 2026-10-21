@@ -78,7 +78,25 @@ describe("createTalkAction", () => {
       description: null,
       heldAt: null,
       createdBy: "presenter-1",
+      isPublic: false,
+      anonymousJoinOpen: true,
     });
     expect(mocks.updateTag).toHaveBeenCalledWith("talks");
+  });
+
+  test("creates a public talk with anonymous joining open", async () => {
+    const form = new FormData();
+    form.set("name", "Open talk");
+    form.set("isPublic", "on");
+
+    await createTalkAction({ ok: true }, form);
+
+    expect(mocks.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Open talk",
+        isPublic: true,
+        anonymousJoinOpen: true,
+      }),
+    );
   });
 });

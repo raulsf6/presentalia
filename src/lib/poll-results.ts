@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import { getDb, type Db } from "@/db";
 import {
@@ -8,9 +8,9 @@ import {
   pollVoteCounts,
   pollVotes,
   polls,
+  talkGuests,
 } from "@/db/schema";
-import type { SessionUser } from "@/lib/auth";
-import { getTalkAccessForUser, type TalkAccess } from "@/lib/membership";
+import type { TalkAccess } from "@/lib/membership";
 import {
   computeResults,
   type ActivityStatus,
@@ -30,7 +30,7 @@ export type PollResultsSource = {
   poll: PollSource | null;
   options: { id: string; label: string }[];
   counts: { optionId: string; votes: number }[];
-  votes?: { optionId: string; email: string }[];
+  votes?: { optionId: string; name: string }[];
 };
 
 const POLL_RESULTS_CACHE_TTL_MS = 2_000;
@@ -125,15 +125,13 @@ export function buildPollResultsPayload(
 
 export type LoadPollResultsOptions = {
   db?: Db;
-  /** Pass the request's already-loaded talk access to avoid re-checking it. */
-  access?: TalkAccess;
 };
 
-/** Loads results through the owner connection after checking app-layer talk access. */
+/** Loads results after the caller has authorized access to the poll's talk. */
 export async function loadPollResults(
   pollId: string,
-  viewer: SessionUser,
-  { db = getDb(), access: providedAccess }: LoadPollResultsOptions = {},
+  access: TalkAccess,
+  { db = getDb() }: LoadPollResultsOptions = {},
 ): Promise<PollResultsPayload | null> {
   // Always read the poll itself. Status changes (launch/close) must be
   // immediate even if the option/count data is still cached.
@@ -151,23 +149,16 @@ export async function loadPollResults(
     .where(eq(activities.id, pollId))
     .limit(1);
   const poll = pollRows[0] ?? null;
-  if (!poll) {
+  if (!poll || access.talk.id !== poll.talkId) {
     return null;
   }
 
-  const accessPromise =
-    providedAccess?.talk.id === poll.talkId
-      ? Promise.resolve(providedAccess)
-      : getTalkAccessForUser(viewer, poll.talkId, db);
-
   const cached = readCachedPollData(pollId);
   if (cached) {
-    const access = await accessPromise;
-    return access ? buildPollResultsPayload({ poll, ...cached.data }) : null;
+    return buildPollResultsPayload({ poll, ...cached.data });
   }
 
-  // Access and the option/count rows are independent; fetch them together.
-  const optionRowsPromise = db
+  const optionRows = await db
     .select({
       id: pollOptions.id,
       label: pollOptions.label,
@@ -184,32 +175,29 @@ export async function loadPollResults(
     .where(eq(pollOptions.pollId, pollId))
     .orderBy(asc(pollOptions.position));
 
-  const [access, optionRows] = await Promise.all([
-    accessPromise,
-    optionRowsPromise,
-  ]);
-  if (!access) {
-    return null;
-  }
-
   const options = optionRows.map(({ id, label }) => ({ id, label }));
   const counts = optionRows.flatMap((row) =>
     row.votes === null ? [] : [{ optionId: row.id, votes: row.votes }],
   );
 
   // Never load voter identities in anonymous mode; the result display would
-  // omit them anyway. Emails come from the app-owned user mirror.
+  // omit them anyway. Names come from the app-owned user mirror or the guest
+  // row that owns the vote.
   const votes = poll.resultsIdentifiable
     ? (
         await db
-          .select({ optionId: pollVotes.optionId, email: appUsers.email })
+          .select({
+            optionId: pollVotes.optionId,
+            name: sql<
+              string | null
+            >`coalesce(${appUsers.email}, ${talkGuests.username})`,
+          })
           .from(pollVotes)
-          .innerJoin(appUsers, eq(appUsers.id, pollVotes.userId))
+          .leftJoin(appUsers, eq(appUsers.id, pollVotes.userId))
+          .leftJoin(talkGuests, eq(talkGuests.id, pollVotes.guestId))
           .where(eq(pollVotes.pollId, pollId))
       ).flatMap((row) =>
-        row.email === null
-          ? []
-          : [{ optionId: row.optionId, email: row.email }],
+        row.name === null ? [] : [{ optionId: row.optionId, name: row.name }],
       )
     : undefined;
 
