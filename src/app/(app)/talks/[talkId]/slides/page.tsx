@@ -49,6 +49,34 @@ async function SlidesContent({
       <div className="card p-6">
         <SlidesManager talkId={talkId} uploadedLabel={uploadedLabel} />
       </div>
+      <div className="card mt-6 p-6">
+        <p className="section-label">Present</p>
+        {uploadedLabel ? (
+          <>
+            <p className="text-ink/75 mt-3 text-sm font-semibold">
+              Open <strong>Present</strong> on the laptop connected to the big
+              screen, then use <strong>Remote</strong> on your phone.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <a
+                href={`/talks/${talkId}/present`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn"
+              >
+                Present
+              </a>
+              <a href={`/talks/${talkId}/remote`} className="btn btn-ghost">
+                Remote
+              </a>
+            </div>
+          </>
+        ) : (
+          <p className="text-muted mt-3 text-sm font-semibold">
+            Upload the deck to project it and control it from your phone.
+          </p>
+        )}
+      </div>
     </main>
   );
 }

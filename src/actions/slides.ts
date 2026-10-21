@@ -1,11 +1,9 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 
-import { getDb } from "@/db";
-import { talks } from "@/db/schema";
 import { requireTalkManager } from "@/lib/membership";
+import { markSlidesUploaded } from "@/lib/slide-state";
 import {
   createSlidesUploadTicket,
   type SlidesUploadTicket,
@@ -64,11 +62,7 @@ export async function completeSlidesUploadAction(
     };
   }
 
-  const [updated] = await getDb()
-    .update(talks)
-    .set({ slidesUpdatedAt: new Date() })
-    .where(eq(talks.id, talkId))
-    .returning({ id: talks.id });
+  const updated = await markSlidesUploaded(talkId);
   if (!updated) {
     return { ok: false, error: "Talk not found." };
   }
