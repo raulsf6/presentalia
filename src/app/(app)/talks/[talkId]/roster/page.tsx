@@ -3,22 +3,13 @@ import { Suspense } from "react";
 
 import { AnonymousAccessManager } from "@/components/AnonymousAccessManager";
 import { GuestManager } from "@/components/GuestManager";
-import { LiveActivityRefresh } from "@/components/LiveActivityRefresh";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { RosterManager } from "@/components/RosterManager";
 import { isManager, loadTalkAccess } from "@/lib/membership";
 import { getSiteUrl } from "@/lib/site-url";
-import { countTalkGuests, loadTalkGuests } from "@/lib/talk-guests-db";
+import { formatGuestJoinedAt } from "@/lib/talk-guests";
+import { loadTalkGuests } from "@/lib/talk-guests-db";
 import { loadTalkRoster } from "@/lib/talk-roster";
-
-function joinedAtLabel(date: Date): string {
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export default function RosterPage({
   params,
@@ -48,12 +39,10 @@ async function RosterContent({
     loadTalkRoster(talkId),
     loadTalkGuests(talkId),
   ]);
-  const guestCount = await countTalkGuests(talkId);
   const joinUrl = `${await getSiteUrl()}/join/${talkId}`;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <LiveActivityRefresh />
       <div className="mb-8">
         <h1 className="font-display text-ink text-2xl">Attendees & access</h1>
         <p className="text-muted mt-1 text-sm font-semibold">
@@ -67,25 +56,15 @@ async function RosterContent({
           isPublic={access.talk.isPublic}
           joinOpen={access.talk.anonymousJoinOpen}
           joinUrl={joinUrl}
-          guestCount={guestCount}
         />
       </div>
       <div className="card mb-6 p-6">
-        <div className="mb-4">
-          <h2 className="text-ink text-sm font-bold">
-            Guest attendees{guests.length > 0 ? ` (${guests.length})` : ""}
-          </h2>
-          <p className="text-muted text-xs font-semibold">
-            Anonymous people currently in this talk. Removing a guest deletes
-            their votes and answers.
-          </p>
-        </div>
         <GuestManager
           talkId={talkId}
-          guests={guests.map((guest) => ({
+          initialGuests={guests.map((guest) => ({
             id: guest.id,
             username: guest.username,
-            joinedAtLabel: joinedAtLabel(guest.joinedAt),
+            joinedAtLabel: formatGuestJoinedAt(guest.joinedAt),
           }))}
         />
       </div>

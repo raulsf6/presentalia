@@ -13,7 +13,6 @@ type Props = {
   isPublic: boolean;
   joinOpen: boolean;
   joinUrl: string;
-  guestCount: number;
 };
 
 export function AnonymousAccessManager({
@@ -21,7 +20,6 @@ export function AnonymousAccessManager({
   isPublic,
   joinOpen,
   joinUrl,
-  guestCount,
 }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -92,11 +90,6 @@ export function AnonymousAccessManager({
                 {joinUrl}
               </code>
             </div>
-            <p className="text-muted text-xs font-semibold">
-              {guestCount === 1
-                ? "1 guest has joined."
-                : `${guestCount} guests have joined.`}
-            </p>
           </div>
         </>
       ) : null}

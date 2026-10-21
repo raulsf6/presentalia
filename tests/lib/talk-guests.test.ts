@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   createGuestToken,
+  formatGuestJoinedAt,
   guestCookieName,
   hashGuestToken,
   normalizeGuestUsername,
@@ -76,5 +77,13 @@ describe("guest cookies", () => {
     expect(parseGuestCookie("not-a-uuid.token")).toBeNull();
     expect(parseGuestCookie(`${crypto.randomUUID()}.`)).toBeNull();
     expect(parseGuestCookie(crypto.randomUUID())).toBeNull();
+  });
+});
+
+describe("guest timestamps", () => {
+  test("formats a join time for the roster", () => {
+    expect(formatGuestJoinedAt(new Date("2026-10-21T10:05:00Z"))).toBe(
+      "Oct 21, 10:05 AM",
+    );
   });
 });

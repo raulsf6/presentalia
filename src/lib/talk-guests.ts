@@ -72,6 +72,17 @@ export function guestCookieName(talkId: string): string {
   return `${GUEST_COOKIE_PREFIX}${talkId}`;
 }
 
+/** Roster label for a guest's join time, stable across server time zones. */
+export function formatGuestJoinedAt(date: Date): string {
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+}
+
 export function isTalkId(value: string): boolean {
   return UUID_PATTERN.test(value);
 }
