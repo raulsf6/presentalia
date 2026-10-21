@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -131,4 +131,31 @@ function revalidateTalkSettings(talkId: string): void {
   revalidatePath(`/talks/${talkId}`);
   revalidatePath(`/talks/${talkId}/roster`);
   revalidatePath(`/talks/${talkId}/join-qr`);
+}
+
+/**
+ * Removes one guest from the talk. Their votes and answers cascade with the
+ * guest row, so live tallies and rankings reflect the removal. The browser's
+ * cookie stops working; with joining open they could return under a new name.
+ */
+export async function removeTalkGuestAction(
+  talkId: string,
+  guestId: string,
+): Promise<AnonymousAccessResult> {
+  const guard = await requireTalkManager(talkId);
+  if (!guard.ok) {
+    return guard;
+  }
+
+  const removed = await getDb()
+    .delete(talkGuests)
+    .where(and(eq(talkGuests.id, guestId), eq(talkGuests.talkId, talkId)))
+    .returning({ id: talkGuests.id });
+
+  if (removed.length === 0) {
+    return { ok: false, error: "That guest is no longer in this talk." };
+  }
+
+  revalidateTalkSettings(talkId);
+  return { ok: true };
 }

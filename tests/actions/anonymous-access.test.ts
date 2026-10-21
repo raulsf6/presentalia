@@ -5,11 +5,12 @@ import type { Db } from "@/db";
 import * as schema from "@/db/schema";
 import {
   joinPublicTalkAction,
+  removeTalkGuestAction,
   setAnonymousJoinOpenAction,
   setTalkPublicAction,
 } from "@/actions/anonymous-access";
 import { hashGuestToken } from "@/lib/talk-guests";
-import { createDb, exec, seedTalk } from "../db/harness";
+import { createDb, exec, seedPoll, seedTalk, setStatus } from "../db/harness";
 
 const mocks = vi.hoisted(() => ({
   db: null as unknown,
@@ -249,5 +250,107 @@ describe("talk access switches", () => {
       [talkId],
     );
     expect(rows[0]?.is_public).toBe(false);
+  });
+});
+
+describe("removeTalkGuestAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireTalkManager.mockResolvedValue({
+      ok: true,
+      user: { id: "presenter", email: "p@example.com", role: "presenter" },
+      talk: { id: "talk", isPublic: true },
+      access: "presenter",
+    });
+  });
+
+  test("removes the guest, their vote, and keeps the tally accurate", async () => {
+    const { pglite, talkId } = await setup();
+    const guestId = crypto.randomUUID();
+    await exec(
+      pglite,
+      `insert into public.talk_guests
+         (id, talk_id, username, username_normalized, token_hash)
+       values ($1, $2, 'Sam', 'sam', 'hash')`,
+      [guestId, talkId],
+    );
+    const { pollId, optionIds } = await seedPoll(pglite, talkId);
+    await setStatus(pglite, pollId, "active");
+    await exec(
+      pglite,
+      "insert into public.poll_votes (poll_id, guest_id, option_id) values ($1, $2, $3)",
+      [pollId, guestId, optionIds[0]],
+    );
+
+    const result = await removeTalkGuestAction(talkId, guestId);
+
+    expect(result).toEqual({ ok: true });
+    const guests = await exec(
+      pglite,
+      "select id from public.talk_guests where id = $1",
+      [guestId],
+    );
+    const votes = await exec(
+      pglite,
+      "select poll_id from public.poll_votes where poll_id = $1",
+      [pollId],
+    );
+    const counts = await exec(
+      pglite,
+      "select votes from public.poll_vote_counts where poll_id = $1 and option_id = $2",
+      [pollId, optionIds[0]],
+    );
+    expect(guests).toHaveLength(0);
+    expect(votes).toHaveLength(0);
+    expect(Number(counts[0]?.votes)).toBe(0);
+  });
+
+  test("will not remove a guest from another talk", async () => {
+    const { pglite, talkId } = await setup();
+    const otherTalkId = await seedTalk(pglite, "Other", []);
+    const otherGuestId = crypto.randomUUID();
+    await exec(
+      pglite,
+      `insert into public.talk_guests
+         (id, talk_id, username, username_normalized, token_hash)
+       values ($1, $2, 'Alex', 'alex', 'hash')`,
+      [otherGuestId, otherTalkId],
+    );
+
+    const result = await removeTalkGuestAction(talkId, otherGuestId);
+
+    expect(result).toMatchObject({ ok: false });
+    const guests = await exec(
+      pglite,
+      "select id from public.talk_guests where id = $1",
+      [otherGuestId],
+    );
+    expect(guests).toHaveLength(1);
+  });
+
+  test("rejects a non-manager", async () => {
+    const { pglite, talkId } = await setup();
+    const guestId = crypto.randomUUID();
+    await exec(
+      pglite,
+      `insert into public.talk_guests
+         (id, talk_id, username, username_normalized, token_hash)
+       values ($1, $2, 'Sam', 'sam', 'hash')`,
+      [guestId, talkId],
+    );
+    mocks.requireTalkManager.mockResolvedValue({
+      ok: false,
+      error: "You can't manage this talk.",
+    });
+
+    const result = await removeTalkGuestAction(talkId, guestId);
+
+    expect(result).toMatchObject({ ok: false });
+    const guests = await exec(
+      pglite,
+      "select id from public.talk_guests where id = $1",
+      [guestId],
+    );
+    expect(guests).toHaveLength(1);
   });
 });

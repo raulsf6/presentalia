@@ -1,15 +1,23 @@
-import { eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { AnonymousAccessManager } from "@/components/AnonymousAccessManager";
+import { GuestManager } from "@/components/GuestManager";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { RosterManager } from "@/components/RosterManager";
-import { getDb } from "@/db";
-import { talkGuests } from "@/db/schema";
 import { isManager, loadTalkAccess } from "@/lib/membership";
 import { getSiteUrl } from "@/lib/site-url";
+import { countTalkGuests, loadTalkGuests } from "@/lib/talk-guests-db";
 import { loadTalkRoster } from "@/lib/talk-roster";
+
+function joinedAtLabel(date: Date): string {
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export default function RosterPage({
   params,
@@ -35,11 +43,11 @@ async function RosterContent({
     notFound();
   }
 
-  const roster = await loadTalkRoster(talkId);
-  const [guestCount] = await getDb()
-    .select({ count: sql<number>`count(*)::int` })
-    .from(talkGuests)
-    .where(eq(talkGuests.talkId, talkId));
+  const [roster, guests] = await Promise.all([
+    loadTalkRoster(talkId),
+    loadTalkGuests(talkId),
+  ]);
+  const guestCount = await countTalkGuests(talkId);
   const joinUrl = `${await getSiteUrl()}/join/${talkId}`;
 
   return (
@@ -57,7 +65,26 @@ async function RosterContent({
           isPublic={access.talk.isPublic}
           joinOpen={access.talk.anonymousJoinOpen}
           joinUrl={joinUrl}
-          guestCount={guestCount?.count ?? 0}
+          guestCount={guestCount}
+        />
+      </div>
+      <div className="card mb-6 p-6">
+        <div className="mb-4">
+          <h2 className="text-ink text-sm font-bold">
+            Guest attendees{guests.length > 0 ? ` (${guests.length})` : ""}
+          </h2>
+          <p className="text-muted text-xs font-semibold">
+            Anonymous people currently in this talk. Removing a guest deletes
+            their votes and answers.
+          </p>
+        </div>
+        <GuestManager
+          talkId={talkId}
+          guests={guests.map((guest) => ({
+            id: guest.id,
+            username: guest.username,
+            joinedAtLabel: joinedAtLabel(guest.joinedAt),
+          }))}
         />
       </div>
       <div className="card p-6">

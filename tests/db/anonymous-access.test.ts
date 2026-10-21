@@ -201,6 +201,27 @@ describe("anonymous talk access migration", () => {
     expect(answers).toEqual([{ guest_id: guestId, body: "Guest answer" }]);
   });
 
+  test("deleting a guest removes their text answer", async () => {
+    const db = await createDb();
+    const talkId = await seedTalk(db, "Talk", []);
+    const guestId = await addGuest(db, talkId);
+    const activityId = await seedTextActivity(db, talkId, { status: "active" });
+    await exec(
+      db,
+      "insert into public.text_answers (activity_id, guest_id, body) values ($1, $2, 'Guest answer')",
+      [activityId, guestId],
+    );
+
+    await exec(db, "delete from public.talk_guests where id = $1", [guestId]);
+
+    const answers = await exec(
+      db,
+      "select id from public.text_answers where activity_id = $1",
+      [activityId],
+    );
+    expect(answers).toHaveLength(0);
+  });
+
   test("deleting a talk removes its guests, votes, and answers", async () => {
     const db = await createDb();
     const talkId = await seedTalk(db, "Talk", []);

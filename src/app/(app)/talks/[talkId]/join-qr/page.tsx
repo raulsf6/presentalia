@@ -1,4 +1,3 @@
-import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -7,11 +6,10 @@ import { AnonymousJoinToggle } from "@/components/AnonymousJoinToggle";
 import { HideInProjector } from "@/components/HideInProjector";
 import { LiveActivityRefresh } from "@/components/LiveActivityRefresh";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { getDb } from "@/db";
-import { talkGuests } from "@/db/schema";
 import { isManager, loadTalkAccess } from "@/lib/membership";
 import { renderQrSvg } from "@/lib/qr";
 import { getSiteUrl } from "@/lib/site-url";
+import { countTalkGuests } from "@/lib/talk-guests-db";
 
 export default function JoinQrPage({
   params,
@@ -51,10 +49,7 @@ async function JoinQrContent({
     ? await renderQrSvg(joinUrl)
     : null;
 
-  const [guestCount] = await getDb()
-    .select({ count: sql<number>`count(*)::int` })
-    .from(talkGuests)
-    .where(eq(talkGuests.talkId, talkId));
+  const guestCount = await countTalkGuests(talkId);
 
   return (
     <main
@@ -122,9 +117,9 @@ async function JoinQrContent({
             joinOpen={access.talk.anonymousJoinOpen}
           />
           <p className="text-muted text-xs font-semibold">
-            {guestCount?.count === 1
+            {guestCount === 1
               ? "1 guest has joined."
-              : `${guestCount?.count ?? 0} guests have joined.`}
+              : `${guestCount} guests have joined.`}
           </p>
         </div>
       ) : null}

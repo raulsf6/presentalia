@@ -12,7 +12,9 @@ answer hidden from the room until the presenter closes them.
 A talk can also be made public. Anonymous attendees scan its join QR code,
 choose a username that is unique inside that talk, and take part without an
 account. Their browser remembers them as that guest; the presenter can stop new
-joins at any time without removing anyone already in the room.
+joins at any time without removing anyone already in the room, and can remove an
+individual guest from the access page. Removing a guest deletes their votes and
+answers.
 
 ## Requirements
 
