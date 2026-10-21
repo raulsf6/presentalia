@@ -93,6 +93,9 @@ describe("joinPublicTalkAction", () => {
     expect(guestId).toBe(guests[0]?.id);
     expect(guests[0]?.token_hash).toBe(hashGuestToken(token));
     expect(mocks.redirect).toHaveBeenCalledWith(`/talks/${talkId}`);
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(
+      `/talks/${talkId}/roster`,
+    );
   });
 
   test("refuses a talk that is not public", async () => {

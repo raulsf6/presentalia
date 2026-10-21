@@ -76,6 +76,7 @@ export async function joinPublicTalkAction(
 
   await setGuestCookie(talkId, guestId, token);
   revalidatePath(`/talks/${talkId}`);
+  revalidatePath(`/talks/${talkId}/roster`);
   redirect(`/talks/${talkId}`);
   return { ok: true };
 }

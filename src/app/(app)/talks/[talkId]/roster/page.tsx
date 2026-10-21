@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { AnonymousAccessManager } from "@/components/AnonymousAccessManager";
 import { GuestManager } from "@/components/GuestManager";
+import { LiveActivityRefresh } from "@/components/LiveActivityRefresh";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { RosterManager } from "@/components/RosterManager";
 import { isManager, loadTalkAccess } from "@/lib/membership";
@@ -52,6 +53,7 @@ async function RosterContent({
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
+      <LiveActivityRefresh />
       <div className="mb-8">
         <h1 className="font-display text-ink text-2xl">Attendees & access</h1>
         <p className="text-muted mt-1 text-sm font-semibold">
