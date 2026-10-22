@@ -1,4 +1,4 @@
-export type ActivityStatus = "draft" | "active" | "locked" | "closed";
+export type ActivityStatus = "ready" | "active" | "locked" | "closed";
 
 export type ActivityType = "poll" | "quiz" | "text";
 
@@ -10,7 +10,7 @@ export type ChoiceResultsRow = {
 };
 
 export function canLaunch(status: ActivityStatus): boolean {
-  return status === "draft";
+  return status === "ready";
 }
 
 export function canClose(status: ActivityStatus): boolean {

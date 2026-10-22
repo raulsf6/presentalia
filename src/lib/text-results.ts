@@ -191,7 +191,7 @@ export function buildTextResultsPayload(
     needsVote:
       viewer.isAttendee && activity.status === "active" && !viewer.hasAnswered,
     run:
-      isManager && !projector && activity.status !== "draft" && source.run
+      isManager && !projector && activity.status !== "ready" && source.run
         ? {
             status: source.run.status,
             error: source.run.error,

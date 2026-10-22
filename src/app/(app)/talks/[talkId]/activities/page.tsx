@@ -4,20 +4,15 @@ import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { isManager, loadTalkAccess } from "@/lib/membership";
+import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
 import { loadTalkActivities } from "@/lib/talk-activities";
 
 const sections = [
   { status: "active", title: "Active" },
   { status: "locked", title: "Ranking" },
-  { status: "draft", title: "Drafts" },
+  { status: "ready", title: "Ready" },
   { status: "closed", title: "Closed" },
 ] as const;
-
-function activityLabel(type: string): string {
-  if (type === "quiz") return "Quiz";
-  if (type === "text") return "Text prompt";
-  return "Poll";
-}
 
 export default function ActivitiesPage({
   params,
@@ -73,27 +68,25 @@ async function ActivitiesContent({
               <h2 className="section-label">{section.title}</h2>
               <ul className="flex flex-col gap-2">
                 {items.map((activity) => {
-                  const isDraft = section.status === "draft";
+                  const isReady = section.status === "ready";
                   return (
                     <li key={activity.id}>
                       <Link
                         href={
-                          isDraft
+                          isReady
                             ? `/talks/${talkId}/activities/${activity.id}`
                             : `/talks/${talkId}/activities/${activity.id}/results`
                         }
                         className="card card-hover flex items-center justify-between gap-4 p-4"
                       >
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="chip chip-soft-amber text-[0.65rem]">
-                            {activityLabel(activity.type)}
-                          </span>
+                          <ActivityTypeBadge type={activity.type} />
                           <span className="text-ink font-bold">
                             {activity.question}
                           </span>
                         </span>
                         <span className="text-muted shrink-0 text-sm font-bold">
-                          {isDraft ? "Manage →" : "Results →"}
+                          {isReady ? "Manage →" : "Results →"}
                         </span>
                       </Link>
                     </li>

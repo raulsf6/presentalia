@@ -103,7 +103,7 @@ describe("createQuizAction", () => {
     expect(mocks.requireTalkManager).toHaveBeenCalledWith("talk-1");
     expect(mocks.inserts[0]).toEqual({
       table: activities,
-      values: { talkId: "talk-1", type: "quiz", status: "draft" },
+      values: { talkId: "talk-1", type: "quiz", status: "ready" },
     });
     expect(mocks.inserts[1]).toEqual({
       table: quizzes,

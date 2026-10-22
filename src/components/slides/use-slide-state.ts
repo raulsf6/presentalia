@@ -55,6 +55,8 @@ export function useSlideState({
       slide: next.slide,
       count: next.count,
       revision: next.revision,
+      activity: next.activity,
+      live: next.live,
     }));
   }, []);
 

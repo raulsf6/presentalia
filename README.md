@@ -186,6 +186,11 @@ them with `NEXT_PUBLIC_` or expose them in client components.
 - `src/lib/results-access.ts` — resolves a session user, guest, or already
   loaded talk access into the shared results shape.
 - `src/lib/activities.ts` — shared activity status and choice-result helpers.
+  Activities are `ready` (editable) → `active` (live) → `closed`.
+- `src/lib/deck-plan.ts` — where activities sit in a talk's deck, and the
+  whole-plan save behind the Slides tab's deck plan editor.
+- `src/lib/deck-activity.ts` — the projected deck's activity payload, served for
+  a ready activity as well as a live one.
 - `src/lib/polls.ts` and `src/lib/poll-results.ts` — poll validation, lifecycle
   rules, result calculations, and privacy-safe result payloads.
 - `src/lib/quizzes.ts` and `src/lib/quiz-results.ts` — quiz validation,

@@ -77,10 +77,10 @@ describe("GET /api/text/[activityId]/results", () => {
     );
   });
 
-  test("hides a missing or draft activity", async () => {
+  test("hides a missing or ready activity", async () => {
     mocks.loadTextResults.mockResolvedValue(
       payload({
-        activity: { id: "activity-1", talkId: "talk-1", status: "draft" },
+        activity: { id: "activity-1", talkId: "talk-1", status: "ready" },
       }),
     );
 

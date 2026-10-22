@@ -65,7 +65,7 @@ type Setup = {
 };
 
 async function setup(
-  status: "draft" | "active" | "locked" | "closed" = "active",
+  status: "ready" | "active" | "locked" | "closed" = "active",
 ) {
   const pglite = await createDb();
   const db = drizzle(pglite, { schema }) as unknown as Db;
@@ -178,7 +178,7 @@ describe("createTextActivityAction", () => {
     );
     expect(rows.rows[0]).toMatchObject({
       type: "text",
-      status: "draft",
+      status: "ready",
       prompt: "What should we ship next?",
       criteria: "Most actionable",
       results_identifiable: true,

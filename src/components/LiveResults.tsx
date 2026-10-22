@@ -9,13 +9,16 @@ const pollIsActive = (payload: PollResultsPayload) =>
 export function LiveResults({
   initial,
   projector,
+  endpoint,
 }: {
   initial: PollResultsPayload;
   projector: boolean;
+  /** Overrides the attendee results URL, for the projected deck. */
+  endpoint?: string;
 }) {
   const { payload, accessRevoked } = useLiveResults({
     initial,
-    url: `/api/polls/${initial.poll.id}/results`,
+    url: endpoint ?? `/api/polls/${initial.poll.id}/results`,
     isActive: pollIsActive,
   });
 

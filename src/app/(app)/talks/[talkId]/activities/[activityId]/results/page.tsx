@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { Suspense } from "react";
 
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
+import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
 import { LiveResults } from "@/components/LiveResults";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { QuizLiveResults } from "@/components/QuizLiveResults";
@@ -76,7 +77,7 @@ async function ActivityResultsContent({
     if (!poll || poll.poll.talkId !== talkId) {
       notFound();
     }
-    if (poll.poll.status === "draft") {
+    if (poll.poll.status === "ready") {
       redirect(activityHref);
     }
   } else if (activity.type === "quiz") {
@@ -89,7 +90,7 @@ async function ActivityResultsContent({
     if (quiz.needsVote) {
       redirect(activityHref);
     }
-    if (quiz.quiz.status === "draft") {
+    if (quiz.quiz.status === "ready") {
       redirect(activityHref);
     }
   } else if (activity.type === "text") {
@@ -102,7 +103,7 @@ async function ActivityResultsContent({
     if (text.needsVote) {
       redirect(activityHref);
     }
-    if (text.activity.status === "draft") {
+    if (text.activity.status === "ready") {
       redirect(activityHref);
     }
   } else {
@@ -147,25 +148,32 @@ async function ActivityResultsContent({
           />
         </div>
       ) : null}
-      {poll ? (
-        <LiveResults
-          key={`${poll.poll.id}-${poll.poll.status}`}
-          initial={poll}
-          projector={projector}
-        />
-      ) : quiz ? (
-        <QuizLiveResults
-          key={`${quiz.quiz.id}-${quiz.quiz.status}-${projector ? "projector" : "attendee"}`}
-          initial={quiz}
-          projector={projector}
-        />
-      ) : text ? (
-        <TextLiveResults
-          key={`${text.activity.id}-${text.activity.status}-${projector ? "projector" : "attendee"}`}
-          initial={text}
-          projector={projector}
-        />
-      ) : null}
+      <div className="relative">
+        {projector ? (
+          <div className="pointer-events-none absolute -top-2 right-0 z-10">
+            <ActivityTypeBadge type={activity.type} size="lg" />
+          </div>
+        ) : null}
+        {poll ? (
+          <LiveResults
+            key={`${poll.poll.id}-${poll.poll.status}`}
+            initial={poll}
+            projector={projector}
+          />
+        ) : quiz ? (
+          <QuizLiveResults
+            key={`${quiz.quiz.id}-${quiz.quiz.status}-${projector ? "projector" : "attendee"}`}
+            initial={quiz}
+            projector={projector}
+          />
+        ) : text ? (
+          <TextLiveResults
+            key={`${text.activity.id}-${text.activity.status}-${projector ? "projector" : "attendee"}`}
+            initial={text}
+            projector={projector}
+          />
+        ) : null}
+      </div>
     </main>
   );
 }

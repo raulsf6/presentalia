@@ -12,7 +12,7 @@ import { requireTalkManager } from "@/lib/membership";
 
 export type ActivityActionResult = { ok: boolean; error?: string };
 
-/** Launch a draft activity. The partial unique index is the race backstop. */
+/** Launch a ready activity. The partial unique index is the race backstop. */
 export async function launchActivityAction(
   activityId: string,
 ): Promise<ActivityActionResult> {
@@ -65,7 +65,7 @@ export async function launchActivityAction(
     const updated = await db
       .update(activities)
       .set({ status: "active", launchedAt: new Date() })
-      .where(and(eq(activities.id, activityId), eq(activities.status, "draft")))
+      .where(and(eq(activities.id, activityId), eq(activities.status, "ready")))
       .returning({ id: activities.id });
     if (updated.length === 0) {
       return {

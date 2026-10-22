@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 import { APP_ROLES } from "@/lib/roles";
@@ -44,6 +45,11 @@ export const talks = pgTable("talks", {
   heldAt: timestamp("held_at", { withTimezone: true }),
   slidesUpdatedAt: timestamp("slides_updated_at", { withTimezone: true }),
   currentSlide: integer("current_slide").notNull().default(1),
+  /** The activity on screen; null while the deck shows a page. */
+  currentActivityId: uuid("current_activity_id").references(
+    (): AnyPgColumn => activities.id,
+    { onDelete: "set null" },
+  ),
   slideCount: integer("slide_count"),
   slideRevision: integer("slide_revision").notNull().default(0),
   createdBy: uuid("created_by"),
@@ -113,7 +119,7 @@ export const activities = pgTable(
       .notNull()
       .references(() => talks.id, { onDelete: "cascade" }),
     type: text("type").notNull().default("poll"),
-    status: text("status").notNull().default("draft"),
+    status: text("status").notNull().default("ready"),
     launchedAt: timestamp("launched_at", { withTimezone: true }),
     closedAt: timestamp("closed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -127,6 +133,21 @@ export const activities = pgTable(
     index("activities_talk_id_idx").on(table.talkId),
   ],
 );
+
+/**
+ * An activity's place in a talk's deck: "after page N", ordered within its gap.
+ * The primary key makes one placement per activity a constraint.
+ */
+export const talkDeckActivities = pgTable("talk_deck_activities", {
+  activityId: uuid("activity_id")
+    .primaryKey()
+    .references(() => activities.id, { onDelete: "cascade" }),
+  afterSlide: integer("after_slide").notNull(),
+  position: integer("position").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const polls = pgTable("polls", {
   activityId: uuid("activity_id")
@@ -367,6 +388,7 @@ export type TalkRow = typeof talks.$inferSelect;
 export type TalkGuestRow = typeof talkGuests.$inferSelect;
 export type TalkRosterRow = typeof talkRoster.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
+export type TalkDeckActivityRow = typeof talkDeckActivities.$inferSelect;
 export type PollRow = typeof polls.$inferSelect;
 export type PollOptionRow = typeof pollOptions.$inferSelect;
 export type PollVoteRow = typeof pollVotes.$inferSelect;

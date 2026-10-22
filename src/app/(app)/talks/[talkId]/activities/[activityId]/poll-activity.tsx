@@ -10,7 +10,7 @@ import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
 import type { ActivityStatus } from "@/lib/polls";
 
 /**
- * Poll-type activity: the draft workspace for managers, the vote page for
+ * Poll-type activity: the editable workspace for managers, the vote page for
  * attendees. Once launched or closed there is nothing to manage here —
  * results is the destination, and it carries the close control.
  */
@@ -48,7 +48,7 @@ export async function PollActivity({
       : [],
   );
 
-  if (!isAttendee(access) && status !== "draft") {
+  if (!isAttendee(access) && status !== "ready") {
     redirect(resultsHref);
   }
 
@@ -89,9 +89,7 @@ export async function PollActivity({
               <span className="pulse-dot" />
               LIVE
             </span>
-          ) : (
-            <span className="chip chip-draft">Draft</span>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -116,10 +114,10 @@ export async function PollActivity({
           <ActivityAdminControls
             activityId={activityId}
             kind="poll"
-            status="draft"
+            status="ready"
           />
         </section>
-      ) : status === "draft" ? (
+      ) : status === "ready" ? (
         <p className="empty">
           The poll hasn&apos;t opened yet. Check back when the speaker launches
           it.

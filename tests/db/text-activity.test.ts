@@ -98,7 +98,7 @@ describe("text activity migration", () => {
       [activityId],
     );
 
-    expect(stored[0]).toEqual({ type: "text", status: "draft" });
+    expect(stored[0]).toEqual({ type: "text", status: "ready" });
     expect(locked[0]?.status).toBe("locked");
   });
 
@@ -133,15 +133,15 @@ describe("text activity migration", () => {
   test("answers are accepted only while the activity is active", async () => {
     const db = await createDb();
     const user = await makeUser(db, "member@example.com");
-    const draftTalk = await seedTalk(db, "Draft talk", [user.email]);
+    const readyTalk = await seedTalk(db, "Ready talk", [user.email]);
     const activeTalk = await seedTalk(db, "Active talk", [user.email]);
     const lockedTalk = await seedTalk(db, "Locked talk", [user.email]);
 
-    const draft = await seedTextActivity(db, draftTalk);
-    const draftInsert = await attempt(
+    const ready = await seedTextActivity(db, readyTalk);
+    const readyInsert = await attempt(
       db,
       "insert into public.text_answers (activity_id, user_id, body) values ($1, $2, 'Too early')",
-      [draft, user.id],
+      [ready, user.id],
     );
 
     const active = await seedTextActivity(db, activeTalk, { status: "active" });
@@ -158,7 +158,7 @@ describe("text activity migration", () => {
       [locked, user.id],
     );
 
-    expect(draftInsert?.message).toMatch(
+    expect(readyInsert?.message).toMatch(
       /only accepted while the activity is active/,
     );
     expect(activeInsert).toBeNull();
@@ -180,7 +180,9 @@ describe("text activity migration", () => {
       [activityId, user.id],
     );
 
-    expect(duplicate?.message).toMatch(/duplicate key value violates unique constraint/);
+    expect(duplicate?.message).toMatch(
+      /duplicate key value violates unique constraint/,
+    );
   });
 
   test("answers cannot be edited or deleted directly", async () => {
@@ -213,7 +215,12 @@ describe("text activity migration", () => {
       status: "active",
       identifiable: true,
     });
-    const answerId = await addAnswer(db, activityId, user.id, "My email is me@example.com");
+    const answerId = await addAnswer(
+      db,
+      activityId,
+      user.id,
+      "My email is me@example.com",
+    );
     const runId = await addRun(db, activityId, {
       status: "succeeded",
       published: true,

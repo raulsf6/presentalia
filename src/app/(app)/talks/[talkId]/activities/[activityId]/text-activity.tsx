@@ -10,7 +10,7 @@ import type { ActivityStatus } from "@/lib/activities";
 import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
 
 /**
- * Text-type activity: the draft workspace for managers and the answer form for
+ * Text-type activity: the editable workspace for managers and the answer form for
  * attendees. Everything after launch lives on the results page, which also
  * carries the rank/publish controls for managers.
  */
@@ -40,7 +40,7 @@ export async function TextActivity({
     notFound();
   }
 
-  if (!isAttendee(access) && status !== "draft") {
+  if (!isAttendee(access) && status !== "ready") {
     redirect(resultsHref);
   }
   if (isAttendee(access) && (status === "locked" || status === "closed")) {
@@ -79,9 +79,7 @@ export async function TextActivity({
               <span className="pulse-dot" />
               LIVE
             </span>
-          ) : (
-            <span className="chip chip-draft">Draft</span>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -113,10 +111,10 @@ export async function TextActivity({
           <ActivityAdminControls
             activityId={activityId}
             kind="text"
-            status="draft"
+            status="ready"
           />
         </section>
-      ) : status === "draft" ? (
+      ) : status === "ready" ? (
         <p className="empty">
           The text prompt hasn&apos;t opened yet. Check back when the speaker
           launches it.

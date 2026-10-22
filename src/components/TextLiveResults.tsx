@@ -9,13 +9,18 @@ const textIsLive = (payload: TextResultsPayload) =>
 export function TextLiveResults({
   initial,
   projector,
+  endpoint,
 }: {
   initial: TextResultsPayload;
   projector: boolean;
+  /** Overrides the attendee results URL, for the projected deck. */
+  endpoint?: string;
 }) {
   const { payload, accessRevoked } = useLiveResults({
     initial,
-    url: `/api/text/${initial.activity.id}/results${projector ? "?display=projector" : ""}`,
+    url:
+      endpoint ??
+      `/api/text/${initial.activity.id}/results${projector ? "?display=projector" : ""}`,
     isActive: textIsLive,
   });
 

@@ -15,7 +15,7 @@ import { validateQuizInput } from "@/lib/quizzes";
 export type QuizActionResult = { ok: boolean; error?: string };
 export type QuizVoteResult = { ok: boolean; error?: string; talkId?: string };
 
-/** Create a draft quiz and its options atomically. */
+/** Create a ready quiz and its options atomically. */
 export async function createQuizAction(
   talkId: string,
   _previous: QuizActionResult,
@@ -45,7 +45,7 @@ export async function createQuizAction(
   await getDb().transaction(async (tx) => {
     const [activity] = await tx
       .insert(activities)
-      .values({ talkId, type: "quiz", status: "draft" })
+      .values({ talkId, type: "quiz", status: "ready" })
       .returning({ id: activities.id });
     quizId = activity.id;
     await tx.insert(quizzes).values({

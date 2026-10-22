@@ -19,7 +19,7 @@ export async function GET(
   const results = await loadTextResults(activityId, access, {
     projector,
   });
-  if (!results || results.activity.status === "draft") {
+  if (!results || results.activity.status === "ready") {
     return Response.json(
       { error: "Activity not found." },
       { status: 404, headers: { "Cache-Control": "no-store" } },

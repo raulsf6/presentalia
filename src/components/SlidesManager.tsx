@@ -1,10 +1,12 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   completeSlidesUploadAction,
   createSlidesUploadAction,
+  removeSlidesAction,
   type SlidesResult,
 } from "@/actions/slides";
 import { LoadingDots } from "@/components/LoadingDots";
@@ -25,6 +27,10 @@ export function SlidesManager({
   >("idle");
   const fileInput = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
+  const router = useRouter();
 
   function onUpload() {
     setResult(null);
@@ -84,11 +90,25 @@ export function SlidesManager({
     });
   }
 
+  function onRemove() {
+    setRemoveError(null);
+    startTransition(async () => {
+      const result = await removeSlidesAction(talkId);
+      if (!result.ok) {
+        setRemoveError(result.error ?? "Could not remove the slides.");
+        return;
+      }
+      setConfirmRemove(false);
+      setRemoved(true);
+      router.refresh();
+    });
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <p className="text-ink/75 text-sm font-semibold">
         {uploadedLabel
-          ? `Current slides uploaded ${uploadedLabel}. Uploading again replaces the file attendees download.`
+          ? `Current slides uploaded ${uploadedLabel}. Uploading again replaces the file attendees download and clears every activity placed in the deck plan.`
           : "No slides uploaded yet. Attendees see a download button once a PDF is uploaded."}
       </p>
       <div className="flex flex-wrap items-center gap-3">
@@ -137,6 +157,60 @@ export function SlidesManager({
             {result.error}
           </p>
         )
+      ) : null}
+
+      {uploadedLabel ? (
+        <div className="border-red/25 mt-2 flex flex-col gap-2 border-t-2 border-dashed pt-4">
+          {confirmRemove ? (
+            <div className="border-red/50 bg-red/5 flex flex-col gap-2 rounded-lg border-[2.5px] p-3">
+              <p className="text-red text-sm font-bold">
+                Remove the PDF, clear the deck plan, and stop the download for
+                attendees?
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={onRemove}
+                  className="btn btn-red btn-small"
+                >
+                  {pending ? (
+                    <>
+                      Removing… <LoadingDots />
+                    </>
+                  ) : (
+                    "Yes, remove"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setConfirmRemove(false)}
+                  className="btn btn-ghost btn-small"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmRemove(true)}
+              className="btn btn-red btn-small w-fit"
+            >
+              Remove slides
+            </button>
+          )}
+          {removeError ? (
+            <p role="alert" className="text-red text-sm font-bold">
+              {removeError}
+            </p>
+          ) : null}
+        </div>
+      ) : removed ? (
+        <p role="status" className="text-green text-sm font-bold">
+          Slides removed.
+        </p>
       ) : null}
     </div>
   );

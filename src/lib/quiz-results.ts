@@ -83,7 +83,7 @@ export function getQuizResultsVisibility(input: {
   if (input.status === "closed") {
     return { needsVote: false, showResults: true };
   }
-  if (input.status === "draft") {
+  if (input.status === "ready") {
     return { needsVote: false, showResults: false };
   }
   const needsVote = input.viewer.isAttendee && !input.viewer.hasVoted;
@@ -329,11 +329,11 @@ export async function loadQuizResults(
   );
 
   // Identities are only part of the public payload when the quiz is
-  // identifiable. Query them for every non-draft state so the short cache can
+  // identifiable. Query them for every non-ready state so the short cache can
   // serve both manager and attendee requests without exposing them early.
   // Names come from the app-owned user mirror or the guest row.
   const votes =
-    quiz.resultsIdentifiable && quiz.status !== "draft"
+    quiz.resultsIdentifiable && quiz.status !== "ready"
       ? (
           await db
             .select({
@@ -352,7 +352,7 @@ export async function loadQuizResults(
       : undefined;
 
   const data: QuizResultsData = { options, counts, votes };
-  if (quiz.status !== "draft") {
+  if (quiz.status !== "ready") {
     writeCachedQuizData(quizId, data);
   }
 

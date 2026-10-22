@@ -128,6 +128,25 @@ export function LogOutIcon(props: IconProps) {
   );
 }
 
+export function UploadIcon(props: IconProps) {
+  return (
+    <SvgIcon {...props}>
+      <path d="M12 15.5V4.5" />
+      <path d="m7.5 9 4.5-4.5L16.5 9" />
+      <path d="M4.5 15v3.5A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5V15" />
+    </SvgIcon>
+  );
+}
+
+export function RemoteIcon(props: IconProps) {
+  return (
+    <SvgIcon {...props}>
+      <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
+      <path d="M11 18.5h2" />
+    </SvgIcon>
+  );
+}
+
 export function PlusIcon(props: IconProps) {
   return (
     <SvgIcon {...props}>

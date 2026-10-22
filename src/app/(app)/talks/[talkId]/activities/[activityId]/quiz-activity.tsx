@@ -10,7 +10,7 @@ import type { ActivityStatus } from "@/lib/activities";
 import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
 
 /**
- * Quiz-type activity: the draft workspace for managers, the vote page for
+ * Quiz-type activity: the editable workspace for managers, the vote page for
  * attendees. Once launched or closed, results is the destination and carries
  * the close control.
  */
@@ -58,7 +58,7 @@ export async function QuizActivity({
   // the attendee payload and would reveal the answer.
   const voteOptions = options.map(({ id, label }) => ({ id, label }));
 
-  if (!isAttendee(access) && status !== "draft") {
+  if (!isAttendee(access) && status !== "ready") {
     redirect(resultsHref);
   }
 
@@ -99,9 +99,7 @@ export async function QuizActivity({
               <span className="pulse-dot" />
               LIVE
             </span>
-          ) : (
-            <span className="chip chip-draft">Draft</span>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -139,10 +137,10 @@ export async function QuizActivity({
           <ActivityAdminControls
             activityId={activityId}
             kind="quiz"
-            status="draft"
+            status="ready"
           />
         </section>
-      ) : status === "draft" ? (
+      ) : status === "ready" ? (
         <p className="empty">
           The quiz hasn&apos;t opened yet. Check back when the speaker launches
           it.

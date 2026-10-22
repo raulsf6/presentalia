@@ -83,20 +83,20 @@ describe("validatePollInput", () => {
 });
 
 describe("activity lifecycle guards", () => {
-  test("canLaunch is only true for draft", () => {
-    expect(canLaunch("draft")).toBe(true);
+  test("canLaunch is only true for ready", () => {
+    expect(canLaunch("ready")).toBe(true);
     expect(canLaunch("active")).toBe(false);
     expect(canLaunch("closed")).toBe(false);
   });
 
   test("canClose is only true for active", () => {
-    expect(canClose("draft")).toBe(false);
+    expect(canClose("ready")).toBe(false);
     expect(canClose("active")).toBe(true);
     expect(canClose("closed")).toBe(false);
   });
 
   test("canVote is only true for active", () => {
-    expect(canVote("draft")).toBe(false);
+    expect(canVote("ready")).toBe(false);
     expect(canVote("active")).toBe(true);
     expect(canVote("closed")).toBe(false);
   });

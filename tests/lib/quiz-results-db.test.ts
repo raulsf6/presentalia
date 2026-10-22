@@ -31,7 +31,7 @@ type Setup = {
 };
 
 async function setup(
-  opts: { identifiable?: boolean; status?: "draft" | "active" | "closed" } = {},
+  opts: { identifiable?: boolean; status?: "ready" | "active" | "closed" } = {},
 ): Promise<Setup> {
   const pglite = await createDb();
   const db = drizzle(pglite, { schema }) as unknown as Db;

@@ -3,7 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 
 import { requireTalkManager } from "@/lib/membership";
-import { markSlidesUploaded } from "@/lib/slide-state";
+import { clearSlides, markSlidesUploaded } from "@/lib/slide-state";
 import {
   createSlidesUploadTicket,
   type SlidesUploadTicket,
@@ -64,6 +64,39 @@ export async function completeSlidesUploadAction(
 
   const updated = await markSlidesUploaded(talkId);
   if (!updated) {
+    return { ok: false, error: "Talk not found." };
+  }
+
+  updateTag("talks");
+  revalidatePath("/talks");
+  revalidatePath(`/talks/${talkId}`);
+  revalidatePath(`/talks/${talkId}/slides`);
+  return { ok: true };
+}
+
+/**
+ * Removes the talk's PDF and everything that pointed into it: the plan
+ * placements, the page count, and the step on screen. The stored object goes
+ * first, so a failed delete never leaves a talk claiming slides it still has.
+ */
+export async function removeSlidesAction(
+  talkId: string,
+): Promise<SlidesResult> {
+  const guard = await requireTalkManager(talkId);
+  if (!guard.ok) {
+    return guard;
+  }
+
+  const service = createSupabaseServiceClient();
+  const { error } = await service.storage
+    .from("talk-slides")
+    .remove([`${talkId}/slides.pdf`]);
+  if (error) {
+    return { ok: false, error: "Could not remove the slides. Try again." };
+  }
+
+  const cleared = await clearSlides(talkId);
+  if (!cleared) {
     return { ok: false, error: "Talk not found." };
   }
 

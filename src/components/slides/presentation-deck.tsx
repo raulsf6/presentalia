@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { SlideDirection, SlideState } from "@/lib/slide-state";
+import { ActivityStep } from "./activity-step";
 import { requestSlideMove, reportSlideCount } from "./slide-api";
 import { SlideCanvas } from "./slide-canvas";
 import { SlideScreenMessage } from "./slide-screen-message";
@@ -31,7 +32,7 @@ export function PresentationDeck({
   initial: SlideState;
 }) {
   const hasSlides = slidesUpdatedAt !== null;
-  const { state, status, terminal, applyPosition } = useSlideState({
+  const { state, status, terminal, applyPosition, refresh } = useSlideState({
     talkId,
     initial,
     intervalMs: POLL_MS,
@@ -213,11 +214,27 @@ export function PresentationDeck({
     );
   }
 
+  const activity = state.activity;
   const displaySlide = pdf ? Math.min(state.slide, pdf.numPages) : state.slide;
   const counter =
     state.count === null
       ? `${displaySlide}`
       : `${displaySlide} / ${state.count}`;
+
+  if (activity) {
+    return (
+      <ActivityStep
+        key={`${activity.id}-${activity.status}`}
+        talkId={talkId}
+        activity={activity}
+        counter={counter}
+        fullscreen={fullscreen}
+        onToggleFullscreen={() => void toggleFullscreen()}
+        onNext={() => void go("next")}
+        onStateChanged={refresh}
+      />
+    );
+  }
 
   return (
     <main

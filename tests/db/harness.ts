@@ -162,7 +162,7 @@ export async function seedPoll(
 ): Promise<{ pollId: string; optionIds: string[] }> {
   const pollId = crypto.randomUUID();
   await db.query(
-    "insert into public.activities (id, talk_id, type, status) values ($1, $2, 'poll', 'draft')",
+    "insert into public.activities (id, talk_id, type, status) values ($1, $2, 'poll', 'ready')",
     [pollId, talkId],
   );
   await db.query(
@@ -194,7 +194,7 @@ export async function seedQuiz(
 ): Promise<{ quizId: string; optionIds: string[] }> {
   const quizId = crypto.randomUUID();
   await db.query(
-    "insert into public.activities (id, talk_id, type, status) values ($1, $2, 'quiz', 'draft')",
+    "insert into public.activities (id, talk_id, type, status) values ($1, $2, 'quiz', 'ready')",
     [quizId, talkId],
   );
   await db.query(
@@ -220,7 +220,7 @@ export async function seedTextActivity(
   db: Db,
   talkId: string,
   opts: {
-    status?: "draft" | "active" | "locked" | "closed";
+    status?: "ready" | "active" | "locked" | "closed";
     identifiable?: boolean;
     prompt?: string;
     criteria?: string;
@@ -229,7 +229,7 @@ export async function seedTextActivity(
   const activityId = crypto.randomUUID();
   await db.query(
     "insert into public.activities (id, talk_id, type, status) values ($1, $2, 'text', $3)",
-    [activityId, talkId, opts.status ?? "draft"],
+    [activityId, talkId, opts.status ?? "ready"],
   );
   await db.query(
     "insert into public.text_activities (activity_id, prompt, criteria, results_identifiable) values ($1, $2, $3, $4)",
@@ -243,18 +243,31 @@ export async function seedTextActivity(
   return activityId;
 }
 
+/** Places an activity in the gap after `afterSlide`. */
+export async function placeActivity(
+  db: Db,
+  activityId: string,
+  afterSlide: number,
+  position = 0,
+): Promise<void> {
+  await db.query(
+    "insert into public.talk_deck_activities (activity_id, after_slide, position) values ($1, $2, $3)",
+    [activityId, afterSlide, position],
+  );
+}
+
 export async function setStatus(
   db: Db,
   activityId: string,
-  status: "draft" | "active" | "locked" | "closed",
+  status: "ready" | "active" | "locked" | "closed",
 ): Promise<void> {
-  // The lifecycle trigger only allows draft -> active -> locked -> closed.
+  // The lifecycle trigger only allows ready -> active -> locked -> closed.
   // Tests routinely jump straight to a later state, so walk the path.
   if (status === "locked" || status === "closed") {
     await db.query(
       `update public.activities
        set status = 'active', launched_at = coalesce(launched_at, now())
-       where id = $1 and status = 'draft'`,
+       where id = $1 and status = 'ready'`,
       [activityId],
     );
   }

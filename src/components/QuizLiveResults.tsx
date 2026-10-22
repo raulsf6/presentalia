@@ -9,13 +9,18 @@ const quizIsActive = (payload: QuizResultsPayload) =>
 export function QuizLiveResults({
   initial,
   projector,
+  endpoint,
 }: {
   initial: QuizResultsPayload;
   projector: boolean;
+  /** Overrides the attendee results URL, for the projected deck. */
+  endpoint?: string;
 }) {
   const { payload, accessRevoked } = useLiveResults({
     initial,
-    url: `/api/quizzes/${initial.quiz.id}/results${projector ? "?display=projector" : ""}`,
+    url:
+      endpoint ??
+      `/api/quizzes/${initial.quiz.id}/results${projector ? "?display=projector" : ""}`,
     isActive: quizIsActive,
   });
 

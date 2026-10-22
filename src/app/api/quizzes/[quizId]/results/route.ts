@@ -19,7 +19,7 @@ export async function GET(
   const results = await loadQuizResults(quizId, access, {
     projector,
   });
-  if (!results || results.quiz.status === "draft") {
+  if (!results || results.quiz.status === "ready") {
     return Response.json(
       { error: "Quiz not found." },
       { status: 404, headers: { "Cache-Control": "no-store" } },

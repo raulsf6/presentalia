@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { PresentationDeck } from "@/components/slides/presentation-deck";
 import { isManager, loadTalkAccess } from "@/lib/membership";
-import { slideStateFromTalk } from "@/lib/slide-state";
+import { readSlideState, slideStateFromTalk } from "@/lib/slide-state";
 
 export default function PresentPage({
   params,
@@ -26,7 +26,8 @@ async function PresentContent({
     notFound();
   }
 
-  const initial = slideStateFromTalk(access.talk);
+  const initial =
+    (await readSlideState(talkId)) ?? slideStateFromTalk(access.talk);
 
   return (
     <PresentationDeck

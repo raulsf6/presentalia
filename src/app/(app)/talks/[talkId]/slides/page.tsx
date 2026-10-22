@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { DeckPlanEditor } from "@/components/DeckPlanEditor";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { SlidesManager } from "@/components/SlidesManager";
+import { SlidesActions } from "@/components/SlidesActions";
+import { loadDeckPlan } from "@/lib/deck-plan";
 import { isManager, loadTalkAccess } from "@/lib/membership";
 
 export default function SlidesPage({
@@ -29,6 +31,8 @@ async function SlidesContent({
     notFound();
   }
 
+  const plan = access.talk.slidesUpdatedAt ? await loadDeckPlan(talkId) : null;
+
   const uploadedLabel = access.talk.slidesUpdatedAt
     ? access.talk.slidesUpdatedAt.toLocaleDateString("en-US", {
         year: "numeric",
@@ -38,45 +42,47 @@ async function SlidesContent({
     : null;
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <div className="mb-8">
-        <h1 className="font-display text-ink text-2xl">Slides</h1>
-        <p className="text-muted mt-1 text-sm font-semibold">
-          {access.talk.name} — one PDF per talk, kept private to its rostered
-          attendees.
-        </p>
-      </div>
-      <div className="card p-6">
-        <SlidesManager talkId={talkId} uploadedLabel={uploadedLabel} />
-      </div>
-      <div className="card mt-6 p-6">
-        <p className="section-label">Present</p>
-        {uploadedLabel ? (
-          <>
-            <p className="text-ink/75 mt-3 text-sm font-semibold">
-              Open <strong>Present</strong> on the laptop connected to the big
-              screen, then use <strong>Remote</strong> on your phone.
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <a
-                href={`/talks/${talkId}/present`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn"
-              >
-                Present
-              </a>
-              <a href={`/talks/${talkId}/remote`} className="btn btn-ghost">
-                Remote
-              </a>
-            </div>
-          </>
-        ) : (
-          <p className="text-muted mt-3 text-sm font-semibold">
-            Upload the deck to project it and control it from your phone.
+    <main className="mx-auto w-full max-w-6xl px-6 py-12">
+      <div className="mx-auto mb-8 flex max-w-2xl flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-ink text-2xl">Slides</h1>
+          <p className="text-muted mt-1 text-sm font-semibold">
+            {access.talk.name} — one PDF per talk, kept private to its rostered
+            attendees.
           </p>
-        )}
+          <p className="text-muted mt-2 text-xs font-semibold">
+            {uploadedLabel
+              ? `Current PDF uploaded ${uploadedLabel}.`
+              : "No PDF uploaded yet."}
+          </p>
+        </div>
+        <SlidesActions talkId={talkId} uploadedLabel={uploadedLabel} />
       </div>
+
+      {plan && access.talk.slidesUpdatedAt ? (
+        <div className="card p-6">
+          <div className="mb-5">
+            <p className="section-label">Deck plan</p>
+            <p className="text-muted mt-2 text-sm font-semibold">
+              Drop an activity between two pages. The deck stops on it when you
+              present, and you launch it from there.
+            </p>
+          </div>
+          <DeckPlanEditor
+            key={access.talk.slidesUpdatedAt.toISOString()}
+            talkId={talkId}
+            slidesUpdatedAt={access.talk.slidesUpdatedAt.toISOString()}
+            initial={plan}
+          />
+        </div>
+      ) : (
+        <div className="card mx-auto max-w-2xl p-6">
+          <p className="text-muted text-sm font-semibold">
+            Upload the deck with the upload icon above, then plan the activities
+            that sit between its slides.
+          </p>
+        </div>
+      )}
     </main>
   );
 }

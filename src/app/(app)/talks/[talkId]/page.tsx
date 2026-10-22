@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
+import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
 import { DeleteTalkButton } from "@/components/DeleteTalkButton";
 import { LiveActivityRefresh } from "@/components/LiveActivityRefresh";
 import { PageSkeleton } from "@/components/PageSkeleton";
@@ -61,8 +62,8 @@ async function TalkContent({
     (activity) => activity.status === "active" || activity.status === "locked",
   );
   const rankingInProgress = currentActivity?.status === "locked";
-  const draftActivities = activityRows.filter(
-    (activity) => activity.status === "draft",
+  const readyActivities = activityRows.filter(
+    (activity) => activity.status === "ready",
   );
   const closedActivities = activityRows.filter(
     (activity) => activity.status === "closed",
@@ -124,9 +125,7 @@ async function TalkContent({
                   LIVE
                 </span>
               )}
-              <span className="chip chip-soft-amber text-[0.65rem]">
-                {activityLabel(currentActivity.type)}
-              </span>
+              <ActivityTypeBadge type={currentActivity.type} />
               <span className="text-ink font-bold">
                 {rankingInProgress
                   ? `${activityLabel(currentActivity.type)} is being ranked: ${currentActivity.question}`
@@ -148,18 +147,15 @@ async function TalkContent({
         )}
       </section>
 
-      {manager && draftActivities.length > 0 ? (
+      {manager && readyActivities.length > 0 ? (
         <section className="mb-8 flex flex-col gap-3">
-          <h2 className="section-label">Pending activities</h2>
+          <h2 className="section-label">Ready activities</h2>
           <ul className="flex flex-col gap-3">
-            {draftActivities.map((activity) => (
+            {readyActivities.map((activity) => (
               <li key={activity.id}>
                 <div className="card flex flex-col gap-4 p-4">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="chip chip-draft">Draft</span>
-                    <span className="chip chip-soft-amber text-[0.65rem]">
-                      {activityLabel(activity.type)}
-                    </span>
+                    <ActivityTypeBadge type={activity.type} />
                     <span className="text-ink font-bold">
                       {activity.question}
                     </span>
@@ -167,7 +163,7 @@ async function TalkContent({
                   <ActivityAdminControls
                     activityId={activity.id}
                     kind={activityKind(activity.type)}
-                    status="draft"
+                    status="ready"
                     launchBlockedReason={
                       currentActivity
                         ? rankingInProgress
@@ -203,9 +199,17 @@ async function TalkContent({
       </section>
 
       {closedActivities.length > 0 ? (
-        <section className="mb-8 flex flex-col gap-3">
-          <h2 className="section-label">Past activities</h2>
-          <ul className="flex flex-col gap-2">
+        <details className="group mb-8">
+          <summary className="section-label flex cursor-pointer list-none items-center gap-2 select-none [&::-webkit-details-marker]:hidden">
+            <span
+              aria-hidden
+              className="text-[0.7rem] transition group-open:rotate-90"
+            >
+              ▶
+            </span>
+            Past activities ({closedActivities.length})
+          </summary>
+          <ul className="mt-3 flex flex-col gap-2">
             {closedActivities.map((activity) => (
               <li key={activity.id}>
                 <Link
@@ -214,9 +218,7 @@ async function TalkContent({
                   className="card card-hover flex items-center justify-between gap-4 p-4"
                 >
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="chip chip-soft-amber text-[0.65rem]">
-                      {activityLabel(activity.type)}
-                    </span>
+                    <ActivityTypeBadge type={activity.type} />
                     <span className="text-ink font-bold">
                       {activity.question}
                     </span>
@@ -228,7 +230,7 @@ async function TalkContent({
               </li>
             ))}
           </ul>
-        </section>
+        </details>
       ) : null}
 
       {manager ? (

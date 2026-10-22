@@ -10,7 +10,7 @@ import { requireTalkManager } from "@/lib/membership";
 
 export type PollActionResult = { ok: boolean; error?: string };
 
-/** Create a draft single-choice poll and its options atomically. */
+/** Create a ready single-choice poll and its options atomically. */
 export async function createPollAction(
   talkId: string,
   _previous: PollActionResult,
@@ -34,7 +34,7 @@ export async function createPollAction(
   await getDb().transaction(async (tx) => {
     const [activity] = await tx
       .insert(activities)
-      .values({ talkId, type: "poll", status: "draft" })
+      .values({ talkId, type: "poll", status: "ready" })
       .returning({ id: activities.id });
     pollId = activity.id;
     await tx.insert(polls).values({

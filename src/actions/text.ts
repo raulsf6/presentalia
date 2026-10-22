@@ -45,7 +45,7 @@ type PreparedRanking =
     }
   | { ok: false; error: string };
 
-/** Create a draft text activity and its prompt/criterion atomically. */
+/** Create a ready text activity and its prompt/criterion atomically. */
 export async function createTextActivityAction(
   talkId: string,
   _previous: TextActionResult,
@@ -69,7 +69,7 @@ export async function createTextActivityAction(
   await getDb().transaction(async (tx) => {
     const [activity] = await tx
       .insert(activities)
-      .values({ talkId, type: "text", status: "draft" })
+      .values({ talkId, type: "text", status: "ready" })
       .returning({ id: activities.id });
     activityId = activity.id;
     await tx.insert(textActivities).values({

@@ -17,8 +17,8 @@ export function ActivityAdminControls({
 }: {
   activityId: string;
   kind: "poll" | "quiz" | "text";
-  status: "draft" | "active" | "closed";
-  /** When set on a draft, launching is unavailable and this explains why. */
+  status: "ready" | "active" | "closed";
+  /** When set on a ready activity, launching is unavailable and this explains why. */
   launchBlockedReason?: string | null;
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -27,7 +27,7 @@ export function ActivityAdminControls({
   const router = useRouter();
 
   const action =
-    status === "draft" ? launchActivityAction : closeActivityAction;
+    status === "ready" ? launchActivityAction : closeActivityAction;
 
   function runAction() {
     setError(null);
@@ -53,7 +53,7 @@ export function ActivityAdminControls({
     );
   }
 
-  if (launchBlockedReason && status === "draft") {
+  if (launchBlockedReason && status === "ready") {
     return (
       <div className="flex flex-col gap-2">
         <button type="button" disabled className="btn w-fit">
@@ -66,7 +66,7 @@ export function ActivityAdminControls({
     );
   }
 
-  const launch = status === "draft";
+  const launch = status === "ready";
   const prompt = launch
     ? kind === "text"
       ? "Launch this text prompt now? Attendees will be able to submit one answer each, and the prompt and criterion will be locked."

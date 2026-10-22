@@ -45,7 +45,7 @@ export async function submitVoteAction(
       if (!poll) {
         return { ok: false, error: "You don't have access to this poll." };
       }
-      if (!canVote(poll.status as "draft" | "active" | "closed")) {
+      if (!canVote(poll.status as "ready" | "active" | "closed")) {
         return { ok: false, error: "This poll is not open for voting." };
       }
 
