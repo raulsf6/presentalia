@@ -135,7 +135,7 @@ export function RemoteDeck({
           onClick={() => go("previous")}
           disabled={atStart || !hasSlides || terminal !== null}
           aria-label="Previous slide"
-          className="border-ink shadow-hard-md enabled:hover:shadow-hard-lg flex min-h-24 flex-1 touch-manipulation flex-col items-center justify-center gap-2 rounded-[16px] border-[3px] bg-white text-base font-bold tracking-[0.08em] uppercase transition disabled:opacity-40 disabled:shadow-none"
+          className="border-ink shadow-hard-md enabled:hover:shadow-hard-lg flex min-h-24 flex-1 touch-manipulation flex-col items-center justify-center gap-2 rounded-[16px] border-[3px] bg-white text-base font-bold tracking-[0.08em] uppercase transition duration-150 ease-out enabled:active:scale-[0.985] enabled:active:shadow-[1px_1px_0_var(--color-ink)] disabled:opacity-40 disabled:shadow-none"
         >
           <span aria-hidden className="text-4xl leading-none">
             ←
@@ -147,7 +147,7 @@ export function RemoteDeck({
           onClick={() => go("next")}
           disabled={atEnd || !hasSlides || terminal !== null}
           aria-label="Next slide"
-          className="border-ink bg-coral shadow-hard-md enabled:hover:shadow-hard-lg flex min-h-24 flex-1 touch-manipulation flex-col items-center justify-center gap-2 rounded-[16px] border-[3px] text-base font-bold tracking-[0.08em] uppercase transition disabled:opacity-40 disabled:shadow-none"
+          className="border-ink bg-coral shadow-hard-md enabled:hover:shadow-hard-lg flex min-h-24 flex-1 touch-manipulation flex-col items-center justify-center gap-2 rounded-[16px] border-[3px] text-base font-bold tracking-[0.08em] uppercase transition duration-150 ease-out enabled:active:scale-[0.985] enabled:active:shadow-[1px_1px_0_var(--color-ink)] disabled:opacity-40 disabled:shadow-none"
         >
           <span aria-hidden className="text-4xl leading-none">
             →
