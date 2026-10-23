@@ -5,18 +5,10 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import {
   addRosterAction,
   importRosterCsvAction,
-  removeRosterEntryAction,
   type RosterSummary,
 } from "@/actions/roster";
 import { LoadingDots } from "@/components/LoadingDots";
 import { parseCsv, parseEmailList } from "@/lib/roster";
-
-export type RosterEntry = {
-  userId: string;
-  email: string | null;
-  addedAtLabel: string;
-  emailVerifiedAt: string | null;
-};
 
 function formatList(items: string[], limit = 5): string {
   const shown = items.slice(0, limit).join(", ");
@@ -64,24 +56,21 @@ function Summary({ summary }: { summary: RosterSummary }) {
   );
 }
 
-export function RosterManager({
-  talkId,
-  roster,
-}: {
-  talkId: string;
-  roster: RosterEntry[];
-}) {
+/**
+ * The roster's add form: invite addresses by hand or import a CSV. Both paths
+ * report what was added, skipped, or already present instead of failing
+ * silently.
+ */
+export function AddPeopleForm({ talkId }: { talkId: string }) {
   const [raw, setRaw] = useState("");
   const [summary, setSummary] = useState<RosterSummary | null>(null);
   const [csvSummary, setCsvSummary] = useState<RosterSummary | null>(null);
   const [csvFileName, setCsvFileName] = useState("");
   const [csvText, setCsvText] = useState("");
   const [csvTooLarge, setCsvTooLarge] = useState(false);
-  const [removeError, setRemoveError] = useState<string | null>(null);
   const csvInput = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [csvPending, startCsvTransition] = useTransition();
-  const [removePending, startRemoveTransition] = useTransition();
 
   const preview = useMemo(() => parseEmailList(raw), [raw]);
   const csvPreview = useMemo(() => parseCsv(csvText), [csvText]);
@@ -130,20 +119,16 @@ export function RosterManager({
     });
   }
 
-  function onRemove(userId: string) {
-    setRemoveError(null);
-    startRemoveTransition(async () => {
-      const result = await removeRosterEntryAction(talkId, userId);
-      if (!result.ok) {
-        setRemoveError(result.error ?? "Could not remove the address.");
-      }
-    });
-  }
-
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3">
-        <h2 className="section-label">Add attendees</h2>
+        <div>
+          <p className="text-ink text-sm font-bold">Invite by email</p>
+          <p className="text-muted text-xs font-semibold">
+            Invited users always have access to this talk, even when it is
+            private.
+          </p>
+        </div>
         <textarea
           rows={3}
           value={raw}
@@ -189,8 +174,8 @@ export function RosterManager({
         {summary ? <Summary summary={summary} /> : null}
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="section-label">Import CSV</h2>
+      <section className="border-ink/15 flex flex-col gap-3 border-t-2 border-dashed pt-5">
+        <h3 className="section-label">Import CSV</h3>
         <p className="text-muted text-xs font-semibold">
           First column is used, or the column headed &quot;email&quot;. 1 MB
           limit.
@@ -250,49 +235,6 @@ export function RosterManager({
           </div>
         ) : null}
         {csvSummary ? <Summary summary={csvSummary} /> : null}
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="section-label">Roster ({roster.length})</h2>
-        {removeError ? (
-          <p role="alert" className="text-red text-sm font-bold">
-            {removeError}
-          </p>
-        ) : null}
-        {roster.length === 0 ? (
-          <p className="empty">
-            No attendees yet. Add users here to give them access to this talk.
-          </p>
-        ) : (
-          <ul className="card divide-ink/10 divide-y-2 divide-dashed overflow-hidden">
-            {roster.map((entry) => (
-              <li
-                key={entry.userId}
-                className="flex items-center justify-between gap-4 px-4 py-2.5"
-              >
-                <div className="flex min-w-0 flex-col">
-                  <span className="text-ink truncate font-mono text-sm font-bold">
-                    {entry.email ?? "No email address"}
-                  </span>
-                  <span className="text-muted text-xs font-semibold">
-                    added {entry.addedAtLabel}
-                    {entry.emailVerifiedAt
-                      ? " · email verified"
-                      : " · email not verified"}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  disabled={removePending}
-                  onClick={() => onRemove(entry.userId)}
-                  className="btn btn-ghost btn-small shrink-0"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
       </section>
     </div>
   );

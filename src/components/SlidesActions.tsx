@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef, type ReactNode, type RefObject } from "react";
+import { useRef, type RefObject } from "react";
 
+import { IconButton } from "@/components/IconButton";
+import { Popup } from "@/components/Popup";
 import { SlidesManager } from "@/components/SlidesManager";
 import { PresentationIcon, RemoteIcon, UploadIcon } from "@/components/icons";
 
@@ -116,62 +118,5 @@ function UploadFirst({ onUpload }: { onUpload: () => void }) {
         Upload slides
       </button>
     </>
-  );
-}
-
-function IconButton({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="border-ink text-ink shadow-hard-md hover:shadow-hard-lg inline-flex size-10 items-center justify-center rounded-lg border-[3px] bg-white transition"
-    >
-      {children}
-    </button>
-  );
-}
-
-function Popup({
-  ref,
-  title,
-  children,
-}: {
-  ref: RefObject<HTMLDialogElement | null>;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <dialog
-      ref={ref}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          ref.current?.close();
-        }
-      }}
-      className="border-ink text-ink shadow-hard-lg backdrop:bg-ink/50 m-auto max-h-[85vh] w-[min(38rem,calc(100vw-2rem))] overflow-y-auto rounded-[12px] border-[3px] bg-white p-0"
-    >
-      <div className="border-ink/15 sticky top-0 flex items-center justify-between gap-4 border-b-[2.5px] bg-white px-5 py-3">
-        <h2 className="font-display text-lg">{title}</h2>
-        <button
-          type="button"
-          onClick={() => ref.current?.close()}
-          aria-label="Close"
-          className="border-ink/25 hover:border-ink rounded-md border px-2 py-0.5 text-sm font-bold"
-        >
-          ×
-        </button>
-      </div>
-      <div className="p-5">{children}</div>
-    </dialog>
   );
 }

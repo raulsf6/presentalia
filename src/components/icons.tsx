@@ -102,6 +102,27 @@ export function UserIcon(props: IconProps) {
   );
 }
 
+export function UserPlusIcon(props: IconProps) {
+  return (
+    <SvgIcon {...props}>
+      <circle cx="10" cy="8" r="3.4" />
+      <path d="M3.5 20c.8-3.6 3.4-5.6 6.5-5.6 1 0 1.9.2 2.7.6" />
+      <path d="M18.5 14.5v6" />
+      <path d="M15.5 17.5h6" />
+    </SvgIcon>
+  );
+}
+
+export function LockIcon(props: IconProps) {
+  return (
+    <SvgIcon {...props}>
+      <rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5" />
+      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+      <path d="M12 15v2.5" />
+    </SvgIcon>
+  );
+}
+
 export function UserCogIcon(props: IconProps) {
   return (
     <SvgIcon {...props}>

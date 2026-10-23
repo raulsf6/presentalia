@@ -15,7 +15,11 @@ type Props = {
   joinUrl: string;
 };
 
-export function AnonymousAccessManager({
+/**
+ * The talk's access settings: whether anonymous people may join, and the link
+ * they use. Invited users keep access either way.
+ */
+export function PrivacySettings({
   talkId,
   isPublic,
   joinOpen,
@@ -62,36 +66,34 @@ export function AnonymousAccessManager({
       </div>
 
       {isPublic ? (
-        <>
-          <div className="border-ink/10 flex flex-col gap-3 border-t-2 border-dashed pt-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-ink text-sm font-bold">Anonymous joining</p>
-                <p className="text-muted text-xs font-semibold">
-                  {joinOpen
-                    ? "New guests can join. People already in the room stay."
-                    : "New guests are turned away. People already in the room stay."}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="btn btn-ghost btn-small"
-                disabled={pending}
-                onClick={() =>
-                  run(() => setAnonymousJoinOpenAction(talkId, !joinOpen))
-                }
-              >
-                {joinOpen ? "Close joining" : "Open joining"}
-              </button>
+        <div className="border-ink/10 flex flex-col gap-3 border-t-2 border-dashed pt-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-ink text-sm font-bold">Anonymous joining</p>
+              <p className="text-muted text-xs font-semibold">
+                {joinOpen
+                  ? "New guests can join. People already in the room stay."
+                  : "New guests are turned away. People already in the room stay."}
+              </p>
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="section-label">Join link</span>
-              <code className="text-ink/80 bg-cream2 overflow-x-auto rounded-md px-3 py-2 text-xs font-semibold">
-                {joinUrl}
-              </code>
-            </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-small"
+              disabled={pending}
+              onClick={() =>
+                run(() => setAnonymousJoinOpenAction(talkId, !joinOpen))
+              }
+            >
+              {joinOpen ? "Close joining" : "Open joining"}
+            </button>
           </div>
-        </>
+          <div className="flex flex-col gap-1">
+            <span className="section-label">Join link</span>
+            <code className="text-ink/80 bg-cream2 overflow-x-auto rounded-md px-3 py-2 text-xs font-semibold">
+              {joinUrl}
+            </code>
+          </div>
+        </div>
       ) : null}
 
       {error ? (
