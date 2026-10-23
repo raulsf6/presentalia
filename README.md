@@ -182,7 +182,7 @@ them with `NEXT_PUBLIC_` or expose them in client components.
 - `src/lib/auth/` — identity and global authorization: session loading
   (`auth.ts`), proxy-verified session headers, roles, the bootstrap admin email,
   the login allowlist, account provisioning, admin/presenter guards, and the
-  admin user list filter.
+  admin user list filter and cached admin user list (`admin-users.ts`).
 - `src/lib/talks/` — a talk and the people around it: `membership.ts` is the
   shared server-side talk authorization for admins, presenters, rostered
   attendees, and talk-scoped anonymous guests; `nav.ts` maps pathnames to talk
@@ -193,7 +193,10 @@ them with `NEXT_PUBLIC_` or expose them in client components.
   typed module per activity: poll and quiz validation/result payloads with
   their privacy rules, free-text validation, answer storage, and AI ranking.
   `results-access.ts` resolves a session user, guest, or already loaded talk
-  access into the shared results shape.
+  access into the shared results shape. `activity-workspace.ts` is the page
+  read model: it loads an activity only for its authorized talk and returns the
+  poll/quiz/text editor and vote-page data, including whether the current
+  attendee already voted.
 - `src/lib/deck/` — the projected deck: `deck-plan.ts` holds where activities
   sit in a talk's deck and the whole-plan save behind the Slides tab's deck plan
   editor; `deck-activity.ts` builds the projected activity payload, served for a
@@ -209,6 +212,11 @@ them with `NEXT_PUBLIC_` or expose them in client components.
   the shared polling behavior.
 - `supabase/migrations/` — Postgres schema, private storage bucket, and trigger
   setup.
+
+Pages and components never import `@/db`; the ESLint config rejects it. All
+database access goes through `src/lib` loaders, which own the talk/activity
+authorization check, cache tags, and payload shape. Server actions validate
+their input and then use the same domain modules.
 
 To add a future activity module, reuse talk membership and the shared
 `activities` lifecycle, add an explicit new `type` and sibling typed tables for

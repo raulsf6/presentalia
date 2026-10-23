@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { Suspense } from "react";
 
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
@@ -10,13 +9,18 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { QuizLiveResults } from "@/components/QuizLiveResults";
 import { TextActivityControls } from "@/components/TextActivityControls";
 import { TextLiveResults } from "@/components/TextLiveResults";
-import { getDb } from "@/db";
-import { activities } from "@/db/schema";
-import { isManager, loadTalkAccess } from "@/lib/talks/membership";
+import { loadActivityPageContext } from "@/lib/activities/activity-workspace";
+import { isManager } from "@/lib/talks/membership";
 import { loadPollResults } from "@/lib/activities/poll-results";
 import type { PollResultsPayload } from "@/lib/activities/polls";
-import { loadQuizResults, type QuizResultsPayload } from "@/lib/activities/quiz-results";
-import { loadTextResults, type TextResultsPayload } from "@/lib/activities/text-results";
+import {
+  loadQuizResults,
+  type QuizResultsPayload,
+} from "@/lib/activities/quiz-results";
+import {
+  loadTextResults,
+  type TextResultsPayload,
+} from "@/lib/activities/text-results";
 
 export default function ActivityResultsPage({
   params,
@@ -40,23 +44,11 @@ async function ActivityResultsContent({
   searchParams: PageProps<"/talks/[talkId]/activities/[activityId]/results">["searchParams"];
 }) {
   const { talkId, activityId } = await params;
-  const access = await loadTalkAccess(talkId);
-  if (!access) {
+  const context = await loadActivityPageContext(talkId, activityId);
+  if (!context) {
     notFound();
   }
-
-  const [activity] = await getDb()
-    .select({
-      type: activities.type,
-      status: activities.status,
-      talkId: activities.talkId,
-    })
-    .from(activities)
-    .where(eq(activities.id, activityId))
-    .limit(1);
-  if (!activity || activity.talkId !== talkId) {
-    notFound();
-  }
+  const { access, activity } = context;
 
   const query = await searchParams;
   const display = Array.isArray(query.display)

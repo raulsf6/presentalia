@@ -1,41 +1,34 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
 
-import { getDb } from "@/db";
-import { textActivities, textAnswers, type ActivityRow } from "@/db/schema";
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { TextAnswerForm } from "@/components/TextAnswerForm";
 import type { ActivityStatus } from "@/lib/activities/activities";
-import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/talks/membership";
+import {
+  hasTextAnswer,
+  loadTextWorkspace,
+  type ActivityDetail,
+} from "@/lib/activities/activity-workspace";
+import { isAttendee, type TalkAccess } from "@/lib/talks/membership";
 
 /**
- * Text-type activity: the editable workspace for managers and the answer form for
- * attendees. Everything after launch lives on the results page, which also
+ * Text-type activity: the editable workspace for managers and the answer form
+ * for attendees. Everything after launch lives on the results page, which also
  * carries the rank/publish controls for managers.
  */
 export async function TextActivity({
   activity,
   access,
 }: {
-  activity: ActivityRow;
+  activity: ActivityDetail;
   access: TalkAccess;
 }) {
-  const db = getDb();
   const talkId = activity.talkId;
   const activityId = activity.id;
   const status = activity.status as ActivityStatus;
   const resultsHref = `/talks/${talkId}/activities/${activityId}/results`;
 
-  const [config] = await db
-    .select({
-      prompt: textActivities.prompt,
-      criteria: textActivities.criteria,
-      resultsIdentifiable: textActivities.resultsIdentifiable,
-    })
-    .from(textActivities)
-    .where(eq(textActivities.activityId, activityId))
-    .limit(1);
+  const config = await loadTextWorkspace(access, activityId);
   if (!config) {
     notFound();
   }
@@ -47,20 +40,7 @@ export async function TextActivity({
     redirect(resultsHref);
   }
   if (isAttendee(access) && status === "active") {
-    const key = attendeeVoteKey(access);
-    const [own] = await db
-      .select({ id: textAnswers.id })
-      .from(textAnswers)
-      .where(
-        and(
-          eq(textAnswers.activityId, activityId),
-          "userId" in key
-            ? eq(textAnswers.userId, key.userId)
-            : eq(textAnswers.guestId, key.guestId),
-        ),
-      )
-      .limit(1);
-    if (own) {
+    if (await hasTextAnswer(access, activityId)) {
       redirect(resultsHref);
     }
   }

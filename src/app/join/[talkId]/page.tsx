@@ -1,11 +1,9 @@
-import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { JoinTalkForm } from "@/components/JoinTalkForm";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { getDb } from "@/db";
-import { talks } from "@/db/schema";
+import { loadPublicTalk } from "@/lib/talks/talk-guests-db";
 import { loadTalkAccess } from "@/lib/talks/membership";
 import { isTalkId } from "@/lib/talks/talk-guests";
 
@@ -42,12 +40,8 @@ async function JoinContent({
     redirect(`/talks/${talkId}`);
   }
 
-  const [talk] = await getDb()
-    .select()
-    .from(talks)
-    .where(eq(talks.id, talkId))
-    .limit(1);
-  if (!talk || !talk.isPublic) {
+  const talk = await loadPublicTalk(talkId);
+  if (!talk) {
     notFound();
   }
 

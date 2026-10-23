@@ -1,11 +1,8 @@
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { getDb } from "@/db";
-import { activities } from "@/db/schema";
-import { loadTalkAccess } from "@/lib/talks/membership";
+import { loadActivityPageContext } from "@/lib/activities/activity-workspace";
 import { PollActivity } from "./poll-activity";
 import { QuizActivity } from "./quiz-activity";
 import { TextActivity } from "./text-activity";
@@ -30,19 +27,11 @@ async function ActivityContent({
   params: PageProps<"/talks/[talkId]/activities/[activityId]">["params"];
 }) {
   const { talkId, activityId } = await params;
-  const access = await loadTalkAccess(talkId);
-  if (!access) {
+  const context = await loadActivityPageContext(talkId, activityId);
+  if (!context) {
     notFound();
   }
-
-  const [activity] = await getDb()
-    .select()
-    .from(activities)
-    .where(eq(activities.id, activityId))
-    .limit(1);
-  if (!activity || activity.talkId !== talkId) {
-    notFound();
-  }
+  const { access, activity } = context;
 
   switch (activity.type) {
     case "poll":

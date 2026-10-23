@@ -3,7 +3,11 @@ import { describe, expect, test } from "vitest";
 
 import type { Db } from "@/db";
 import * as schema from "@/db/schema";
-import { countTalkGuests, loadTalkGuests } from "@/lib/talks/talk-guests-db";
+import {
+  countTalkGuests,
+  loadPublicTalk,
+  loadTalkGuests,
+} from "@/lib/talks/talk-guests-db";
 import { createDb, exec, seedTalk } from "../../db/harness";
 
 async function setup() {
@@ -45,5 +49,36 @@ describe("countTalkGuests", () => {
     const { db, talkId } = await setup();
 
     await expect(countTalkGuests(talkId, db)).resolves.toBe(2);
+  });
+});
+
+describe("loadPublicTalk", () => {
+  test("returns a public talk for the join screen", async () => {
+    const { pglite, db, talkId } = await setup();
+    await exec(
+      pglite,
+      "update public.talks set is_public = true where id = $1",
+      [talkId],
+    );
+
+    const talk = await loadPublicTalk(talkId, db);
+
+    expect(talk).toMatchObject({
+      id: talkId,
+      name: "Talk",
+      isPublic: true,
+    });
+  });
+
+  test("hides a private talk", async () => {
+    const { db, talkId } = await setup();
+
+    await expect(loadPublicTalk(talkId, db)).resolves.toBeNull();
+  });
+
+  test("returns null for an unknown talk", async () => {
+    const { db } = await setup();
+
+    await expect(loadPublicTalk(crypto.randomUUID(), db)).resolves.toBeNull();
   });
 });
