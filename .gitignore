@@ -27,6 +27,7 @@
 # local notes and design docs (not published)
 /TODO.txt
 /docs/
+/.openchamber/
 
 # brainstorming companion mockups (local only)
 /.superpowers/
