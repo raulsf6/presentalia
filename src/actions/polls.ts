@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
 import { activities, pollOptions, polls } from "@/db/schema";
-import { validatePollInput } from "@/lib/polls";
-import { requireTalkManager } from "@/lib/membership";
+import { validatePollInput } from "@/lib/activities/polls";
+import { requireTalkManager } from "@/lib/talks/membership";
 
 export type PollActionResult = { ok: boolean; error?: string };
 

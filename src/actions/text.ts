@@ -17,22 +17,22 @@ import {
   canPublishUnranked,
   canRank,
   type ActivityStatus,
-} from "@/lib/activities";
-import { isUniqueViolation } from "@/lib/db-errors";
-import { requireTalkManager, resolveTalkAttendee } from "@/lib/membership";
-import { logServerError } from "@/lib/server-log";
+} from "@/lib/activities/activities";
+import { isUniqueViolation } from "@/lib/platform/db-errors";
+import { requireTalkManager, resolveTalkAttendee } from "@/lib/talks/membership";
+import { logServerError } from "@/lib/platform/server-log";
 import {
   RANKED_ANSWER_LIMIT,
   validateTextActivityInput,
   validateTextAnswer,
-} from "@/lib/text-activity";
+} from "@/lib/activities/text-activity";
 import {
   RANKING_PROMPT_VERSION,
   RANKING_STALE_MS,
   generateRankingWithGateway,
   rankTextAnswers,
   type RankingAnswer,
-} from "@/lib/text-ranking";
+} from "@/lib/activities/text-ranking";
 
 export type TextActionResult = { ok: boolean; error?: string };
 export type TextAnswerResult = { ok: boolean; error?: string; talkId?: string };

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isAllowedLoginEmail } from "@/lib/login-gate";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isAllowedLoginEmail } from "@/lib/auth/login-gate";
+import { createSupabaseServerClient } from "@/lib/platform/supabase/server";
 
 /**
  * Completes either a PKCE magic link or a server-issued invite token. The

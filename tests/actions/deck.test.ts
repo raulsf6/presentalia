@@ -6,10 +6,10 @@ const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
 }));
 
-vi.mock("@/lib/membership", () => ({
+vi.mock("@/lib/talks/membership", () => ({
   requireTalkManager: mocks.requireTalkManager,
 }));
-vi.mock("@/lib/deck-plan", () => ({
+vi.mock("@/lib/deck/deck-plan", () => ({
   saveDeckPlan: mocks.saveDeckPlan,
 }));
 vi.mock("next/cache", () => ({

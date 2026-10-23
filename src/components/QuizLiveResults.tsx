@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveResults } from "@/components/useLiveResults";
-import type { QuizResultsPayload } from "@/lib/quiz-results";
+import type { QuizResultsPayload } from "@/lib/activities/quiz-results";
 
 const quizIsActive = (payload: QuizResultsPayload) =>
   payload.quiz.status === "active";

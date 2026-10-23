@@ -10,12 +10,12 @@ const mocks = vi.hoisted(() => ({
   redirect: vi.fn(),
 }));
 
-vi.mock("@/lib/require-admin", () => ({
+vi.mock("@/lib/auth/require-admin", () => ({
   requireAdmin: mocks.requireAdmin,
   requirePresenter: mocks.requirePresenter,
 }));
 
-vi.mock("@/lib/membership", () => ({
+vi.mock("@/lib/talks/membership", () => ({
   requireTalkManager: mocks.requireTalkManager,
 }));
 
@@ -36,7 +36,7 @@ vi.mock("@/db", () => ({
   }),
 }));
 
-vi.mock("@/lib/supabase/service", () => ({
+vi.mock("@/lib/platform/supabase/service", () => ({
   createSupabaseServiceClient: vi.fn(),
 }));
 

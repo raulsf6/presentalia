@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { loadTalkAccess } from "@/lib/membership";
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { loadTalkAccess } from "@/lib/talks/membership";
+import { createSupabaseServiceClient } from "@/lib/platform/supabase/service";
 
 /**
  * Serves the talk's PDF only to authorized viewers: the owner, an admin, or a

@@ -12,16 +12,16 @@ const mocks = vi.hoisted(() => ({
   inserts: [] as { table: unknown; values: unknown }[],
 }));
 
-vi.mock("@/lib/membership", () => ({
+vi.mock("@/lib/talks/membership", () => ({
   requireTalkManager: mocks.requireTalkManager,
   isRosteredAttendee: mocks.isRosteredAttendee,
 }));
 
-vi.mock("@/lib/auth", () => ({
+vi.mock("@/lib/auth/auth", () => ({
   getSessionUser: vi.fn(),
 }));
 
-vi.mock("@/lib/quiz-results", () => ({
+vi.mock("@/lib/activities/quiz-results", () => ({
   clearQuizResultsCache: mocks.clearQuizResultsCache,
 }));
 

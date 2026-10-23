@@ -1,5 +1,5 @@
-import { authorizeSlideRequest } from "@/lib/slide-access";
-import { readSlideState } from "@/lib/slide-state";
+import { authorizeSlideRequest } from "@/lib/deck/slide-access";
+import { readSlideState } from "@/lib/deck/slide-state";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 

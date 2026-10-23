@@ -6,9 +6,9 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
 import { talks } from "@/db/schema";
-import { requireTalkManager } from "@/lib/membership";
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { requirePresenter } from "@/lib/require-admin";
+import { requireTalkManager } from "@/lib/talks/membership";
+import { createSupabaseServiceClient } from "@/lib/platform/supabase/service";
+import { requirePresenter } from "@/lib/auth/require-admin";
 
 export type ActionResult = { ok: boolean; error?: string };
 

@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   createSupabaseServiceClient: vi.fn(),
 }));
 
-vi.mock("@/lib/require-admin", () => ({
+vi.mock("@/lib/auth/require-admin", () => ({
   requireAdmin: mocks.requireAdmin,
 }));
 
@@ -24,12 +24,12 @@ vi.mock("@/db", () => ({
   }),
 }));
 
-vi.mock("@/lib/provision-user", () => ({
+vi.mock("@/lib/auth/provision-user", () => ({
   ensureAppUser: mocks.ensureAppUser,
   sendAppUserInvite: mocks.sendAppUserInvite,
 }));
 
-vi.mock("@/lib/supabase/service", () => ({
+vi.mock("@/lib/platform/supabase/service", () => ({
   createSupabaseServiceClient: mocks.createSupabaseServiceClient,
 }));
 

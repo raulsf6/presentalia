@@ -5,9 +5,9 @@ import { revalidatePath } from "next/cache";
 
 import { getDb } from "@/db";
 import { activities, pollOptions, pollVotes, polls } from "@/db/schema";
-import { isUniqueViolation } from "@/lib/db-errors";
-import { resolveTalkAttendee } from "@/lib/membership";
-import { canVote } from "@/lib/polls";
+import { isUniqueViolation } from "@/lib/platform/db-errors";
+import { resolveTalkAttendee } from "@/lib/talks/membership";
+import { canVote } from "@/lib/activities/polls";
 
 export type VoteResult = { ok: boolean; error?: string; talkId?: string };
 

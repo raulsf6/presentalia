@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 
 import { ChartIcon, FileIcon, HomeIcon, UsersIcon } from "@/components/icons";
-import { activeTalkTab, type TalkTab } from "@/lib/nav";
+import { activeTalkTab, type TalkTab } from "@/lib/talks/nav";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 

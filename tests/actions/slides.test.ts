@@ -9,14 +9,14 @@ const mocks = vi.hoisted(() => ({
   updateTag: vi.fn(),
 }));
 
-vi.mock("@/lib/membership", () => ({
+vi.mock("@/lib/talks/membership", () => ({
   requireTalkManager: mocks.requireTalkManager,
 }));
-vi.mock("@/lib/slide-state", () => ({
+vi.mock("@/lib/deck/slide-state", () => ({
   clearSlides: mocks.clearSlides,
   markSlidesUploaded: vi.fn(),
 }));
-vi.mock("@/lib/supabase/service", () => ({
+vi.mock("@/lib/platform/supabase/service", () => ({
   createSupabaseServiceClient: () => ({
     storage: { from: mocks.from },
   }),

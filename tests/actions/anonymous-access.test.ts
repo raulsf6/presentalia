@@ -9,7 +9,7 @@ import {
   setAnonymousJoinOpenAction,
   setTalkPublicAction,
 } from "@/actions/anonymous-access";
-import { hashGuestToken } from "@/lib/talk-guests";
+import { hashGuestToken } from "@/lib/talks/talk-guests";
 import { createDb, exec, seedPoll, seedTalk, setStatus } from "../db/harness";
 
 const mocks = vi.hoisted(() => ({
@@ -24,11 +24,11 @@ vi.mock("@/db", () => ({
   getDb: () => mocks.db,
 }));
 
-vi.mock("@/lib/guest-session", () => ({
+vi.mock("@/lib/talks/guest-session", () => ({
   setGuestCookie: mocks.setGuestCookie,
 }));
 
-vi.mock("@/lib/membership", () => ({
+vi.mock("@/lib/talks/membership", () => ({
   requireTalkManager: mocks.requireTalkManager,
 }));
 

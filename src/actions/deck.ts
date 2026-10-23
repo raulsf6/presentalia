@@ -6,8 +6,8 @@ import {
   saveDeckPlan,
   type DeckPlanInput,
   type DeckPlanResult,
-} from "@/lib/deck-plan";
-import { requireTalkManager } from "@/lib/membership";
+} from "@/lib/deck/deck-plan";
+import { requireTalkManager } from "@/lib/talks/membership";
 
 /** Replaces a talk's deck plan. Whole-plan replacement, last write wins. */
 export async function saveDeckPlanAction(

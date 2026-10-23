@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { loadSlideDocument, type SlideDocument } from "@/lib/pdf";
+import { loadSlideDocument, type SlideDocument } from "@/lib/deck/pdf";
 
 const RETRY_BASE_MS = 1_000;
 const RETRY_MAX_MS = 8_000;

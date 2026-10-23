@@ -3,11 +3,11 @@ import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { RosterScreen } from "@/components/RosterScreen";
-import { isManager, loadTalkAccess } from "@/lib/membership";
-import { getSiteUrl } from "@/lib/site-url";
-import { formatGuestJoinedAt } from "@/lib/talk-guests";
-import { loadTalkGuests } from "@/lib/talk-guests-db";
-import { loadTalkRoster } from "@/lib/talk-roster";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
+import { getSiteUrl } from "@/lib/platform/site-url";
+import { formatGuestJoinedAt } from "@/lib/talks/talk-guests";
+import { loadTalkGuests } from "@/lib/talks/talk-guests-db";
+import { loadTalkRoster } from "@/lib/talks/talk-roster";
 
 export default function RosterPage({
   params,

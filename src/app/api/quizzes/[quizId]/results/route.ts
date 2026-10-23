@@ -1,5 +1,5 @@
-import { loadQuizResults } from "@/lib/quiz-results";
-import { getActivityTalkAccess } from "@/lib/results-access";
+import { loadQuizResults } from "@/lib/activities/quiz-results";
+import { getActivityTalkAccess } from "@/lib/activities/results-access";
 
 export async function GET(
   request: Request,

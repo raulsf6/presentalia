@@ -1,6 +1,6 @@
-import { isManager, loadTalkAccess } from "@/lib/membership";
-import { formatGuestJoinedAt } from "@/lib/talk-guests";
-import { loadTalkGuests } from "@/lib/talk-guests-db";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
+import { formatGuestJoinedAt } from "@/lib/talks/talk-guests";
+import { loadTalkGuests } from "@/lib/talks/talk-guests-db";
 
 /** Manager-only guest list for the live roster view. */
 export async function GET(

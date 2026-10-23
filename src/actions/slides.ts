@@ -2,13 +2,13 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 
-import { requireTalkManager } from "@/lib/membership";
-import { clearSlides, markSlidesUploaded } from "@/lib/slide-state";
+import { requireTalkManager } from "@/lib/talks/membership";
+import { clearSlides, markSlidesUploaded } from "@/lib/deck/slide-state";
 import {
   createSlidesUploadTicket,
   type SlidesUploadTicket,
-} from "@/lib/slides-upload";
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
+} from "@/lib/deck/slides-upload";
+import { createSupabaseServiceClient } from "@/lib/platform/supabase/service";
 
 export type SlidesResult = { ok: boolean; error?: string };
 

@@ -5,10 +5,10 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { getDb } from "@/db";
 import { activities } from "@/db/schema";
-import { canClose, canLaunch, type ActivityStatus } from "@/lib/activities";
-import { getSessionUser } from "@/lib/auth";
-import { isUniqueViolation } from "@/lib/db-errors";
-import { requireTalkManager } from "@/lib/membership";
+import { canClose, canLaunch, type ActivityStatus } from "@/lib/activities/activities";
+import { getSessionUser } from "@/lib/auth/auth";
+import { isUniqueViolation } from "@/lib/platform/db-errors";
+import { requireTalkManager } from "@/lib/talks/membership";
 
 export type ActivityActionResult = { ok: boolean; error?: string };
 

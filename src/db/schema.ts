@@ -14,7 +14,7 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
-import { APP_ROLES } from "@/lib/roles";
+import { APP_ROLES } from "@/lib/auth/roles";
 
 // Mirrors supabase/migrations/0001_talk_platform.sql. The migration is the
 // source of truth for constraints and triggers (the database is never

@@ -6,14 +6,14 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
 import { talkGuests, talks } from "@/db/schema";
-import { isUniqueViolation } from "@/lib/db-errors";
-import { setGuestCookie } from "@/lib/guest-session";
-import { requireTalkManager } from "@/lib/membership";
+import { isUniqueViolation } from "@/lib/platform/db-errors";
+import { setGuestCookie } from "@/lib/talks/guest-session";
+import { requireTalkManager } from "@/lib/talks/membership";
 import {
   createGuestToken,
   isTalkId,
   validateGuestUsername,
-} from "@/lib/talk-guests";
+} from "@/lib/talks/talk-guests";
 
 export type AnonymousAccessResult = { ok: boolean; error?: string };
 

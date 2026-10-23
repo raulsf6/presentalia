@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { isManager, loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
 import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
-import { loadTalkActivities } from "@/lib/talk-activities";
+import { loadTalkActivities } from "@/lib/activities/talk-activities";
 
 const sections = [
   { status: "active", title: "Active" },

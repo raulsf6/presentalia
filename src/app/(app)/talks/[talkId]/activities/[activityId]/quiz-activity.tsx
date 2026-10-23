@@ -6,8 +6,8 @@ import { getDb } from "@/db";
 import { quizOptions, quizVotes, quizzes, type ActivityRow } from "@/db/schema";
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { VoteForm } from "@/components/VoteForm";
-import type { ActivityStatus } from "@/lib/activities";
-import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
+import type { ActivityStatus } from "@/lib/activities/activities";
+import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/talks/membership";
 
 /**
  * Quiz-type activity: the editable workspace for managers, the vote page for

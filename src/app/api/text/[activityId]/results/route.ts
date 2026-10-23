@@ -1,5 +1,5 @@
-import { getActivityTalkAccess } from "@/lib/results-access";
-import { loadTextResults } from "@/lib/text-results";
+import { getActivityTalkAccess } from "@/lib/activities/results-access";
+import { loadTextResults } from "@/lib/activities/text-results";
 
 export async function GET(
   request: Request,

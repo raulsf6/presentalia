@@ -7,7 +7,7 @@ import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
 import { LoadingDots } from "@/components/LoadingDots";
 import { SlideCanvas } from "@/components/slides/slide-canvas";
 import { usePdfDocument } from "@/components/slides/use-pdf-document";
-import type { DeckPlan, DeckPlanEntry } from "@/lib/deck-plan";
+import type { DeckPlan, DeckPlanEntry } from "@/lib/deck/deck-plan";
 
 type Item = { activityId: string; afterSlide: number };
 

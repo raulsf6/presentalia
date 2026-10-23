@@ -17,16 +17,16 @@ const mocks = vi.hoisted(() => ({
   redirect: vi.fn(),
 }));
 
-vi.mock("@/lib/login-gate", () => ({
+vi.mock("@/lib/auth/login-gate", () => ({
   isAllowedLoginEmail: mocks.isAllowedLoginEmail,
 }));
 
-vi.mock("@/lib/provision-user", () => ({
+vi.mock("@/lib/auth/provision-user", () => ({
   ensureAppUser: mocks.ensureAppUser,
   sendAppUserInvite: mocks.sendAppUserInvite,
 }));
 
-vi.mock("@/lib/supabase/server", () => ({
+vi.mock("@/lib/platform/supabase/server", () => ({
   createSupabaseServerClient: async () => ({
     auth: { signInWithOtp: mocks.signInWithOtp, signOut: mocks.signOut },
   }),

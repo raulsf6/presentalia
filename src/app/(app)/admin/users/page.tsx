@@ -7,7 +7,7 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { getDb } from "@/db";
 import { appUsers } from "@/db/schema";
 import { UserManager } from "@/components/UserManager";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth/auth";
 
 export default function AdminUsersPage() {
   return (

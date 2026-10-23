@@ -6,8 +6,8 @@ import { JoinTalkForm } from "@/components/JoinTalkForm";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { getDb } from "@/db";
 import { talks } from "@/db/schema";
-import { loadTalkAccess } from "@/lib/membership";
-import { isTalkId } from "@/lib/talk-guests";
+import { loadTalkAccess } from "@/lib/talks/membership";
+import { isTalkId } from "@/lib/talks/talk-guests";
 
 function formatDate(date: Date | null): string {
   if (!date) return "";

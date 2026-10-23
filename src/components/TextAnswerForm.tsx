@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { submitTextAnswerAction } from "@/actions/text";
-import { ANSWER_MAX_LENGTH } from "@/lib/text-activity";
+import { ANSWER_MAX_LENGTH } from "@/lib/activities/text-activity";
 
 export function TextAnswerForm({
   activityId,

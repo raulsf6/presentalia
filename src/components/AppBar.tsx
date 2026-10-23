@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { AppBarNav } from "@/components/AppBarNav";
-import type { SessionUser } from "@/lib/auth";
+import type { SessionUser } from "@/lib/auth/auth";
 
 /** Persistent top bar for every signed-in page. */
 export function AppBar({ user }: { user: SessionUser }) {

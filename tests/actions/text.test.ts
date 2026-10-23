@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Db } from "@/db";
 import * as schema from "@/db/schema";
 import type { TalkRow } from "@/db/schema";
-import type { SessionUser } from "@/lib/auth";
-import type { TalkAccess } from "@/lib/membership";
+import type { SessionUser } from "@/lib/auth/auth";
+import type { TalkAccess } from "@/lib/talks/membership";
 
 const mocks = vi.hoisted(() => ({
   db: undefined as unknown,
@@ -21,13 +21,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/db", () => ({ getDb: () => mocks.db }));
-vi.mock("@/lib/auth", () => ({ getSessionUser: mocks.getSessionUser }));
-vi.mock("@/lib/membership", () => ({
+vi.mock("@/lib/auth/auth", () => ({ getSessionUser: mocks.getSessionUser }));
+vi.mock("@/lib/talks/membership", () => ({
   requireTalkManager: mocks.requireTalkManager,
   resolveTalkAttendee: mocks.resolveTalkAttendee,
 }));
-vi.mock("@/lib/text-ranking", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/text-ranking")>();
+vi.mock("@/lib/activities/text-ranking", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/activities/text-ranking")>();
   return { ...actual, generateRankingWithGateway: mocks.generate };
 });
 vi.mock("next/cache", () => ({
@@ -35,7 +35,7 @@ vi.mock("next/cache", () => ({
   revalidatePath: mocks.revalidatePath,
 }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
-vi.mock("@/lib/server-log", () => ({
+vi.mock("@/lib/platform/server-log", () => ({
   logServerError: mocks.logServerError,
   logServerWarning: vi.fn(),
 }));

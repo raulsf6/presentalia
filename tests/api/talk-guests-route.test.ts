@@ -5,12 +5,12 @@ const mocks = vi.hoisted(() => ({
   loadTalkGuests: vi.fn(),
 }));
 
-vi.mock("@/lib/membership", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/membership")>();
+vi.mock("@/lib/talks/membership", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/talks/membership")>();
   return { ...actual, loadTalkAccess: mocks.loadTalkAccess };
 });
 
-vi.mock("@/lib/talk-guests-db", () => ({
+vi.mock("@/lib/talks/talk-guests-db", () => ({
   loadTalkGuests: mocks.loadTalkGuests,
 }));
 

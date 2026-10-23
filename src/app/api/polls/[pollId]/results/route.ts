@@ -1,5 +1,5 @@
-import { loadPollResults } from "@/lib/poll-results";
-import { getActivityTalkAccess } from "@/lib/results-access";
+import { loadPollResults } from "@/lib/activities/poll-results";
+import { getActivityTalkAccess } from "@/lib/activities/results-access";
 
 export async function GET(
   request: Request,

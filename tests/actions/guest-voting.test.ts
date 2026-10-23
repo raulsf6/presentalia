@@ -27,15 +27,15 @@ vi.mock("@/db", () => ({
   getDb: () => mocks.db,
 }));
 
-vi.mock("@/lib/auth", () => ({
+vi.mock("@/lib/auth/auth", () => ({
   getSessionUser: mocks.getSessionUser,
 }));
 
-vi.mock("@/lib/guest-session", () => ({
+vi.mock("@/lib/talks/guest-session", () => ({
   readGuestSession: mocks.readGuestSession,
 }));
 
-vi.mock("@/lib/quiz-results", () => ({
+vi.mock("@/lib/activities/quiz-results", () => ({
   clearQuizResultsCache: vi.fn(),
 }));
 

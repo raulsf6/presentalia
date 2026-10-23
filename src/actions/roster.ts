@@ -5,9 +5,9 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { getDb } from "@/db";
 import { appUsers, talkRoster } from "@/db/schema";
-import { requireTalkManager } from "@/lib/membership";
-import { ensureAppUser, sendAppUserInvite } from "@/lib/provision-user";
-import { mergeRoster, parseCsv, parseEmailList } from "@/lib/roster";
+import { requireTalkManager } from "@/lib/talks/membership";
+import { ensureAppUser, sendAppUserInvite } from "@/lib/auth/provision-user";
+import { mergeRoster, parseCsv, parseEmailList } from "@/lib/talks/roster";
 
 export type RosterSummary = {
   ok: boolean;

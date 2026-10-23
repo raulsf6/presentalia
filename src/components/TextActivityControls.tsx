@@ -8,7 +8,7 @@ import {
   rankTextActivityAction,
 } from "@/actions/text";
 import { LoadingDots } from "@/components/LoadingDots";
-import { RANKED_ANSWER_LIMIT } from "@/lib/text-activity";
+import { RANKED_ANSWER_LIMIT } from "@/lib/activities/text-activity";
 
 type Mode = "rank" | "unranked";
 

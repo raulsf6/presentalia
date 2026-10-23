@@ -8,8 +8,8 @@ import {
   deleteUserAction,
 } from "@/actions/users";
 import { LoadingDots } from "@/components/LoadingDots";
-import { APP_ROLES, type AppRole } from "@/lib/roles";
-import { filterUsers, type UserRoleFilter } from "@/lib/user-filters";
+import { APP_ROLES, type AppRole } from "@/lib/auth/roles";
+import { filterUsers, type UserRoleFilter } from "@/lib/auth/user-filters";
 
 type ManagedUser = {
   id: string;

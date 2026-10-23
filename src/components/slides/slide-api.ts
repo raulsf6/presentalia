@@ -1,4 +1,4 @@
-import type { SlideDirection, SlidePosition } from "@/lib/slide-state";
+import type { SlideDirection, SlidePosition } from "@/lib/deck/slide-state";
 
 export type MoveResult = { ok: true; state: SlidePosition } | { ok: false };
 

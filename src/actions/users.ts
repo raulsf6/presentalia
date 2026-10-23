@@ -4,12 +4,12 @@ import { sql } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 
 import { getDb } from "@/db";
-import { requireAdmin } from "@/lib/require-admin";
-import { APP_ROLES, type AppRole } from "@/lib/roles";
-import { ensureAppUser, sendAppUserInvite } from "@/lib/provision-user";
-import { normalizeEmail, validateEmail } from "@/lib/roster";
-import { logServerError } from "@/lib/server-log";
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/auth/require-admin";
+import { APP_ROLES, type AppRole } from "@/lib/auth/roles";
+import { ensureAppUser, sendAppUserInvite } from "@/lib/auth/provision-user";
+import { normalizeEmail, validateEmail } from "@/lib/talks/roster";
+import { logServerError } from "@/lib/platform/server-log";
+import { createSupabaseServiceClient } from "@/lib/platform/supabase/service";
 
 const USER_ID_RE = /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i;
 

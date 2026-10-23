@@ -179,23 +179,30 @@ them with `NEXT_PUBLIC_` or expose them in client components.
   membership references app-user IDs, with email verification mirrored from
   Auth.
 - `src/db/index.ts` — server-only Drizzle connection using `POSTGRES_URL`.
-- `src/lib/membership.ts` — shared server-side talk authorization for admins,
-  presenters, rostered attendees, and talk-scoped anonymous guests.
-- `src/lib/guest-session.ts` and `src/lib/talk-guests.ts` — the guest cookie,
-  token validation, and username rules behind public talk access.
-- `src/lib/results-access.ts` — resolves a session user, guest, or already
-  loaded talk access into the shared results shape.
-- `src/lib/activities.ts` — shared activity status and choice-result helpers.
-  Activities are `ready` (editable) → `active` (live) → `closed`.
-- `src/lib/deck-plan.ts` — where activities sit in a talk's deck, and the
-  whole-plan save behind the Slides tab's deck plan editor.
-- `src/lib/deck-activity.ts` — the projected deck's activity payload, served for
-  a ready activity as well as a live one.
-- `src/lib/polls.ts` and `src/lib/poll-results.ts` — poll validation, lifecycle
-  rules, result calculations, and privacy-safe result payloads.
-- `src/lib/quizzes.ts` and `src/lib/quiz-results.ts` — quiz validation,
-  exactly-one-correct-answer rules, live/closed result visibility, accuracy,
-  and privacy-safe result payloads.
+- `src/lib/auth/` — identity and global authorization: session loading
+  (`auth.ts`), proxy-verified session headers, roles, the bootstrap admin email,
+  the login allowlist, account provisioning, admin/presenter guards, and the
+  admin user list filter.
+- `src/lib/talks/` — a talk and the people around it: `membership.ts` is the
+  shared server-side talk authorization for admins, presenters, rostered
+  attendees, and talk-scoped anonymous guests; `nav.ts` maps pathnames to talk
+  tabs; `roster.ts`/`talk-roster.ts` and `guest-session.ts`/`talk-guests*.ts`
+  back rostered and anonymous access; `qr.ts` renders the join-screen code.
+- `src/lib/activities/` — the shared `activities.ts` lifecycle (`ready`
+  (editable) → `active` (live) → `closed`) and choice-result helpers, plus one
+  typed module per activity: poll and quiz validation/result payloads with
+  their privacy rules, free-text validation, answer storage, and AI ranking.
+  `results-access.ts` resolves a session user, guest, or already loaded talk
+  access into the shared results shape.
+- `src/lib/deck/` — the projected deck: `deck-plan.ts` holds where activities
+  sit in a talk's deck and the whole-plan save behind the Slides tab's deck plan
+  editor; `deck-activity.ts` builds the projected activity payload, served for a
+  ready activity as well as a live one; `slide-state.ts` advances the deck, and
+  `slides.ts`/`slides-upload.ts`/`slide-access.ts`/`pdf.ts` cover PDF upload
+  validation, signed uploads, slide authorization, and browser PDF loading.
+- `src/lib/platform/` — runtime plumbing with no product model: Postgres error
+  mapping, server-only logging, the site origin, the visibility-aware refresh
+  timer, and the Supabase browser/server/service clients.
 - `src/components/LiveResults.tsx` and `src/components/QuizLiveResults.tsx` —
   shared attendee/presenter/admin/projector results displays, refreshed through
   the authorized results endpoints every five seconds. `useLiveResults` holds

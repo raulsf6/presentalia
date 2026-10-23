@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { RemoteDeck } from "@/components/slides/remote-deck";
-import { isManager, loadTalkAccess } from "@/lib/membership";
-import { readSlideState, slideStateFromTalk } from "@/lib/slide-state";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
+import { readSlideState, slideStateFromTalk } from "@/lib/deck/slide-state";
 
 export default function RemotePage({
   params,

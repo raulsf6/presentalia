@@ -8,7 +8,7 @@ import {
   type RosterSummary,
 } from "@/actions/roster";
 import { LoadingDots } from "@/components/LoadingDots";
-import { parseCsv, parseEmailList } from "@/lib/roster";
+import { parseCsv, parseEmailList } from "@/lib/talks/roster";
 
 function formatList(items: string[], limit = 5): string {
   const shown = items.slice(0, limit).join(", ");

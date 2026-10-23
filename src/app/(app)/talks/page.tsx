@@ -4,8 +4,8 @@ import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { UserIcon } from "@/components/icons";
-import { getSessionUser } from "@/lib/auth";
-import { loadTalkList } from "@/lib/membership";
+import { getSessionUser } from "@/lib/auth/auth";
+import { loadTalkList } from "@/lib/talks/membership";
 
 function formatDate(date: Date | null): string {
   if (!date) return "";

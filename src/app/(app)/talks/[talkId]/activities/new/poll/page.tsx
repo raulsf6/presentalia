@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { PollForm } from "@/components/PollForm";
-import { isManager, loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
 
 export default function NewPollPage({
   params,

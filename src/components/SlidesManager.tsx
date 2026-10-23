@@ -10,8 +10,8 @@ import {
   type SlidesResult,
 } from "@/actions/slides";
 import { LoadingDots } from "@/components/LoadingDots";
-import { MAX_SLIDES_BYTES } from "@/lib/slides";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { MAX_SLIDES_BYTES } from "@/lib/deck/slides";
+import { createSupabaseBrowserClient } from "@/lib/platform/supabase/browser";
 
 export function SlidesManager({
   talkId,

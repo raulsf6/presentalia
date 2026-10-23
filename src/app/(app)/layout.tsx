@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from "react";
 
 import { AppBar, AppBarSkeleton } from "@/components/AppBar";
 import { HideInProjector } from "@/components/HideInProjector";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth/auth";
 
 /**
  * Shell for every signed-in page. The app bar streams behind its own

@@ -7,11 +7,11 @@ import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
 import { DeleteTalkButton } from "@/components/DeleteTalkButton";
 import { LiveActivityRefresh } from "@/components/LiveActivityRefresh";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { isAttendee, isManager, loadTalkAccess } from "@/lib/membership";
+import { isAttendee, isManager, loadTalkAccess } from "@/lib/talks/membership";
 import {
   loadTalkActivities,
   type TalkActivitySummary,
-} from "@/lib/talk-activities";
+} from "@/lib/activities/talk-activities";
 
 function formatDate(date: Date | null): string {
   if (!date) return "";

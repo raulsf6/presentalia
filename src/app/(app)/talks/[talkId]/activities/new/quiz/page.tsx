@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { QuizForm } from "@/components/QuizForm";
-import { isManager, loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
 
 export default function NewQuizPage({
   params,

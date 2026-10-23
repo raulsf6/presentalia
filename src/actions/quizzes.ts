@@ -6,11 +6,11 @@ import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
 import { activities, quizOptions, quizVotes, quizzes } from "@/db/schema";
-import { canVote, type ActivityStatus } from "@/lib/activities";
-import { isUniqueViolation } from "@/lib/db-errors";
-import { requireTalkManager, resolveTalkAttendee } from "@/lib/membership";
-import { clearQuizResultsCache } from "@/lib/quiz-results";
-import { validateQuizInput } from "@/lib/quizzes";
+import { canVote, type ActivityStatus } from "@/lib/activities/activities";
+import { isUniqueViolation } from "@/lib/platform/db-errors";
+import { requireTalkManager, resolveTalkAttendee } from "@/lib/talks/membership";
+import { clearQuizResultsCache } from "@/lib/activities/quiz-results";
+import { validateQuizInput } from "@/lib/activities/quizzes";
 
 export type QuizActionResult = { ok: boolean; error?: string };
 export type QuizVoteResult = { ok: boolean; error?: string; talkId?: string };

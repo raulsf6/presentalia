@@ -5,10 +5,10 @@ const mocks = vi.hoisted(() => ({
   loadTextResults: vi.fn(),
 }));
 
-vi.mock("@/lib/results-access", () => ({
+vi.mock("@/lib/activities/results-access", () => ({
   getActivityTalkAccess: mocks.getActivityTalkAccess,
 }));
-vi.mock("@/lib/text-results", () => ({
+vi.mock("@/lib/activities/text-results", () => ({
   loadTextResults: mocks.loadTextResults,
 }));
 

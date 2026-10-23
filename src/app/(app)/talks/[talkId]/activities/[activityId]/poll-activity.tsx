@@ -6,8 +6,8 @@ import { getDb } from "@/db";
 import { pollOptions, pollVotes, polls, type ActivityRow } from "@/db/schema";
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { VoteForm } from "@/components/VoteForm";
-import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
-import type { ActivityStatus } from "@/lib/polls";
+import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/talks/membership";
+import type { ActivityStatus } from "@/lib/activities/polls";
 
 /**
  * Poll-type activity: the editable workspace for managers, the vote page for

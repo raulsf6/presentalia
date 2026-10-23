@@ -14,7 +14,7 @@ import type {
   SlideDirection,
   SlideLiveActivity,
   SlideState,
-} from "@/lib/slide-state";
+} from "@/lib/deck/slide-state";
 import { requestSlideMove } from "./slide-api";
 import { useSlideState } from "./use-slide-state";
 import { useWakeLock } from "./use-wake-lock";

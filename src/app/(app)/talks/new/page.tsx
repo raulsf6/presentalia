@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { CreateTalkForm } from "@/components/CreateTalkForm";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth/auth";
 
 export default function NewTalkPage() {
   return (

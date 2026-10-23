@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveResults } from "@/components/useLiveResults";
-import type { TextResultsPayload } from "@/lib/text-results";
+import type { TextResultsPayload } from "@/lib/activities/text-results";
 
 const textIsLive = (payload: TextResultsPayload) =>
   payload.activity.status !== "closed";

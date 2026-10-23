@@ -2,13 +2,13 @@
 
 import { redirect } from "next/navigation";
 
-import { isAllowedLoginEmail } from "@/lib/login-gate";
-import { waitForMinimumDuration } from "@/lib/auth-timing";
-import { normalizeEmail, validateEmail } from "@/lib/roster";
-import { ensureAppUser, sendAppUserInvite } from "@/lib/provision-user";
-import { logServerError, logServerWarning, maskEmail } from "@/lib/server-log";
-import { getSiteUrl } from "@/lib/site-url";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isAllowedLoginEmail } from "@/lib/auth/login-gate";
+import { waitForMinimumDuration } from "@/lib/auth/auth-timing";
+import { normalizeEmail, validateEmail } from "@/lib/talks/roster";
+import { ensureAppUser, sendAppUserInvite } from "@/lib/auth/provision-user";
+import { logServerError, logServerWarning, maskEmail } from "@/lib/platform/server-log";
+import { getSiteUrl } from "@/lib/platform/site-url";
+import { createSupabaseServerClient } from "@/lib/platform/supabase/server";
 
 export type MagicLinkState = {
   ok: boolean;

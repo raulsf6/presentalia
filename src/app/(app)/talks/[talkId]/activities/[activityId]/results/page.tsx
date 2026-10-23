@@ -12,11 +12,11 @@ import { TextActivityControls } from "@/components/TextActivityControls";
 import { TextLiveResults } from "@/components/TextLiveResults";
 import { getDb } from "@/db";
 import { activities } from "@/db/schema";
-import { isManager, loadTalkAccess } from "@/lib/membership";
-import { loadPollResults } from "@/lib/poll-results";
-import type { PollResultsPayload } from "@/lib/polls";
-import { loadQuizResults, type QuizResultsPayload } from "@/lib/quiz-results";
-import { loadTextResults, type TextResultsPayload } from "@/lib/text-results";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
+import { loadPollResults } from "@/lib/activities/poll-results";
+import type { PollResultsPayload } from "@/lib/activities/polls";
+import { loadQuizResults, type QuizResultsPayload } from "@/lib/activities/quiz-results";
+import { loadTextResults, type TextResultsPayload } from "@/lib/activities/text-results";
 
 export default function ActivityResultsPage({
   params,

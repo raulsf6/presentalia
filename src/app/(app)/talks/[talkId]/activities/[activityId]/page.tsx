@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { getDb } from "@/db";
 import { activities } from "@/db/schema";
-import { loadTalkAccess } from "@/lib/membership";
+import { loadTalkAccess } from "@/lib/talks/membership";
 import { PollActivity } from "./poll-activity";
 import { QuizActivity } from "./quiz-activity";
 import { TextActivity } from "./text-activity";

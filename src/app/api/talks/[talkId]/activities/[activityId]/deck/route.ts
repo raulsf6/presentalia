@@ -1,5 +1,5 @@
-import { loadDeckActivity } from "@/lib/deck-activity";
-import { authorizeManagerAccess } from "@/lib/slide-access";
+import { loadDeckActivity } from "@/lib/deck/deck-activity";
+import { authorizeManagerAccess } from "@/lib/deck/slide-access";
 
 const NO_STORE = { "Cache-Control": "private, no-store" } as const;
 

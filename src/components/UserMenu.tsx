@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { signOutAction } from "@/actions/auth";
 import { LogOutIcon } from "@/components/icons";
-import type { AppRole } from "@/lib/roles";
+import type { AppRole } from "@/lib/auth/roles";
 
 /**
  * Account menu in the app bar: who is signed in, the global destinations,

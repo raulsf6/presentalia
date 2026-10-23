@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { PDFDocumentProxy } from "@/lib/pdf";
+import type { PDFDocumentProxy } from "@/lib/deck/pdf";
 import { renderPageToCanvas } from "./render-page";
 
 /**

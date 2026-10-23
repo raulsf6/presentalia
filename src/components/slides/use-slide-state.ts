@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { startLiveRefresh } from "@/lib/live-refresh";
-import type { SlidePosition, SlideState } from "@/lib/slide-state";
+import { startLiveRefresh } from "@/lib/platform/live-refresh";
+import type { SlidePosition, SlideState } from "@/lib/deck/slide-state";
 
 export type SlideTerminal = "sign-in" | "no-access" | "missing" | null;
 export type SlideStatus = "live" | "reconnecting";

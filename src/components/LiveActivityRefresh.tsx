@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { startLiveRefresh } from "@/lib/live-refresh";
+import { startLiveRefresh } from "@/lib/platform/live-refresh";
 
 const REFRESH_INTERVAL_MS = 10_000;
 

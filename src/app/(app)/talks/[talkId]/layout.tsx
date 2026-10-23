@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { HideInProjector } from "@/components/HideInProjector";
 import { TalkNav } from "@/components/TalkNav";
-import { isManager, loadTalkAccess } from "@/lib/membership";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
 
 /**
  * Shell for a single talk. Chrome streams behind its own boundary so the

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { authorizeSlideRequest } from "@/lib/slide-access";
-import { moveSlide } from "@/lib/slide-state";
+import { authorizeSlideRequest } from "@/lib/deck/slide-access";
+import { moveSlide } from "@/lib/deck/slide-state";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 

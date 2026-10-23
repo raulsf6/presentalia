@@ -6,8 +6,8 @@ import { getDb } from "@/db";
 import { textActivities, textAnswers, type ActivityRow } from "@/db/schema";
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { TextAnswerForm } from "@/components/TextAnswerForm";
-import type { ActivityStatus } from "@/lib/activities";
-import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/membership";
+import type { ActivityStatus } from "@/lib/activities/activities";
+import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/talks/membership";
 
 /**
  * Text-type activity: the editable workspace for managers and the answer form for

@@ -12,10 +12,10 @@ import { LiveResults } from "@/components/LiveResults";
 import { LoadingDots } from "@/components/LoadingDots";
 import { QuizLiveResults } from "@/components/QuizLiveResults";
 import { TextLiveResults } from "@/components/TextLiveResults";
-import type { PollResultsPayload } from "@/lib/polls";
-import type { QuizResultsPayload } from "@/lib/quiz-results";
-import type { TextResultsPayload } from "@/lib/text-results";
-import type { SlideActivity } from "@/lib/slide-state";
+import type { PollResultsPayload } from "@/lib/activities/polls";
+import type { QuizResultsPayload } from "@/lib/activities/quiz-results";
+import type { TextResultsPayload } from "@/lib/activities/text-results";
+import type { SlideActivity } from "@/lib/deck/slide-state";
 
 type Loaded =
   | { type: "poll"; payload: PollResultsPayload }

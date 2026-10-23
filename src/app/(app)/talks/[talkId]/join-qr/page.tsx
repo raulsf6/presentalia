@@ -6,10 +6,10 @@ import { AnonymousJoinToggle } from "@/components/AnonymousJoinToggle";
 import { HideInProjector } from "@/components/HideInProjector";
 import { LiveActivityRefresh } from "@/components/LiveActivityRefresh";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { isManager, loadTalkAccess } from "@/lib/membership";
-import { renderQrSvg } from "@/lib/qr";
-import { getSiteUrl } from "@/lib/site-url";
-import { countTalkGuests } from "@/lib/talk-guests-db";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
+import { renderQrSvg } from "@/lib/talks/qr";
+import { getSiteUrl } from "@/lib/platform/site-url";
+import { countTalkGuests } from "@/lib/talks/talk-guests-db";
 
 export default function JoinQrPage({
   params,

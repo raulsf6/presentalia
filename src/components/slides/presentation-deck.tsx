@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { SlideDirection, SlideState } from "@/lib/slide-state";
+import type { SlideDirection, SlideState } from "@/lib/deck/slide-state";
 import { ActivityStep } from "./activity-step";
 import { requestSlideMove, reportSlideCount } from "./slide-api";
 import { SlideCanvas } from "./slide-canvas";

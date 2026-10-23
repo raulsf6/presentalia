@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { PresentationDeck } from "@/components/slides/presentation-deck";
-import { isManager, loadTalkAccess } from "@/lib/membership";
-import { readSlideState, slideStateFromTalk } from "@/lib/slide-state";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
+import { readSlideState, slideStateFromTalk } from "@/lib/deck/slide-state";
 
 export default function PresentPage({
   params,

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { UserMenu } from "@/components/UserMenu";
 import { PresentationIcon, UserCogIcon } from "@/components/icons";
-import type { AppRole } from "@/lib/roles";
+import type { AppRole } from "@/lib/auth/roles";
 
 /** Primary destinations and the account menu, with section highlighting. */
 export function AppBarNav({

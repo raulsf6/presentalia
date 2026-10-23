@@ -1,8 +1,8 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { withVerifiedIdentity } from "@/lib/session-headers";
-import { GUEST_COOKIE_PREFIX } from "@/lib/talk-guests";
+import { withVerifiedIdentity } from "@/lib/auth/session-headers";
+import { GUEST_COOKIE_PREFIX } from "@/lib/talks/talk-guests";
 
 const PROTECTED_PREFIXES = ["/talks"];
 

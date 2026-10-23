@@ -5,10 +5,10 @@ const mocks = vi.hoisted(() => ({
   loadDeckActivity: vi.fn(),
 }));
 
-vi.mock("@/lib/slide-access", () => ({
+vi.mock("@/lib/deck/slide-access", () => ({
   authorizeManagerAccess: mocks.authorizeManagerAccess,
 }));
-vi.mock("@/lib/deck-activity", () => ({
+vi.mock("@/lib/deck/deck-activity", () => ({
   loadDeckActivity: mocks.loadDeckActivity,
 }));
 

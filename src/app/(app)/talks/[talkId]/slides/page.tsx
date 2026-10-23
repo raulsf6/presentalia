@@ -4,8 +4,8 @@ import { Suspense } from "react";
 import { DeckPlanEditor } from "@/components/DeckPlanEditor";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { SlidesActions } from "@/components/SlidesActions";
-import { loadDeckPlan } from "@/lib/deck-plan";
-import { isManager, loadTalkAccess } from "@/lib/membership";
+import { loadDeckPlan } from "@/lib/deck/deck-plan";
+import { isManager, loadTalkAccess } from "@/lib/talks/membership";
 
 export default function SlidesPage({
   params,

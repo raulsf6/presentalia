@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveResults } from "@/components/useLiveResults";
-import type { PollResultsPayload } from "@/lib/polls";
+import type { PollResultsPayload } from "@/lib/activities/polls";
 
 const pollIsActive = (payload: PollResultsPayload) =>
   payload.poll.status === "active";
