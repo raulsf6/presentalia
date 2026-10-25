@@ -19,8 +19,15 @@ import {
   type ActivityStatus,
 } from "@/lib/activities/activities";
 import { isUniqueViolation } from "@/lib/platform/db-errors";
-import { requireTalkManager, resolveTalkAttendee } from "@/lib/talks/membership";
+import {
+  requireTalkManager,
+  resolveTalkAttendee,
+} from "@/lib/talks/membership";
 import { logServerError } from "@/lib/platform/server-log";
+import {
+  publishActivityResultsChanged,
+  publishActivityStatusChanged,
+} from "@/lib/platform/live-event-bus";
 import {
   RANKED_ANSWER_LIMIT,
   validateTextActivityInput,
@@ -151,6 +158,7 @@ export async function submitTextAnswerAction(
   updateTag(`activities:${outcome.talkId}`);
   revalidatePath(`/talks/${outcome.talkId}/activities/${activityId}`);
   revalidatePath(`/talks/${outcome.talkId}/activities/${activityId}/results`);
+  await publishActivityResultsChanged(outcome.talkId, activityId);
   return { ok: true, talkId: outcome.talkId };
 }
 
@@ -276,6 +284,11 @@ export async function rankTextActivityAction(
 
   const { runId, answers } = prepared;
 
+  // The overview changes from LIVE to RANKING as soon as this commits, while
+  // the model call may take a while. Invalidate and signal before waiting.
+  revalidateText(activity.talkId, activityId);
+  await publishActivityStatusChanged(activity.talkId, { activityId });
+
   const rankingAnswers: RankingAnswer[] = answers.map((answer) => ({
     id: answer.id,
     text: answer.body,
@@ -374,6 +387,7 @@ export async function rankTextActivityAction(
   }
 
   revalidateText(activity.talkId, activityId);
+  await publishActivityStatusChanged(activity.talkId, { activityId });
   return { ok: true };
 }
 
@@ -456,6 +470,7 @@ export async function publishTextUnrankedAction(
   }
 
   revalidateText(outcome.talkId, activityId);
+  await publishActivityStatusChanged(outcome.talkId, { activityId });
   return { ok: true };
 }
 

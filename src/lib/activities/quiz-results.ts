@@ -15,7 +15,11 @@ import {
   type ActivityStatus,
   type ChoiceResultsRow,
 } from "@/lib/activities/activities";
-import { attendeeVoteKey, isAttendee, type TalkAccess } from "@/lib/talks/membership";
+import {
+  attendeeVoteKey,
+  isAttendee,
+  type TalkAccess,
+} from "@/lib/talks/membership";
 
 export type QuizResultsRow = ChoiceResultsRow;
 
@@ -222,6 +226,8 @@ export type LoadQuizResultsOptions = {
   db?: Db;
   /** Projector views never receive live percentages or response counts. */
   projector?: boolean;
+  /** Skip the per-instance count cache for a push-triggered refresh. */
+  fresh?: boolean;
 };
 
 function viewerState(
@@ -260,7 +266,11 @@ async function loadViewerVote(
 export async function loadQuizResults(
   quizId: string,
   access: TalkAccess,
-  { db = getDb(), projector = false }: LoadQuizResultsOptions = {},
+  {
+    db = getDb(),
+    projector = false,
+    fresh = false,
+  }: LoadQuizResultsOptions = {},
 ): Promise<QuizResultsPayload | null> {
   // Always read the quiz itself. Status changes (launch/close) must be
   // immediate even if the option/count data is still cached.
@@ -282,7 +292,7 @@ export async function loadQuizResults(
     return null;
   }
 
-  const cached = readCachedQuizData(quizId);
+  const cached = fresh ? null : readCachedQuizData(quizId);
   if (cached) {
     const vote = await loadViewerVote(quizId, access, db);
     return buildQuizResultsPayload({

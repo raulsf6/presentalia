@@ -22,6 +22,7 @@ export function TextLiveResults({
       endpoint ??
       `/api/text/${initial.activity.id}/results${projector ? "?display=projector" : ""}`,
     isActive: textIsLive,
+    activityId: initial.activity.id,
   });
 
   if (!payload) {

@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   getSessionUser: vi.fn(),
   readGuestSession: vi.fn(),
   revalidatePath: vi.fn(),
+  publishActivityResultsChanged: vi.fn(),
 }));
 
 vi.mock("@/db", () => ({
@@ -42,6 +43,10 @@ vi.mock("@/lib/activities/quiz-results", () => ({
 vi.mock("next/cache", () => ({
   revalidatePath: mocks.revalidatePath,
   updateTag: vi.fn(),
+}));
+vi.mock("@/lib/platform/live-event-bus", () => ({
+  publishActivityResultsChanged: mocks.publishActivityResultsChanged,
+  publishActivityStatusChanged: vi.fn(),
 }));
 
 async function setup() {
@@ -96,6 +101,10 @@ describe("guest voting", () => {
         option_id: f.poll.optionIds[0],
       },
     ]);
+    expect(mocks.publishActivityResultsChanged).toHaveBeenCalledWith(
+      f.talkId,
+      f.poll.pollId,
+    );
   });
 
   test("refuses a guest's second poll vote", async () => {
@@ -127,6 +136,10 @@ describe("guest voting", () => {
       [f.quiz.quizId],
     );
     expect(votes).toEqual([{ guest_id: f.guestId }]);
+    expect(mocks.publishActivityResultsChanged).toHaveBeenCalledWith(
+      f.talkId,
+      f.quiz.quizId,
+    );
   });
 
   test("records a guest's text answer", async () => {
@@ -151,6 +164,10 @@ describe("guest voting", () => {
         body: "Ship the small thing.",
       },
     ]);
+    expect(mocks.publishActivityResultsChanged).toHaveBeenCalledWith(
+      f.talkId,
+      f.textId,
+    );
   });
 
   test("denies a guest when the guest session is no longer valid", async () => {

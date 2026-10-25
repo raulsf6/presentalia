@@ -3,25 +3,20 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  startLiveRefresh,
-  TALK_OVERVIEW_REFRESH_INTERVAL_MS,
-} from "@/lib/platform/live-refresh";
+import { startLiveEvents, talkEventsUrl } from "@/lib/platform/live-events";
 
 /**
- * The talk page is where attendees wait between activities. Refresh it while
- * visible so a launch or close elsewhere reaches them without a manual reload.
- * The server cache is tag-invalidated by the activity actions, so the refreshed
- * payload is current.
+ * Keeps the talk overview current while it is visible. Activity changes arrive
+ * over SSE; the normal authorized page render is still the source of truth.
  */
-export function LiveActivityRefresh() {
+export function LiveActivityRefresh({ talkId }: { talkId: string }) {
   const router = useRouter();
 
   useEffect(
     () =>
-      startLiveRefresh({
+      startLiveEvents({
+        url: talkEventsUrl(talkId),
         refresh: () => router.refresh(),
-        intervalMs: TALK_OVERVIEW_REFRESH_INTERVAL_MS,
         visibility: {
           isVisible: () => document.visibilityState === "visible",
           subscribe: (listener) => {
@@ -32,7 +27,7 @@ export function LiveActivityRefresh() {
           },
         },
       }),
-    [router],
+    [router, talkId],
   );
 
   return null;

@@ -6,7 +6,10 @@ import * as schema from "@/db/schema";
 import type { TalkRow } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth/auth";
 import type { TalkAccess } from "@/lib/talks/membership";
-import { clearPollResultsCache, loadPollResults } from "@/lib/activities/poll-results";
+import {
+  clearPollResultsCache,
+  loadPollResults,
+} from "@/lib/activities/poll-results";
 import {
   createDb,
   makeUser,
@@ -146,6 +149,24 @@ describe("loadPollResults", () => {
 
     clearPollResultsCache();
     const fresh = await loadPollResults(pollId, access, { db });
+    expect(fresh?.total).toBe(2);
+  });
+
+  test("bypasses cached counts when fresh is requested", async () => {
+    const { pglite, db, pollId, optionIds, access } = await setupPoll(false);
+    await loadPollResults(pollId, access, { db });
+
+    const secondVoter = await makeUser(pglite, "fresh-voter@example.com");
+    await pglite.query(
+      `insert into public.poll_votes (poll_id, user_id, option_id)
+       values ($1, $2, $3)`,
+      [pollId, secondVoter.id, optionIds[0]],
+    );
+
+    const cached = await loadPollResults(pollId, access, { db });
+    expect(cached?.total).toBe(1);
+
+    const fresh = await loadPollResults(pollId, access, { db, fresh: true });
     expect(fresh?.total).toBe(2);
   });
 

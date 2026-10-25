@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   redirect: vi.fn(),
   logServerError: vi.fn(),
+  publishActivityStatusChanged: vi.fn(),
+  publishActivityResultsChanged: vi.fn(),
 }));
 
 vi.mock("@/db", () => ({ getDb: () => mocks.db }));
@@ -27,7 +29,8 @@ vi.mock("@/lib/talks/membership", () => ({
   resolveTalkAttendee: mocks.resolveTalkAttendee,
 }));
 vi.mock("@/lib/activities/text-ranking", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/activities/text-ranking")>();
+  const actual =
+    await importOriginal<typeof import("@/lib/activities/text-ranking")>();
   return { ...actual, generateRankingWithGateway: mocks.generate };
 });
 vi.mock("next/cache", () => ({
@@ -38,6 +41,10 @@ vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("@/lib/platform/server-log", () => ({
   logServerError: mocks.logServerError,
   logServerWarning: vi.fn(),
+}));
+vi.mock("@/lib/platform/live-event-bus", () => ({
+  publishActivityStatusChanged: mocks.publishActivityStatusChanged,
+  publishActivityResultsChanged: mocks.publishActivityResultsChanged,
 }));
 
 import {
@@ -207,6 +214,10 @@ describe("submitTextAnswerAction", () => {
       user_id: f.member.id,
       body: "Ship the small thing.",
     });
+    expect(mocks.publishActivityResultsChanged).toHaveBeenCalledWith(
+      f.talkId,
+      f.activityId,
+    );
   });
 
   test("refuses an answer once the activity is locked", async () => {
@@ -269,6 +280,9 @@ describe("rankTextActivityAction", () => {
       { answer_id: first, rank: 1, score: 92 },
       { answer_id: second, rank: 2, score: 70 },
     ]);
+    expect(mocks.publishActivityStatusChanged).toHaveBeenCalledWith(f.talkId, {
+      activityId: f.activityId,
+    });
   });
 
   test("ranks guest answers alongside member answers", async () => {
@@ -324,6 +338,9 @@ describe("rankTextActivityAction", () => {
     expect(result.ok).toBe(false);
     expect(activity.rows[0]).toEqual({ status: "locked" });
     expect(runs[0]).toMatchObject({ status: "failed" });
+    expect(mocks.publishActivityStatusChanged).toHaveBeenCalledWith(f.talkId, {
+      activityId: f.activityId,
+    });
   });
 
   test("refuses above the answer cap without locking", async () => {
@@ -358,6 +375,7 @@ describe("rankTextActivityAction", () => {
     });
     expect(activity.rows[0]).toEqual({ status: "active" });
     expect(runs[0]?.count).toBe(0);
+    expect(mocks.publishActivityStatusChanged).not.toHaveBeenCalled();
   });
 
   test("sweeps a stale run and retries successfully", async () => {
@@ -411,6 +429,9 @@ describe("publishTextUnrankedAction", () => {
     expect(result).toEqual({ ok: true });
     expect(activity.rows[0]).toEqual({ status: "closed" });
     expect(runs[0]?.count).toBe(0);
+    expect(mocks.publishActivityStatusChanged).toHaveBeenCalledWith(f.talkId, {
+      activityId: f.activityId,
+    });
   });
 
   test("refuses while a live run is still running", async () => {

@@ -14,10 +14,12 @@ export async function GET(
     );
   }
 
-  const projector =
-    new URL(request.url).searchParams.get("display") === "projector";
+  const search = new URL(request.url).searchParams;
+  const projector = search.get("display") === "projector";
+  const fresh = search.get("fresh") === "1";
   const results = await loadQuizResults(quizId, access, {
     projector,
+    fresh,
   });
   if (!results || results.quiz.status === "ready") {
     return Response.json(

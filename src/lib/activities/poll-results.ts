@@ -125,13 +125,15 @@ export function buildPollResultsPayload(
 
 export type LoadPollResultsOptions = {
   db?: Db;
+  /** Skip the per-instance count cache for a push-triggered refresh. */
+  fresh?: boolean;
 };
 
 /** Loads results after the caller has authorized access to the poll's talk. */
 export async function loadPollResults(
   pollId: string,
   access: TalkAccess,
-  { db = getDb() }: LoadPollResultsOptions = {},
+  { db = getDb(), fresh = false }: LoadPollResultsOptions = {},
 ): Promise<PollResultsPayload | null> {
   // Always read the poll itself. Status changes (launch/close) must be
   // immediate even if the option/count data is still cached.
@@ -153,7 +155,7 @@ export async function loadPollResults(
     return null;
   }
 
-  const cached = readCachedPollData(pollId);
+  const cached = fresh ? null : readCachedPollData(pollId);
   if (cached) {
     return buildPollResultsPayload({ poll, ...cached.data });
   }

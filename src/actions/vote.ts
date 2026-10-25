@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/db";
 import { activities, pollOptions, pollVotes, polls } from "@/db/schema";
 import { isUniqueViolation } from "@/lib/platform/db-errors";
+import { publishActivityResultsChanged } from "@/lib/platform/live-event-bus";
 import { resolveTalkAttendee } from "@/lib/talks/membership";
 import { canVote } from "@/lib/activities/polls";
 
@@ -81,6 +82,7 @@ export async function submitVoteAction(
 
   revalidatePath(`/talks/${outcome.talkId}/activities/${pollId}`);
   revalidatePath(`/talks/${outcome.talkId}/activities/${pollId}/results`);
+  await publishActivityResultsChanged(outcome.talkId, pollId);
   // The client navigates to the results after playing the vote celebration,
   // so success returns the talk id instead of redirecting here.
   return { ok: true, talkId: outcome.talkId };

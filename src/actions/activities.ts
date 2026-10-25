@@ -5,9 +5,14 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { getDb } from "@/db";
 import { activities } from "@/db/schema";
-import { canClose, canLaunch, type ActivityStatus } from "@/lib/activities/activities";
+import {
+  canClose,
+  canLaunch,
+  type ActivityStatus,
+} from "@/lib/activities/activities";
 import { getSessionUser } from "@/lib/auth/auth";
 import { isUniqueViolation } from "@/lib/platform/db-errors";
+import { publishActivityStatusChanged } from "@/lib/platform/live-event-bus";
 import { requireTalkManager } from "@/lib/talks/membership";
 
 export type ActivityActionResult = { ok: boolean; error?: string };
@@ -87,6 +92,7 @@ export async function launchActivityAction(
   revalidatePath(`/talks/${activity.talkId}`);
   revalidatePath(`/talks/${activity.talkId}/activities`);
   revalidatePath(`/talks/${activity.talkId}/activities/${activityId}`);
+  await publishActivityStatusChanged(activity.talkId, { activityId });
   return { ok: true };
 }
 
@@ -136,5 +142,8 @@ export async function closeActivityAction(
   revalidatePath(
     `/talks/${closedActivity.talkId}/activities/${closedActivity.id}/results`,
   );
+  await publishActivityStatusChanged(closedActivity.talkId, {
+    activityId: closedActivity.id,
+  });
   return { ok: true };
 }

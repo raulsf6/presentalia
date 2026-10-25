@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import {
-  startLiveRefresh,
-  TALK_OVERVIEW_REFRESH_INTERVAL_MS,
-} from "@/lib/platform/live-refresh";
+import { startLiveRefresh } from "@/lib/platform/live-refresh";
 
 function fakeVisibility(initialVisible: boolean) {
   let visible = initialVisible;
@@ -34,24 +31,6 @@ afterEach(() => {
 });
 
 describe("startLiveRefresh", () => {
-  test("uses a two-second cadence for the talk overview", () => {
-    const refresh = vi.fn();
-    const visibility = fakeVisibility(true);
-    const stop = startLiveRefresh({
-      refresh,
-      intervalMs: TALK_OVERVIEW_REFRESH_INTERVAL_MS,
-      visibility,
-    });
-
-    vi.advanceTimersByTime(1_999);
-    expect(refresh).not.toHaveBeenCalled();
-
-    vi.advanceTimersByTime(1);
-    expect(refresh).toHaveBeenCalledTimes(1);
-
-    stop();
-  });
-
   test("refreshes on the interval while the page is visible", () => {
     const refresh = vi.fn();
     const visibility = fakeVisibility(true);

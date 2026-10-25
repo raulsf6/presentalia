@@ -71,7 +71,7 @@ async function TalkContent({
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <LiveActivityRefresh />
+      <LiveActivityRefresh talkId={talkId} />
       <div className="mb-2 flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-ink text-2xl">{talk.name}</h1>

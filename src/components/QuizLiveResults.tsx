@@ -22,6 +22,7 @@ export function QuizLiveResults({
       endpoint ??
       `/api/quizzes/${initial.quiz.id}/results${projector ? "?display=projector" : ""}`,
     isActive: quizIsActive,
+    activityId: initial.quiz.id,
   });
 
   if (!payload) {

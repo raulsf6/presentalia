@@ -57,7 +57,7 @@ async function JoinQrContent({
         projector ? "max-w-7xl" : "max-w-3xl"
       }`}
     >
-      <LiveActivityRefresh />
+      <LiveActivityRefresh talkId={talkId} />
       <div className="mb-8 flex w-full items-center justify-between gap-4">
         <HideInProjector>
           <Link href={`/talks/${talkId}`} className="linky">

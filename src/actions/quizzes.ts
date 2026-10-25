@@ -8,7 +8,11 @@ import { getDb } from "@/db";
 import { activities, quizOptions, quizVotes, quizzes } from "@/db/schema";
 import { canVote, type ActivityStatus } from "@/lib/activities/activities";
 import { isUniqueViolation } from "@/lib/platform/db-errors";
-import { requireTalkManager, resolveTalkAttendee } from "@/lib/talks/membership";
+import { publishActivityResultsChanged } from "@/lib/platform/live-event-bus";
+import {
+  requireTalkManager,
+  resolveTalkAttendee,
+} from "@/lib/talks/membership";
 import { clearQuizResultsCache } from "@/lib/activities/quiz-results";
 import { validateQuizInput } from "@/lib/activities/quizzes";
 
@@ -139,6 +143,7 @@ export async function submitQuizVoteAction(
   clearQuizResultsCache(quizId);
   revalidatePath(`/talks/${outcome.talkId}/activities/${quizId}`);
   revalidatePath(`/talks/${outcome.talkId}/activities/${quizId}/results`);
+  await publishActivityResultsChanged(outcome.talkId, quizId);
   // The client navigates to the results after playing the vote celebration,
   // so success returns the talk id instead of redirecting here.
   return { ok: true, talkId: outcome.talkId };

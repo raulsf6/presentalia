@@ -2,42 +2,105 @@
 
 import { useEffect, useState } from "react";
 
+import {
+  activityResultsEventsUrl,
+  startLiveEvents,
+  type LiveEventSource,
+} from "@/lib/platform/live-events";
+import type { LiveRefreshVisibility } from "@/lib/platform/live-refresh";
+
+function documentVisibility(): LiveRefreshVisibility {
+  return {
+    isVisible: () => document.visibilityState === "visible",
+    subscribe(listener) {
+      document.addEventListener("visibilitychange", listener);
+      return () => {
+        document.removeEventListener("visibilitychange", listener);
+      };
+    },
+  };
+}
+
+/** Push-triggered reads bypass the short per-instance results cache. */
+function freshResultsUrl(url: string): string {
+  const target = new URL(url, window.location.origin);
+  target.searchParams.set("fresh", "1");
+  return target.toString();
+}
+
 /**
- * Shared live-results polling. Refreshes every five seconds while the
- * payload reports an active activity, pauses in background tabs, and backs
- * off after transient failures. A 401/404 clears the payload and reports that
- * access was revoked.
+ * Shared live-results updates. When an activity id is supplied, the hook
+ * subscribes to its SSE stream and fetches the existing results JSON on a
+ * change; a fallback poll covers reconnects. Without an activity id it keeps
+ * the original polling behavior.
+ *
+ * Pauses in background tabs, backs off after transient failures, and a
+ * 401/404 clears the payload and reports that access was revoked.
  */
 export function useLiveResults<T>({
   initial,
   url,
   isActive,
+  activityId,
   intervalMs = 5_000,
+  createEventSource,
 }: {
   initial: T;
   url: string;
   isActive: (payload: T) => boolean;
-  /** Polling cadence while visible; also the base for failure backoff. */
+  /** Subscribe to this activity's SSE updates instead of polling it. */
+  activityId?: string;
+  /** Fallback polling cadence; also the base for failure backoff. */
   intervalMs?: number;
+  /** Test seam for the browser EventSource constructor. */
+  createEventSource?: (url: string) => LiveEventSource;
 }) {
   const [payload, setPayload] = useState<T | null>(initial);
   const [accessRevoked, setAccessRevoked] = useState(false);
   const active = payload ? isActive(payload) : false;
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || accessRevoked) return;
 
     let disposed = false;
-    let timer: number | undefined;
+    let pollTimer: number | undefined;
+    let retryTimer: number | undefined;
     let refreshing = false;
     let failures = 0;
 
-    function schedule(ms: number) {
-      if (disposed) return;
-      timer = window.setTimeout(() => {
-        timer = undefined;
+    function clearPoll() {
+      if (pollTimer !== undefined) {
+        window.clearTimeout(pollTimer);
+        pollTimer = undefined;
+      }
+    }
+
+    function clearRetry() {
+      if (retryTimer !== undefined) {
+        window.clearTimeout(retryTimer);
+        retryTimer = undefined;
+      }
+    }
+
+    function schedulePoll(ms: number) {
+      if (disposed || activityId) return;
+      clearPoll();
+      pollTimer = window.setTimeout(() => {
+        pollTimer = undefined;
         void refresh();
       }, ms);
+    }
+
+    function scheduleRetry() {
+      if (disposed || retryTimer !== undefined) return;
+      failures = Math.min(failures + 1, 3);
+      retryTimer = window.setTimeout(
+        () => {
+          retryTimer = undefined;
+          void refresh();
+        },
+        Math.min(intervalMs * 2 ** failures, 30_000),
+      );
     }
 
     async function refresh() {
@@ -49,7 +112,9 @@ export function useLiveResults<T>({
 
       refreshing = true;
       try {
-        const response = await fetch(url, { cache: "no-store" });
+        const response = await fetch(freshResultsUrl(url), {
+          cache: "no-store",
+        });
         if (disposed) return;
 
         if (!response.ok) {
@@ -58,47 +123,56 @@ export function useLiveResults<T>({
             setAccessRevoked(true);
             return;
           }
-          failures = Math.min(failures + 1, 3);
-          schedule(Math.min(intervalMs * 2 ** failures, 30_000));
+          scheduleRetry();
           return;
         }
 
         const next = (await response.json()) as T;
         if (!disposed) {
+          clearRetry();
+          failures = 0;
           setPayload(next);
           setAccessRevoked(false);
-          failures = 0;
+          schedulePoll(intervalMs);
         }
-        schedule(intervalMs);
       } catch {
         // Keep the last known result and retry with backoff.
-        failures = Math.min(failures + 1, 3);
-        schedule(Math.min(intervalMs * 2 ** failures, 30_000));
+        scheduleRetry();
       } finally {
         refreshing = false;
       }
     }
 
-    function handleVisibility() {
-      if (document.visibilityState !== "visible") return;
-      if (timer !== undefined) {
-        window.clearTimeout(timer);
-        timer = undefined;
-      }
-      void refresh();
-    }
+    let stopEvents: (() => void) | undefined;
 
-    schedule(intervalMs);
-    document.addEventListener("visibilitychange", handleVisibility);
+    if (activityId) {
+      stopEvents = startLiveEvents({
+        url: activityResultsEventsUrl(activityId),
+        refresh: () => {
+          void refresh();
+        },
+        visibility: documentVisibility(),
+        fallbackIntervalMs: intervalMs,
+        createEventSource,
+      });
+    } else {
+      const visibility = documentVisibility();
+      function handleVisibility() {
+        if (document.visibilityState !== "visible") return;
+        clearPoll();
+        void refresh();
+      }
+      stopEvents = visibility.subscribe(handleVisibility);
+      schedulePoll(intervalMs);
+    }
 
     return () => {
       disposed = true;
-      if (timer !== undefined) {
-        window.clearTimeout(timer);
-      }
-      document.removeEventListener("visibilitychange", handleVisibility);
+      clearPoll();
+      clearRetry();
+      stopEvents?.();
     };
-  }, [active, url, intervalMs]);
+  }, [active, url, intervalMs, activityId, accessRevoked, createEventSource]);
 
   return { payload, accessRevoked };
 }

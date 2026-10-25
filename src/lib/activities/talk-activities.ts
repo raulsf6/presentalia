@@ -1,7 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
-import { cacheLife, cacheTag } from "next/cache";
 
-import { getDb } from "@/db";
+import { getDb, type Db } from "@/db";
 import { activities, polls, quizzes, textActivities } from "@/db/schema";
 
 export type TalkActivitySummary = {
@@ -13,18 +12,15 @@ export type TalkActivitySummary = {
 };
 
 /**
- * Cached activity summaries for a talk. Activity actions invalidate the
- * talk's tag, so creating, launching, or closing an activity is reflected
- * immediately.
+ * Activity summaries for a talk. Read fresh: this powers the live overview,
+ * where a push-triggered refresh must never be served a stale in-memory cache
+ * from a different server instance.
  */
 export async function loadTalkActivities(
   talkId: string,
+  db: Db = getDb(),
 ): Promise<TalkActivitySummary[]> {
-  "use cache";
-  cacheLife({ stale: 30, revalidate: 30, expire: 300 });
-  cacheTag("activities", `activities:${talkId}`);
-
-  return getDb()
+  return db
     .select({
       id: activities.id,
       type: activities.type,

@@ -2,8 +2,6 @@
  * Keeps a page fresh while it is visible: refreshes on an interval, pauses
  * in background tabs, and refreshes immediately when the tab comes back.
  */
-export const TALK_OVERVIEW_REFRESH_INTERVAL_MS = 2_000;
-
 export type LiveRefreshVisibility = {
   isVisible(): boolean;
   /** Subscribes to visibility changes and returns an unsubscribe function. */

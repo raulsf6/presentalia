@@ -14,7 +14,8 @@ export async function GET(
     );
   }
 
-  const results = await loadPollResults(pollId, access);
+  const fresh = new URL(request.url).searchParams.get("fresh") === "1";
+  const results = await loadPollResults(pollId, access, { fresh });
   if (!results) {
     return Response.json(
       { error: "Poll not found." },

@@ -120,6 +120,7 @@ For a hosted Supabase project, configure these environment variables in
 | `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL                                         | Browser and server                           |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key                                     | Browser and server                           |
 | `POSTGRES_URL`                  | Supabase transaction-pooler URL, including `sslmode=require` | **Server only**                              |
+| `SUPABASE_DB_URL`               | Supabase session-pooler URL (port 5432), for live events     | **Server only**                              |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service-role key                                    | **Server only; never expose to the browser** |
 | `ADMIN_EMAIL`                   | One-time email for bootstrapping the first database admin    | **Server only**                              |
 | `NEXT_PUBLIC_SITE_URL`          | Optional app origin                                          | Browser and server                           |
@@ -141,9 +142,10 @@ One-time setup:
    be ignored or deleted; later deploys come only from the workflow.
 2. In the Vercel project, set **Node.js Version** to 24 under Settings →
    General, then add the environment variables above for **Production**
-   (`NEXT_PUBLIC_SITE_URL` is the production origin once the domain is known).
-   Vercel builds each deployment with direct access to its environment
-   variables, so Secret-type values work as-is.
+   (`NEXT_PUBLIC_SITE_URL` is the production origin once the domain is known;
+   `SUPABASE_DB_URL` must be the session-pooler URL so live talk events can
+   `LISTEN`). Vercel builds each deployment with direct access to its
+   environment variables, so Secret-type values work as-is.
 3. Run `npx vercel login` and `npx vercel link` locally, read `orgId` and
    `projectId` from `.vercel/project.json`, and create a token under Account
    Settings → Tokens.
@@ -164,8 +166,9 @@ pass through a Vercel function. The bucket enforces the 20 MB and PDF MIME
 limits. Downloads use a server-issued signed URL after talk-access
 authorization.
 
-Keep `POSTGRES_URL` and `SUPABASE_SERVICE_ROLE_KEY` server-only. Never prefix
-them with `NEXT_PUBLIC_` or expose them in client components.
+Keep `POSTGRES_URL`, `SUPABASE_DB_URL`, and `SUPABASE_SERVICE_ROLE_KEY`
+server-only. Never prefix them with `NEXT_PUBLIC_` or expose them in client
+components.
 
 ## Architecture map
 
@@ -205,11 +208,25 @@ them with `NEXT_PUBLIC_` or expose them in client components.
   validation, signed uploads, slide authorization, and browser PDF loading.
 - `src/lib/platform/` — runtime plumbing with no product model: Postgres error
   mapping, server-only logging, the site origin, the visibility-aware refresh
-  timer, and the Supabase browser/server/service clients.
+  timer, and the Supabase browser/server/service clients. `live-event-bus.ts`
+  owns the per-instance Postgres `LISTEN` bus and best-effort publisher;
+  `live-event-stream.ts` and `live-events.ts` provide the Hobby-safe
+  SSE stream and its visibility-aware browser controller.
 - `src/components/LiveResults.tsx` and `src/components/QuizLiveResults.tsx` —
-  shared attendee/presenter/admin/projector results displays, refreshed through
-  the authorized results endpoints every five seconds. `useLiveResults` holds
-  the shared polling behavior.
+  shared attendee/presenter/admin/projector results displays. `useLiveResults`
+  subscribes to the activity's SSE stream and fetches the existing authorized
+  results JSON on change, with a five-second fallback while reconnecting.
+- Live overview updates use `GET /api/talks/[talkId]/events`; live result
+  changes use `GET /api/activities/[activityId]/events`. While visible, the
+  page holds an SSE connection; activity actions invalidate caches and publish
+  a `pg_notify` signal after the change commits. A per-instance Postgres
+  listener fans the signal out as a generic `changed` event, and the browser
+  refreshes through the normal authorized page or results endpoint. No activity
+  content is sent over the stream. The server closes each stream at 270
+  seconds, before Vercel Hobby's 300-second Function limit; the client
+  reconnects and uses a fallback refresh while the stream is unavailable.
+  Result-change signals are scoped to their activity, so a vote does not make
+  every overview viewer refresh.
 - `supabase/migrations/` — Postgres schema, private storage bucket, and trigger
   setup.
 

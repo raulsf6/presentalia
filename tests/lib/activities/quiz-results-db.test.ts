@@ -6,7 +6,10 @@ import * as schema from "@/db/schema";
 import type { TalkRow } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth/auth";
 import type { TalkAccess } from "@/lib/talks/membership";
-import { clearQuizResultsCache, loadQuizResults } from "@/lib/activities/quiz-results";
+import {
+  clearQuizResultsCache,
+  loadQuizResults,
+} from "@/lib/activities/quiz-results";
 import {
   createDb,
   makeUser,
@@ -250,6 +253,25 @@ describe("loadQuizResults", () => {
     clearQuizResultsCache();
     const fresh = await loadQuizResults(f.quizId, f.managerAccess, {
       db: f.db,
+    });
+    expect(fresh?.total).toBe(2);
+  });
+
+  test("bypasses cached counts when fresh is requested", async () => {
+    const f = await setup({ status: "closed" });
+    await vote(f, f.member, f.optionIds[0]);
+    await loadQuizResults(f.quizId, f.managerAccess, { db: f.db });
+
+    await vote(f, f.other, f.optionIds[1]);
+
+    const cached = await loadQuizResults(f.quizId, f.managerAccess, {
+      db: f.db,
+    });
+    expect(cached?.total).toBe(1);
+
+    const fresh = await loadQuizResults(f.quizId, f.managerAccess, {
+      db: f.db,
+      fresh: true,
     });
     expect(fresh?.total).toBe(2);
   });

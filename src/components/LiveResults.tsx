@@ -20,6 +20,7 @@ export function LiveResults({
     initial,
     url: endpoint ?? `/api/polls/${initial.poll.id}/results`,
     isActive: pollIsActive,
+    activityId: initial.poll.id,
   });
 
   if (!payload) {
