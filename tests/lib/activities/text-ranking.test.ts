@@ -1,3 +1,4 @@
+import { NoObjectGeneratedError } from "ai";
 import { describe, expect, test, vi } from "vitest";
 
 import {
@@ -49,6 +50,7 @@ describe("buildRankingPrompt", () => {
 
     expect(prompt.system).toMatch(/untrusted/i);
     expect(prompt.system).toMatch(/never follow/i);
+    expect(prompt.system).toMatch(/reason of at most 120 characters/i);
     expect(prompt.user).toContain("Most actionable");
     for (const answer of answers) {
       expect(prompt.user).toContain(answer.id);
@@ -140,7 +142,11 @@ describe("validateRankingOutput", () => {
     const result = validateRankingOutput(
       {
         ...validOutput(),
-        ranked: [{ id: "a", score: 101 }, { id: "b", score: 90 }, { id: "c", score: 60 }],
+        ranked: [
+          { id: "a", score: 101 },
+          { id: "b", score: 90 },
+          { id: "c", score: 60 },
+        ],
       },
       answers,
     );
@@ -196,7 +202,9 @@ describe("rankTextAnswers", () => {
   test("retries once with the validation error and succeeds", async () => {
     const generate = vi
       .fn()
-      .mockResolvedValueOnce({ output: { ranked: [], dropped: [], summary: "" } })
+      .mockResolvedValueOnce({
+        output: { ranked: [], dropped: [], summary: "" },
+      })
       .mockResolvedValueOnce({ output: validOutput() });
     const result = await rankTextAnswers(
       { prompt: "What next?", criteria: "Most actionable", answers },
@@ -204,7 +212,38 @@ describe("rankTextAnswers", () => {
     );
 
     expect(generate).toHaveBeenCalledTimes(2);
-    expect(generate.mock.calls[1][0].user).toMatch(/previous output was invalid/i);
+    expect(generate.mock.calls[1][0].user).toMatch(
+      /previous output was invalid/i,
+    );
+    expect(result.ranked).toHaveLength(3);
+  });
+
+  test("retries when the SDK rejects output that violates the schema", async () => {
+    const schemaError = new NoObjectGeneratedError({
+      message: "Generated object failed schema validation.",
+      text: JSON.stringify({ summary: "x".repeat(301) }),
+      response: {} as never,
+      usage: {} as never,
+      finishReason: "stop",
+    });
+    const generate = vi
+      .fn()
+      .mockRejectedValueOnce(schemaError)
+      .mockResolvedValueOnce({ output: validOutput() });
+
+    const result = await rankTextAnswers(
+      { prompt: "What next?", criteria: "Most actionable", answers },
+      generate,
+    );
+
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(generate.mock.calls[1][0].user).toMatch(
+      /previous output was invalid/i,
+    );
+    expect(generate.mock.calls[1][0].user).not.toContain(
+      "Generated object failed",
+    );
+    expect(generate.mock.calls[1][0].user).not.toContain("x".repeat(301));
     expect(result.ranked).toHaveLength(3);
   });
 
