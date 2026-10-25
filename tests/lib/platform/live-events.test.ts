@@ -145,7 +145,7 @@ describe("startLiveEvents", () => {
     stop();
   });
 
-  test("stops the fallback once the stream opens", () => {
+  test("uses a slower safety refresh while the stream is open", () => {
     const refresh = vi.fn();
     const visibility = fakeVisibility(true);
     const events = fakeEventSources();
@@ -153,14 +153,18 @@ describe("startLiveEvents", () => {
       url: talkEventsUrl("talk-1"),
       refresh,
       visibility,
+      fallbackIntervalMs: 5_000,
+      safetyIntervalMs: 30_000,
       createEventSource: events.create,
     });
 
     events.sources[0]?.emit("changed");
     events.sources[0]?.onopen?.();
-    vi.advanceTimersByTime(LIVE_EVENTS_FALLBACK_INTERVAL_MS);
-
+    vi.advanceTimersByTime(5_000);
     expect(refresh).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(25_000);
+    expect(refresh).toHaveBeenCalledTimes(2);
     stop();
   });
 

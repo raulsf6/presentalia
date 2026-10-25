@@ -3,6 +3,9 @@ import type { LiveRefreshVisibility } from "@/lib/platform/live-refresh";
 /** Slower safety net while the event stream is unavailable or reconnecting. */
 export const LIVE_EVENTS_FALLBACK_INTERVAL_MS = 60_000;
 
+/** Slow refresh kept while the stream is open, in case no events arrive. */
+export const LIVE_EVENTS_SAFETY_INTERVAL_MS = 60_000;
+
 /** Avoid a burst of route refreshes when several events arrive together. */
 const REFRESH_GAP_MS = 1_000;
 
@@ -19,6 +22,8 @@ export type StartLiveEventsOptions = {
   visibility: LiveRefreshVisibility;
   /** Fallback cadence while the stream is not open. */
   fallbackIntervalMs?: number;
+  /** Slow safety cadence while the stream is open. */
+  safetyIntervalMs?: number;
   createEventSource?: (url: string) => LiveEventSource;
 };
 
@@ -40,12 +45,14 @@ export function startLiveEvents({
   refresh,
   visibility,
   fallbackIntervalMs = LIVE_EVENTS_FALLBACK_INTERVAL_MS,
+  safetyIntervalMs = LIVE_EVENTS_SAFETY_INTERVAL_MS,
   createEventSource = (target) =>
     new EventSource(target) as unknown as LiveEventSource,
 }: StartLiveEventsOptions): () => void {
   let stopped = false;
   let source: LiveEventSource | null = null;
   let fallback: ReturnType<typeof setTimeout> | undefined;
+  let safety: ReturnType<typeof setTimeout> | undefined;
   let coalesce: ReturnType<typeof setTimeout> | undefined;
   let lastRefreshAt = Number.NEGATIVE_INFINITY;
 
@@ -53,6 +60,13 @@ export function startLiveEvents({
     if (fallback !== undefined) {
       clearTimeout(fallback);
       fallback = undefined;
+    }
+  }
+
+  function clearSafety() {
+    if (safety !== undefined) {
+      clearTimeout(safety);
+      safety = undefined;
     }
   }
 
@@ -65,6 +79,17 @@ export function startLiveEvents({
       requestRefresh();
       startFallback();
     }, fallbackIntervalMs);
+  }
+
+  function startSafety() {
+    if (stopped || !visibility.isVisible() || safety !== undefined) {
+      return;
+    }
+    safety = setTimeout(() => {
+      safety = undefined;
+      requestRefresh();
+      startSafety();
+    }, safetyIntervalMs);
   }
 
   function requestRefresh() {
@@ -94,6 +119,7 @@ export function startLiveEvents({
       source = null;
     }
     clearFallback();
+    clearSafety();
   }
 
   function connect() {
@@ -108,8 +134,14 @@ export function startLiveEvents({
       startFallback();
       return;
     }
-    next.onopen = () => clearFallback();
-    next.onerror = () => startFallback();
+    next.onopen = () => {
+      clearFallback();
+      startSafety();
+    };
+    next.onerror = () => {
+      clearSafety();
+      startFallback();
+    };
     next.addEventListener("changed", requestRefresh);
     next.addEventListener("resync", requestRefresh);
     source = next;
@@ -119,6 +151,7 @@ export function startLiveEvents({
   function handleVisibility() {
     if (visibility.isVisible()) {
       clearFallback();
+      clearSafety();
       requestRefresh();
       connect();
     } else {

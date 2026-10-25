@@ -43,18 +43,28 @@ afterEach(() => {
 });
 
 describe("liveEventConnectionString", () => {
-  test("prefers the session pooler for LISTEN", () => {
+  test("prefers the integration's non-pooling connection", () => {
+    vi.stubEnv("POSTGRES_URL_NON_POOLING", "postgres://direct");
+    vi.stubEnv("SUPABASE_DB_URL", "postgres://session");
+    vi.stubEnv("POSTGRES_URL", "postgres://transaction");
+
+    expect(liveEventConnectionString()).toBe("postgres://direct");
+  });
+
+  test("uses an explicit session URL when non-pooling is absent", () => {
+    vi.stubEnv("POSTGRES_URL_NON_POOLING", "");
     vi.stubEnv("SUPABASE_DB_URL", "postgres://session");
     vi.stubEnv("POSTGRES_URL", "postgres://transaction");
 
     expect(liveEventConnectionString()).toBe("postgres://session");
   });
 
-  test("falls back to the app connection when no session URL is set", () => {
+  test("never falls back to the transaction-pooler URL", () => {
+    vi.stubEnv("POSTGRES_URL_NON_POOLING", "");
     vi.stubEnv("SUPABASE_DB_URL", "");
     vi.stubEnv("POSTGRES_URL", "postgres://transaction");
 
-    expect(liveEventConnectionString()).toBe("postgres://transaction");
+    expect(liveEventConnectionString()).toBeNull();
   });
 });
 

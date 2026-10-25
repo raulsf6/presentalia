@@ -19,14 +19,15 @@ type ReportError = (
 ) => void;
 
 /**
- * `LISTEN` only works on a session-mode connection. The transaction pooler
- * used by the app cannot keep a listener open, so deployments supply the
- * session pooler URL separately.
+ * `LISTEN` only works on a session-mode connection. Prefer the connection the
+ * Vercel/Supabase integration marks as non-pooling, then an explicitly
+ * configured session URL. Never fall back to `POSTGRES_URL`, which is the
+ * transaction pooler and cannot keep a listener open.
  */
 export function liveEventConnectionString(): string | null {
   return (
+    process.env.POSTGRES_URL_NON_POOLING?.trim() ||
     process.env.SUPABASE_DB_URL?.trim() ||
-    process.env.POSTGRES_URL?.trim() ||
     null
   );
 }
@@ -171,7 +172,7 @@ export function createLiveEventBus({
         report(
           "live-events.listen",
           new Error(
-            "SUPABASE_DB_URL or POSTGRES_URL is required for live talk events.",
+            "POSTGRES_URL_NON_POOLING or SUPABASE_DB_URL is required for live events; POSTGRES_URL is pooled and cannot LISTEN.",
           ),
         );
       }

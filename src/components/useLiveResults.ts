@@ -9,6 +9,9 @@ import {
 } from "@/lib/platform/live-events";
 import type { LiveRefreshVisibility } from "@/lib/platform/live-refresh";
 
+/** Slow full-results refresh kept while the SSE stream is healthy. */
+const RESULTS_SAFETY_INTERVAL_MS = 30_000;
+
 function documentVisibility(): LiveRefreshVisibility {
   return {
     isVisible: () => document.visibilityState === "visible",
@@ -153,6 +156,7 @@ export function useLiveResults<T>({
         },
         visibility: documentVisibility(),
         fallbackIntervalMs: intervalMs,
+        safetyIntervalMs: RESULTS_SAFETY_INTERVAL_MS,
         createEventSource,
       });
     } else {
