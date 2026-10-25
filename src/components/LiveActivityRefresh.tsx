@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { startLiveRefresh } from "@/lib/platform/live-refresh";
-
-const REFRESH_INTERVAL_MS = 10_000;
+import {
+  startLiveRefresh,
+  TALK_OVERVIEW_REFRESH_INTERVAL_MS,
+} from "@/lib/platform/live-refresh";
 
 /**
  * The talk page is where attendees wait between activities. Refresh it while
@@ -20,7 +21,7 @@ export function LiveActivityRefresh() {
     () =>
       startLiveRefresh({
         refresh: () => router.refresh(),
-        intervalMs: REFRESH_INTERVAL_MS,
+        intervalMs: TALK_OVERVIEW_REFRESH_INTERVAL_MS,
         visibility: {
           isVisible: () => document.visibilityState === "visible",
           subscribe: (listener) => {
