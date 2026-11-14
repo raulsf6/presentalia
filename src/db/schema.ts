@@ -384,6 +384,52 @@ export const textRankings = pgTable(
   ],
 );
 
+/**
+ * Idea cloud activity module. Attendees submit one short phrase while the
+ * activity is active; the results view groups identical phrases and scales
+ * each by how often it was submitted. Authors are never shown.
+ */
+export const cloudActivities = pgTable("cloud_activities", {
+  activityId: uuid("activity_id")
+    .primaryKey()
+    .references(() => activities.id, { onDelete: "cascade" }),
+  prompt: text("prompt").notNull(),
+});
+
+// Author columns are nullable only for cascades. Application writes always set
+// exactly one of user_id or guest_id. Deleting either author removes the idea.
+export const cloudAnswers = pgTable(
+  "cloud_answers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => cloudActivities.activityId, { onDelete: "cascade" }),
+    userId: uuid("user_id"),
+    guestId: uuid("guest_id").references(() => talkGuests.id, {
+      onDelete: "cascade",
+    }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("cloud_answers_activity_user_unique").on(
+      table.activityId,
+      table.userId,
+    ),
+    uniqueIndex("cloud_answers_activity_guest_unique")
+      .on(table.activityId, table.guestId)
+      .where(sql`guest_id IS NOT NULL`),
+    index("cloud_answers_activity_idx").on(
+      table.activityId,
+      table.createdAt,
+      table.id,
+    ),
+  ],
+);
+
 export type TalkRow = typeof talks.$inferSelect;
 export type TalkGuestRow = typeof talkGuests.$inferSelect;
 export type TalkRosterRow = typeof talkRoster.$inferSelect;
@@ -401,4 +447,6 @@ export type TextActivityRow = typeof textActivities.$inferSelect;
 export type TextAnswerRow = typeof textAnswers.$inferSelect;
 export type TextRankingRunRow = typeof textRankingRuns.$inferSelect;
 export type TextRankingRow = typeof textRankings.$inferSelect;
+export type CloudActivityRow = typeof cloudActivities.$inferSelect;
+export type CloudAnswerRow = typeof cloudAnswers.$inferSelect;
 export type AppUserRow = typeof appUsers.$inferSelect;

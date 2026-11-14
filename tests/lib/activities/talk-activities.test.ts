@@ -4,7 +4,13 @@ import { describe, expect, test } from "vitest";
 import type { Db } from "@/db";
 import * as schema from "@/db/schema";
 import { loadTalkActivities } from "@/lib/activities/talk-activities";
-import { createDb, seedPoll, seedTalk, setStatus } from "../../db/harness";
+import {
+  createDb,
+  seedCloudActivity,
+  seedPoll,
+  seedTalk,
+  setStatus,
+} from "../../db/harness";
 
 async function setup() {
   const pglite = await createDb();
@@ -36,5 +42,20 @@ describe("loadTalkActivities", () => {
     expect(second[0]?.status).toBe("active");
 
     await expect(loadTalkActivities(otherTalkId, db)).resolves.toEqual([]);
+  });
+
+  test("returns an idea cloud's prompt", async () => {
+    const { pglite, db, talkId } = await setup();
+    const activityId = await seedCloudActivity(pglite, talkId, {
+      prompt: "What should we improve next?",
+    });
+
+    const rows = await loadTalkActivities(talkId, db);
+
+    expect(rows.find((row) => row.id === activityId)).toMatchObject({
+      type: "cloud",
+      status: "ready",
+      question: "What should we improve next?",
+    });
   });
 });

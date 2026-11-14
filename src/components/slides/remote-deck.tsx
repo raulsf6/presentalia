@@ -21,15 +21,17 @@ import { useWakeLock } from "./use-wake-lock";
 
 const POLL_MS = 1_000;
 
-function typeLabel(type: "poll" | "quiz" | "text"): string {
+function typeLabel(type: "poll" | "quiz" | "text" | "cloud"): string {
   if (type === "quiz") return "Quiz";
   if (type === "text") return "Text prompt";
+  if (type === "cloud") return "Idea cloud";
   return "Poll";
 }
 
-function closeLabel(type: "poll" | "quiz" | "text"): string {
+function closeLabel(type: "poll" | "quiz" | "text" | "cloud"): string {
   if (type === "quiz") return "Close quiz";
   if (type === "text") return "Rank & close";
+  if (type === "cloud") return "Close idea cloud";
   return "Close voting";
 }
 

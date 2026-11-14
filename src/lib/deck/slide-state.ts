@@ -3,6 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb, type Db, type DbTx } from "@/db";
 import {
   activities,
+  cloudActivities,
   polls,
   quizzes,
   talkDeckActivities,
@@ -58,7 +59,7 @@ export function clampSlide(slide: number, count: number | null): number {
   return Math.min(Math.max(1, slide), count);
 }
 
-const activityQuestion = sql<string>`coalesce(${polls.question}, ${quizzes.question}, ${textActivities.prompt})`;
+const activityQuestion = sql<string>`coalesce(${polls.question}, ${quizzes.question}, ${textActivities.prompt}, ${cloudActivities.prompt})`;
 
 const activityColumns = {
   id: activities.id,
@@ -78,6 +79,7 @@ async function readActivity(
     .leftJoin(polls, eq(polls.activityId, activities.id))
     .leftJoin(quizzes, eq(quizzes.activityId, activities.id))
     .leftJoin(textActivities, eq(textActivities.activityId, activities.id))
+    .leftJoin(cloudActivities, eq(cloudActivities.activityId, activities.id))
     .where(eq(activities.id, activityId))
     .limit(1);
   if (!row) {
@@ -103,6 +105,7 @@ async function readLiveActivity(
     .leftJoin(polls, eq(polls.activityId, activities.id))
     .leftJoin(quizzes, eq(quizzes.activityId, activities.id))
     .leftJoin(textActivities, eq(textActivities.activityId, activities.id))
+    .leftJoin(cloudActivities, eq(cloudActivities.activityId, activities.id))
     .where(
       and(
         eq(activities.talkId, talkId),

@@ -22,15 +22,17 @@ function formatDate(date: Date | null): string {
   });
 }
 
-function activityKind(type: string): "poll" | "quiz" | "text" {
+function activityKind(type: string): "poll" | "quiz" | "text" | "cloud" {
   if (type === "quiz") return "quiz";
   if (type === "text") return "text";
+  if (type === "cloud") return "cloud";
   return "poll";
 }
 
 function activityLabel(type: string): string {
   if (type === "quiz") return "Quiz";
   if (type === "text") return "Text prompt";
+  if (type === "cloud") return "Idea cloud";
   return "Poll";
 }
 
@@ -138,7 +140,9 @@ async function TalkContent({
                 : attendee
                   ? currentActivity.type === "text"
                     ? "Tap to answer →"
-                    : "Tap to vote and see results →"
+                    : currentActivity.type === "cloud"
+                      ? "Tap to submit an idea →"
+                      : "Tap to vote and see results →"
                   : "Tap to open the live activity →"}
             </span>
           </Link>

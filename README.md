@@ -7,7 +7,9 @@ once, and everyone with talk access can see live results. Anonymous results
 are the default; voter emails appear only when a presenter or admin explicitly
 chooses identifiable results before launching a poll or quiz. Polls show live
 results as votes arrive; quizzes have one correct answer and keep the tally and
-answer hidden from the room until the presenter closes them.
+answer hidden from the room until the presenter closes them. An idea cloud
+collects one word or short phrase per attendee and makes repeated ideas larger
+on the presenter screen.
 
 A talk can also be made public. Anonymous attendees scan its join QR code,
 choose a username that is unique inside that talk, and take part without an
@@ -196,11 +198,13 @@ Keep `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `SUPABASE_DB_URL`, and
 - `src/lib/activities/` — the shared `activities.ts` lifecycle (`ready`
   (editable) → `active` (live) → `closed`) and choice-result helpers, plus one
   typed module per activity: poll and quiz validation/result payloads with
-  their privacy rules, free-text validation, answer storage, and AI ranking.
+  their privacy rules, free-text validation, answer storage, and AI ranking,
+  and the idea cloud's phrase normalization, frequency grouping, and
+  presenter-only live visibility.
   `results-access.ts` resolves a session user, guest, or already loaded talk
   access into the shared results shape. `activity-workspace.ts` is the page
   read model: it loads an activity only for its authorized talk and returns the
-  poll/quiz/text editor and vote-page data, including whether the current
+  poll/quiz/text/cloud editor and vote-page data, including whether the current
   attendee already voted.
 - `src/lib/deck/` — the projected deck: `deck-plan.ts` holds where activities
   sit in a talk's deck and the whole-plan save behind the Slides tab's deck plan
@@ -214,8 +218,10 @@ Keep `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `SUPABASE_DB_URL`, and
   owns the per-instance Postgres `LISTEN` bus and best-effort publisher;
   `live-event-stream.ts` and `live-events.ts` provide the Hobby-safe
   SSE stream and its visibility-aware browser controller.
-- `src/components/LiveResults.tsx` and `src/components/QuizLiveResults.tsx` —
-  shared attendee/presenter/admin/projector results displays. `useLiveResults`
+- `src/components/LiveResults.tsx`, `src/components/QuizLiveResults.tsx`,
+  `src/components/TextLiveResults.tsx`, and
+  `src/components/CloudLiveResults.tsx` — shared
+  attendee/presenter/admin/projector results displays. `useLiveResults`
   subscribes to the activity's SSE stream and fetches the existing authorized
   results JSON on change, with a five-second fallback while reconnecting.
 - Live overview updates use `GET /api/talks/[talkId]/events`; live result
@@ -258,8 +264,9 @@ database with minimal Supabase `auth` and `storage` stand-ins. It checks
 database constraints, role defaults and bootstrap, last-admin safeguards,
 poll and quiz vote-count triggers, user-sync triggers, and private bucket
 configuration. Pure tests cover role/session loading, login allowlisting,
-roster parsing, poll and quiz rules, result privacy/math, upload validation,
-and Postgres error mapping.
+roster parsing, poll and quiz rules, free-text and idea-cloud validation,
+frequency grouping, result privacy/visibility, upload validation, and Postgres
+error mapping.
 
 There is no hosted Supabase project in the automated test environment. Before
 launch, verify magic-link delivery/redirects, the signed PDF upload and

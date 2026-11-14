@@ -243,6 +243,26 @@ export async function seedTextActivity(
   return activityId;
 }
 
+export async function seedCloudActivity(
+  db: Db,
+  talkId: string,
+  opts: {
+    status?: "ready" | "active" | "closed";
+    prompt?: string;
+  } = {},
+): Promise<string> {
+  const activityId = crypto.randomUUID();
+  await db.query(
+    "insert into public.activities (id, talk_id, type, status) values ($1, $2, 'cloud', $3)",
+    [activityId, talkId, opts.status ?? "ready"],
+  );
+  await db.query(
+    "insert into public.cloud_activities (activity_id, prompt) values ($1, $2)",
+    [activityId, opts.prompt ?? "What should we improve next?"],
+  );
+  return activityId;
+}
+
 /** Places an activity in the gap after `afterSlide`. */
 export async function placeActivity(
   db: Db,

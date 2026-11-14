@@ -73,6 +73,16 @@ export function TextIcon(props: IconProps) {
   );
 }
 
+export function CloudIcon(props: IconProps) {
+  return (
+    <SvgIcon {...props}>
+      <path d="M7 18.5h10a4.2 4.2 0 0 0 .7-8.34A5.6 5.6 0 0 0 7.2 9.4 4.6 4.6 0 0 0 7 18.5Z" />
+      <path d="M9.5 13h5" />
+      <path d="M9.5 15.5h3.5" />
+    </SvgIcon>
+  );
+}
+
 export function UsersIcon(props: IconProps) {
   return (
     <SvgIcon {...props}>

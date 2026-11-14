@@ -3,6 +3,8 @@ import { and, asc, eq } from "drizzle-orm";
 import { getDb, type Db } from "@/db";
 import {
   activities,
+  cloudActivities,
+  cloudAnswers,
   pollOptions,
   pollVotes,
   polls,
@@ -46,6 +48,10 @@ export type TextWorkspace = {
   prompt: string;
   criteria: string;
   resultsIdentifiable: boolean;
+};
+
+export type CloudWorkspace = {
+  prompt: string;
 };
 
 /**
@@ -204,6 +210,28 @@ export async function loadTextWorkspace(
   return text ?? null;
 }
 
+/** Loads the idea cloud editor and answer page data for an authorized viewer. */
+export async function loadCloudWorkspace(
+  access: TalkAccess,
+  activityId: string,
+  db: Db = getDb(),
+): Promise<CloudWorkspace | null> {
+  const [cloud] = await db
+    .select({ prompt: cloudActivities.prompt })
+    .from(cloudActivities)
+    .innerJoin(activities, eq(activities.id, cloudActivities.activityId))
+    .where(
+      and(
+        eq(cloudActivities.activityId, activityId),
+        eq(activities.talkId, access.talk.id),
+        eq(activities.type, "cloud"),
+      ),
+    )
+    .limit(1);
+
+  return cloud ?? null;
+}
+
 /** True when this attendee already has a poll vote on the activity. */
 export async function hasPollVote(
   access: TalkAccess,
@@ -266,6 +294,29 @@ export async function hasTextAnswer(
         "userId" in key
           ? eq(textAnswers.userId, key.userId)
           : eq(textAnswers.guestId, key.guestId),
+      ),
+    )
+    .limit(1);
+
+  return answer !== undefined;
+}
+
+/** True when this attendee already submitted an idea to the idea cloud. */
+export async function hasCloudAnswer(
+  access: TalkAccess,
+  activityId: string,
+  db: Db = getDb(),
+): Promise<boolean> {
+  const key = attendeeVoteKey(access);
+  const [answer] = await db
+    .select({ id: cloudAnswers.id })
+    .from(cloudAnswers)
+    .where(
+      and(
+        eq(cloudAnswers.activityId, activityId),
+        "userId" in key
+          ? eq(cloudAnswers.userId, key.userId)
+          : eq(cloudAnswers.guestId, key.guestId),
       ),
     )
     .limit(1);

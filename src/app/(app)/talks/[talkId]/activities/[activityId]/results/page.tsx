@@ -3,24 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
+import { ActivityResultsBody } from "@/components/ActivityResultsBody";
 import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
-import { LiveResults } from "@/components/LiveResults";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { QuizLiveResults } from "@/components/QuizLiveResults";
 import { TextActivityControls } from "@/components/TextActivityControls";
-import { TextLiveResults } from "@/components/TextLiveResults";
 import { loadActivityPageContext } from "@/lib/activities/activity-workspace";
+import { loadActivityResults } from "@/lib/activities/activity-results";
 import { isManager } from "@/lib/talks/membership";
-import { loadPollResults } from "@/lib/activities/poll-results";
-import type { PollResultsPayload } from "@/lib/activities/polls";
-import {
-  loadQuizResults,
-  type QuizResultsPayload,
-} from "@/lib/activities/quiz-results";
-import {
-  loadTextResults,
-  type TextResultsPayload,
-} from "@/lib/activities/text-results";
 
 export default function ActivityResultsPage({
   params,
@@ -60,53 +49,27 @@ async function ActivityResultsContent({
     : `/talks/${talkId}/activities/${activityId}/results?display=projector`;
   const activityHref = `/talks/${talkId}/activities/${activityId}`;
 
-  let poll: PollResultsPayload | null = null;
-  let quiz: QuizResultsPayload | null = null;
-  let text: TextResultsPayload | null = null;
-
-  if (activity.type === "poll") {
-    poll = await loadPollResults(activityId, access);
-    if (!poll || poll.poll.talkId !== talkId) {
-      notFound();
-    }
-    if (poll.poll.status === "ready") {
-      redirect(activityHref);
-    }
-  } else if (activity.type === "quiz") {
-    quiz = await loadQuizResults(activityId, access, {
-      projector,
-    });
-    if (!quiz || quiz.quiz.talkId !== talkId) {
-      notFound();
-    }
-    if (quiz.needsVote) {
-      redirect(activityHref);
-    }
-    if (quiz.quiz.status === "ready") {
-      redirect(activityHref);
-    }
-  } else if (activity.type === "text") {
-    text = await loadTextResults(activityId, access, {
-      projector,
-    });
-    if (!text || text.activity.talkId !== talkId) {
-      notFound();
-    }
-    if (text.needsVote) {
-      redirect(activityHref);
-    }
-    if (text.activity.status === "ready") {
-      redirect(activityHref);
-    }
-  } else {
+  const loaded = await loadActivityResults(activity, access, { projector });
+  if (!loaded || loaded.talkId !== talkId) {
     notFound();
   }
+  if (loaded.needsVote) {
+    redirect(activityHref);
+  }
+  if (loaded.status === "ready") {
+    redirect(activityHref);
+  }
 
-  const kind = activity.type === "quiz" ? "quiz" : "poll";
-  const active = activity.status === "active";
   const manager = isManager(access);
+  const textResults = loaded.type === "text" ? loaded.payload : null;
   const textControls =
-    text && manager && !projector && activity.status !== "closed";
+    textResults !== null && manager && !projector && loaded.status !== "closed";
+  const kind =
+    loaded.type === "quiz"
+      ? "quiz"
+      : loaded.type === "cloud"
+        ? "cloud"
+        : "poll";
 
   return (
     <main
@@ -122,16 +85,16 @@ async function ActivityResultsContent({
           {projector ? "Attendee view" : "Projector view"}
         </Link>
       </div>
-      {text && textControls ? (
+      {textResults && textControls ? (
         <div className="mb-6">
           <TextActivityControls
             activityId={activityId}
-            status={activity.status as "active" | "locked"}
-            runStatus={text.run?.status ?? null}
-            answerCount={text.activity.totalAnswers}
+            status={loaded.status as "active" | "locked"}
+            runStatus={textResults.run?.status ?? null}
+            answerCount={textResults.activity.totalAnswers}
           />
         </div>
-      ) : !projector && manager && active ? (
+      ) : !projector && manager && loaded.status === "active" ? (
         <div className="mb-6">
           <ActivityAdminControls
             activityId={activityId}
@@ -143,28 +106,10 @@ async function ActivityResultsContent({
       <div className="relative">
         {projector ? (
           <div className="pointer-events-none absolute -top-2 right-0 z-10">
-            <ActivityTypeBadge type={activity.type} size="lg" />
+            <ActivityTypeBadge type={loaded.type} size="lg" />
           </div>
         ) : null}
-        {poll ? (
-          <LiveResults
-            key={`${poll.poll.id}-${poll.poll.status}`}
-            initial={poll}
-            projector={projector}
-          />
-        ) : quiz ? (
-          <QuizLiveResults
-            key={`${quiz.quiz.id}-${quiz.quiz.status}-${projector ? "projector" : "attendee"}`}
-            initial={quiz}
-            projector={projector}
-          />
-        ) : text ? (
-          <TextLiveResults
-            key={`${text.activity.id}-${text.activity.status}-${projector ? "projector" : "attendee"}`}
-            initial={text}
-            projector={projector}
-          />
-        ) : null}
+        <ActivityResultsBody loaded={loaded} projector={projector} />
       </div>
     </main>
   );

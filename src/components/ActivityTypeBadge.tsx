@@ -1,9 +1,10 @@
-import { ChartIcon, QuizIcon, TextIcon } from "@/components/icons";
+import { ChartIcon, CloudIcon, QuizIcon, TextIcon } from "@/components/icons";
 
 const TYPES = {
   poll: { label: "Poll", box: "bg-coral text-ink", Icon: ChartIcon },
   quiz: { label: "Quiz", box: "bg-green text-white", Icon: QuizIcon },
   text: { label: "Text prompt", box: "bg-amber text-ink", Icon: TextIcon },
+  cloud: { label: "Idea cloud", box: "bg-tan text-ink", Icon: CloudIcon },
 } as const;
 
 /**

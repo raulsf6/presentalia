@@ -8,10 +8,12 @@ import {
 } from "@/actions/activities";
 import { rankTextActivityAction } from "@/actions/text";
 import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
+import { CloudLiveResults } from "@/components/CloudLiveResults";
 import { LiveResults } from "@/components/LiveResults";
 import { LoadingDots } from "@/components/LoadingDots";
 import { QuizLiveResults } from "@/components/QuizLiveResults";
 import { TextLiveResults } from "@/components/TextLiveResults";
+import type { CloudResultsPayload } from "@/lib/activities/cloud-results";
 import type { PollResultsPayload } from "@/lib/activities/polls";
 import type { QuizResultsPayload } from "@/lib/activities/quiz-results";
 import type { TextResultsPayload } from "@/lib/activities/text-results";
@@ -20,17 +22,20 @@ import type { SlideActivity } from "@/lib/deck/slide-state";
 type Loaded =
   | { type: "poll"; payload: PollResultsPayload }
   | { type: "quiz"; payload: QuizResultsPayload }
-  | { type: "text"; payload: TextResultsPayload };
+  | { type: "text"; payload: TextResultsPayload }
+  | { type: "cloud"; payload: CloudResultsPayload };
 
 function launchLabel(type: SlideActivity["type"]): string {
   if (type === "quiz") return "Launch quiz";
   if (type === "text") return "Launch prompt";
+  if (type === "cloud") return "Launch idea cloud";
   return "Launch poll";
 }
 
 function closeLabel(type: SlideActivity["type"]): string {
   if (type === "quiz") return "Close quiz";
   if (type === "text") return "Rank & close";
+  if (type === "cloud") return "Close idea cloud";
   return "Close voting";
 }
 
@@ -62,6 +67,11 @@ function responseLabel(payload: Loaded | null): string | null {
   if (payload.type === "text" && payload.payload.activity.totalAnswers > 0) {
     return `${payload.payload.activity.totalAnswers} ${
       payload.payload.activity.totalAnswers === 1 ? "answer" : "answers"
+    }`;
+  }
+  if (payload.type === "cloud" && payload.payload.activity.totalIdeas > 0) {
+    return `${payload.payload.activity.totalIdeas} ${
+      payload.payload.activity.totalIdeas === 1 ? "idea" : "ideas"
     }`;
   }
   return null;
@@ -206,14 +216,21 @@ export function ActivityStep({
               projector={true}
               endpoint={endpoint}
             />
-          ) : (
+          ) : payload.type === "text" ? (
             <TextLiveResults
               key={`${activity.id}-${activity.status}`}
               initial={payload.payload}
               projector={true}
               endpoint={endpoint}
             />
-          )}
+          ) : payload.type === "cloud" ? (
+            <CloudLiveResults
+              key={`${activity.id}-${activity.status}`}
+              initial={payload.payload}
+              projector={true}
+              endpoint={endpoint}
+            />
+          ) : null}
         </div>
 
         <footer className="border-ink/15 bg-cream sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t-[3px] border-dashed pt-4">
@@ -327,6 +344,20 @@ function WaitingView({ payload }: { payload: Loaded }) {
       <div className="flex flex-col gap-6">
         <p className="text-ink/75 text-xl font-semibold">
           {payload.payload.activity.criteria}
+        </p>
+        <p className="text-muted text-sm font-bold tracking-[0.12em] uppercase">
+          Waiting to launch
+        </p>
+      </div>
+    );
+  }
+
+  if (payload.type === "cloud") {
+    return (
+      <div className="flex flex-col gap-6">
+        <p className="text-ink/75 text-xl font-semibold">
+          Attendees will submit one word or short phrase each. Repeated ideas
+          grow on the screen.
         </p>
         <p className="text-muted text-sm font-bold tracking-[0.12em] uppercase">
           Waiting to launch

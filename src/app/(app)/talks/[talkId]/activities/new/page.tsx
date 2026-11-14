@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { ChartIcon, QuizIcon, TextIcon } from "@/components/icons";
+import { ChartIcon, CloudIcon, QuizIcon, TextIcon } from "@/components/icons";
 import { isManager, loadTalkAccess } from "@/lib/talks/membership";
 
 export default function NewActivityPage({
@@ -86,6 +86,24 @@ async function NewActivityContent({
             <span className="text-muted text-xs font-semibold">
               Collect short written answers and rank them against your criterion
               with AI.
+            </span>
+          </span>
+          <span className="text-muted ml-auto shrink-0 text-sm font-bold">
+            Create →
+          </span>
+        </Link>
+        <Link
+          href={`/talks/${talkId}/activities/new/cloud`}
+          className="card card-hover flex items-center gap-4 p-4"
+        >
+          <span className="border-ink bg-tan shadow-hard-sm flex size-11 shrink-0 items-center justify-center rounded-lg border-[2.5px]">
+            <CloudIcon className="size-5" />
+          </span>
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-ink font-bold">Idea cloud</span>
+            <span className="text-muted text-xs font-semibold">
+              Collect one word or short phrase per person and grow the repeated
+              ideas on the big screen.
             </span>
           </span>
           <span className="text-muted ml-auto shrink-0 text-sm font-bold">

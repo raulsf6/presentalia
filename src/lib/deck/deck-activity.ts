@@ -5,14 +5,25 @@ import { activities } from "@/db/schema";
 import type { TalkAccess } from "@/lib/talks/membership";
 import { loadPollResults } from "@/lib/activities/poll-results";
 import type { PollResultsPayload } from "@/lib/activities/polls";
-import { loadQuizResults, type QuizResultsPayload } from "@/lib/activities/quiz-results";
-import { loadTextResults, type TextResultsPayload } from "@/lib/activities/text-results";
+import {
+  loadQuizResults,
+  type QuizResultsPayload,
+} from "@/lib/activities/quiz-results";
+import {
+  loadTextResults,
+  type TextResultsPayload,
+} from "@/lib/activities/text-results";
+import {
+  loadCloudResults,
+  type CloudResultsPayload,
+} from "@/lib/activities/cloud-results";
 
 /** The activity payload the projected deck renders, selected by type. */
 export type DeckActivityPayload =
   | { type: "poll"; payload: PollResultsPayload }
   | { type: "quiz"; payload: QuizResultsPayload }
-  | { type: "text"; payload: TextResultsPayload };
+  | { type: "text"; payload: TextResultsPayload }
+  | { type: "cloud"; payload: CloudResultsPayload };
 
 /**
  * Loads an activity for the projector, whatever its status. The attendee
@@ -53,6 +64,10 @@ export async function loadDeckActivity(
       projector: true,
     });
     return payload ? { type: "text", payload } : null;
+  }
+  if (activity.type === "cloud") {
+    const payload = await loadCloudResults(activityId, access, { db });
+    return payload ? { type: "cloud", payload } : null;
   }
   return null;
 }

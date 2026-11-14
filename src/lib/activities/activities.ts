@@ -1,6 +1,6 @@
 export type ActivityStatus = "ready" | "active" | "locked" | "closed";
 
-export type ActivityType = "poll" | "quiz" | "text";
+export type ActivityType = "poll" | "quiz" | "text" | "cloud";
 
 export type ChoiceResultsRow = {
   optionId: string;

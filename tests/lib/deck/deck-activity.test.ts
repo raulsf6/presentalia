@@ -10,6 +10,7 @@ import type { TalkAccess } from "@/lib/talks/membership";
 import {
   createDb,
   makeUser,
+  seedCloudActivity,
   seedPoll,
   seedQuiz,
   seedTalk,
@@ -72,6 +73,25 @@ describe("loadDeckActivity", () => {
     expect(result.payload.quiz.question).toBe("Which framework is correct?");
     expect(result.payload.total).toBeNull();
     expect(result.payload.quiz.correctOptionId).toBeNull();
+  });
+
+  test("serves a ready idea cloud's prompt", async () => {
+    const talkId = await seedTalk(pglite, "Deck talk", [], ownerId);
+    const activityId = await seedCloudActivity(pglite, talkId, {
+      prompt: "What should we improve next?",
+    });
+
+    const result = await loadDeckActivity(
+      talkId,
+      activityId,
+      await managerAccess(talkId),
+      db,
+    );
+
+    if (result?.type !== "cloud") throw new Error("expected an idea cloud");
+    expect(result.payload.activity.prompt).toBe("What should we improve next?");
+    expect(result.payload.activity.status).toBe("ready");
+    expect(result.payload.items).toEqual([]);
   });
 
   test("refuses an activity from another talk", async () => {

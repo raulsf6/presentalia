@@ -4,10 +4,12 @@ import { describe, expect, test } from "vitest";
 import type { Db } from "@/db";
 import * as schema from "@/db/schema";
 import {
+  hasCloudAnswer,
   hasPollVote,
   hasQuizVote,
   hasTextAnswer,
   loadActivityForTalk,
+  loadCloudWorkspace,
   loadPollWorkspace,
   loadQuizWorkspace,
   loadTextWorkspace,
@@ -17,6 +19,7 @@ import {
   createDb,
   exec,
   makeUser,
+  seedCloudActivity,
   seedPoll,
   seedQuiz,
   seedTalk,
@@ -191,6 +194,28 @@ describe("loadTextWorkspace", () => {
   });
 });
 
+describe("loadCloudWorkspace", () => {
+  test("returns the idea cloud question", async () => {
+    const { pglite, db, talkId, access } = await setup();
+    const activityId = await seedCloudActivity(pglite, talkId, {
+      prompt: "What should we improve next?",
+    });
+
+    await expect(loadCloudWorkspace(access, activityId, db)).resolves.toEqual({
+      prompt: "What should we improve next?",
+    });
+  });
+
+  test("returns null when the cloud belongs to another talk", async () => {
+    const { pglite, db, talkId, otherAccess } = await setup();
+    const activityId = await seedCloudActivity(pglite, talkId);
+
+    await expect(
+      loadCloudWorkspace(otherAccess, activityId, db),
+    ).resolves.toBeNull();
+  });
+});
+
 describe("attendee vote checks", () => {
   test("hasPollVote sees a member's own vote", async () => {
     const { pglite, db, talkId, access } = await setup();
@@ -267,6 +292,28 @@ describe("attendee vote checks", () => {
     );
 
     await expect(hasTextAnswer(voterAccess, activityId, db)).resolves.toBe(
+      true,
+    );
+  });
+
+  test("hasCloudAnswer sees a member's own idea", async () => {
+    const { pglite, db, talkId } = await setup();
+    const activityId = await seedCloudActivity(pglite, talkId);
+    const voter = await makeUser(pglite, "voter@example.com");
+    const voterAccess = memberAccess(talkId, voter);
+
+    await expect(hasCloudAnswer(voterAccess, activityId, db)).resolves.toBe(
+      false,
+    );
+
+    await setStatus(pglite, activityId, "active");
+    await exec(
+      pglite,
+      "insert into public.cloud_answers (activity_id, user_id, body) values ($1, $2, $3)",
+      [activityId, voter.id, "Better onboarding"],
+    );
+
+    await expect(hasCloudAnswer(voterAccess, activityId, db)).resolves.toBe(
       true,
     );
   });

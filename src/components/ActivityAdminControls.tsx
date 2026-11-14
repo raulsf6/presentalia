@@ -16,7 +16,7 @@ export function ActivityAdminControls({
   launchBlockedReason,
 }: {
   activityId: string;
-  kind: "poll" | "quiz" | "text";
+  kind: "poll" | "quiz" | "text" | "cloud";
   status: "ready" | "active" | "closed";
   /** When set on a ready activity, launching is unavailable and this explains why. */
   launchBlockedReason?: string | null;
@@ -25,6 +25,7 @@ export function ActivityAdminControls({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const name = kind === "cloud" ? "idea cloud" : kind;
 
   const action =
     status === "ready" ? launchActivityAction : closeActivityAction;
@@ -34,7 +35,7 @@ export function ActivityAdminControls({
     startTransition(async () => {
       const result = await action(activityId);
       if (!result.ok) {
-        setError(result.error ?? `Could not update the ${kind}.`);
+        setError(result.error ?? `Could not update the ${name}.`);
         return;
       }
       setConfirming(false);
@@ -43,9 +44,17 @@ export function ActivityAdminControls({
   }
 
   if (status === "closed") {
+    if (kind === "cloud") {
+      return (
+        <p className="text-muted text-sm font-semibold">
+          This idea cloud is closed. Its question is read-only and its ideas are
+          final.
+        </p>
+      );
+    }
     return (
       <p className="text-muted text-sm font-semibold">
-        This {kind} is closed. Its question, options, and results setting are
+        This {name} is closed. Its question, options, and results setting are
         read-only.
         {kind === "quiz" ? " The correct answer is now visible." : ""}
         {kind === "text" ? " Its ranking is final." : ""}
@@ -57,7 +66,7 @@ export function ActivityAdminControls({
     return (
       <div className="flex flex-col gap-2">
         <button type="button" disabled className="btn w-fit">
-          Launch {kind}…
+          Launch {name}…
         </button>
         <p className="text-muted text-xs font-semibold">
           {launchBlockedReason}
@@ -70,12 +79,16 @@ export function ActivityAdminControls({
   const prompt = launch
     ? kind === "text"
       ? "Launch this text prompt now? Attendees will be able to submit one answer each, and the prompt and criterion will be locked."
-      : `Launch this ${kind} now? Attendees will be able to vote, and the question, options, and results identity setting will be locked.`
+      : kind === "cloud"
+        ? "Launch this idea cloud now? Attendees will be able to submit one word or short phrase each, and the question will be locked."
+        : `Launch this ${kind} now? Attendees will be able to vote, and the question, options, and results identity setting will be locked.`
     : kind === "quiz"
       ? "Close this quiz now? Attendees will no longer be able to submit votes, and the correct answer will be revealed to everyone with access."
       : kind === "text"
         ? "Close this text prompt now? Attendees will no longer be able to submit answers, and every answer will be published unranked."
-        : "Close voting now? Attendees will no longer be able to submit votes, but everyone authorized can still see the final results.";
+        : kind === "cloud"
+          ? "Close this idea cloud now? Attendees will no longer be able to submit ideas, and the final cloud will be visible to everyone with access."
+          : "Close voting now? Attendees will no longer be able to submit votes, but everyone authorized can still see the final results.";
 
   return (
     <div className="flex flex-col gap-3">
@@ -85,7 +98,7 @@ export function ActivityAdminControls({
           onClick={() => setConfirming(true)}
           className={`btn w-fit ${launch ? "btn-green" : "btn-ink"}`}
         >
-          {launch ? `Launch ${kind}…` : `Close ${kind}…`}
+          {launch ? `Launch ${name}…` : `Close ${name}…`}
         </button>
       ) : (
         <div className="border-amber bg-ambersoft flex flex-col gap-3 rounded-lg border-[2.5px] p-4">
@@ -102,7 +115,9 @@ export function ActivityAdminControls({
                   {launch ? "Launching…" : "Closing…"} <LoadingDots />
                 </>
               ) : launch ? (
-                `Yes, launch ${kind} 🎉`
+                `Yes, launch ${name} 🎉`
+              ) : kind === "cloud" ? (
+                "Yes, close idea cloud"
               ) : (
                 "Yes, close voting"
               )}

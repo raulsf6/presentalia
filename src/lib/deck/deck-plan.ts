@@ -3,6 +3,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { getDb, type Db } from "@/db";
 import {
   activities,
+  cloudActivities,
   polls,
   quizzes,
   talkDeckActivities,
@@ -39,7 +40,7 @@ export type DeckPlanResult = { ok: true } | { ok: false; error: string };
 
 const MAX_PAGES = 2_000;
 
-const activityQuestion = sql<string>`coalesce(${polls.question}, ${quizzes.question}, ${textActivities.prompt})`;
+const activityQuestion = sql<string>`coalesce(${polls.question}, ${quizzes.question}, ${textActivities.prompt}, ${cloudActivities.prompt})`;
 
 /** Every activity and every placement of a talk, for the plan editor. */
 export async function loadDeckPlan(
@@ -57,6 +58,7 @@ export async function loadDeckPlan(
     .leftJoin(polls, eq(polls.activityId, activities.id))
     .leftJoin(quizzes, eq(quizzes.activityId, activities.id))
     .leftJoin(textActivities, eq(textActivities.activityId, activities.id))
+    .leftJoin(cloudActivities, eq(cloudActivities.activityId, activities.id))
     .where(eq(activities.talkId, talkId))
     .orderBy(activities.createdAt);
 
