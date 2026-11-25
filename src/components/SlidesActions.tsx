@@ -2,6 +2,7 @@
 
 import { useRef, type RefObject } from "react";
 
+import { useT } from "@/components/I18nProvider";
 import { IconButton } from "@/components/IconButton";
 import { Popup } from "@/components/Popup";
 import { SlidesManager } from "@/components/SlidesManager";
@@ -19,6 +20,7 @@ export function SlidesActions({
   talkId: string;
   uploadedLabel: string | null;
 }) {
+  const t = useT();
   const upload = useRef<HTMLDialogElement>(null);
   const present = useRef<HTMLDialogElement>(null);
   const remote = useRef<HTMLDialogElement>(null);
@@ -34,32 +36,34 @@ export function SlidesActions({
     <>
       <div className="flex items-center gap-2">
         <IconButton
-          label="Upload slides"
+          label={t("slides.upload")}
           onClick={() => upload.current?.showModal()}
         >
           <UploadIcon className="size-5" />
         </IconButton>
         <IconButton
-          label="Present"
+          label={t("slides.present")}
           onClick={() => present.current?.showModal()}
         >
           <PresentationIcon className="size-5" />
         </IconButton>
-        <IconButton label="Remote" onClick={() => remote.current?.showModal()}>
+        <IconButton
+          label={t("slides.remote")}
+          onClick={() => remote.current?.showModal()}
+        >
           <RemoteIcon className="size-5" />
         </IconButton>
       </div>
 
-      <Popup ref={upload} title="Slides PDF">
+      <Popup ref={upload} title={t("slides.slidesPdf")}>
         <SlidesManager talkId={talkId} uploadedLabel={uploadedLabel} />
       </Popup>
 
-      <Popup ref={present} title="Present">
+      <Popup ref={present} title={t("slides.present")}>
         {hasSlides ? (
           <>
             <p className="text-ink/75 text-sm font-semibold">
-              Open <strong>Present</strong> on the laptop connected to the big
-              screen, then use the remote on your phone.
+              {t("slides.presentIntro")}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <a
@@ -69,14 +73,14 @@ export function SlidesActions({
                 className="btn"
                 onClick={() => present.current?.close()}
               >
-                Open Present ↗
+                {t("slides.openPresent")}
               </a>
               <button
                 type="button"
                 onClick={() => openFrom(remote)}
                 className="btn btn-ghost"
               >
-                Open Remote instead
+                {t("slides.openRemoteInstead")}
               </button>
             </div>
           </>
@@ -85,17 +89,15 @@ export function SlidesActions({
         )}
       </Popup>
 
-      <Popup ref={remote} title="Remote">
+      <Popup ref={remote} title={t("slides.remote")}>
         {hasSlides ? (
           <>
             <p className="text-ink/75 text-sm font-semibold">
-              Open this on the phone in your hand, signed in as the same
-              account. The remote moves the deck and launches or closes the
-              activity the deck is sitting on.
+              {t("slides.remoteIntro")}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <a href={`/talks/${talkId}/remote`} className="btn">
-                Open Remote
+                {t("slides.openRemote")}
               </a>
             </div>
           </>
@@ -108,14 +110,14 @@ export function SlidesActions({
 }
 
 function UploadFirst({ onUpload }: { onUpload: () => void }) {
+  const t = useT();
   return (
     <>
       <p className="text-ink/75 text-sm font-semibold">
-        Upload the talk&apos;s PDF first. The deck is what Present projects and
-        what the remote moves.
+        {t("slides.uploadFirst")}
       </p>
       <button type="button" onClick={onUpload} className="btn mt-4">
-        Upload slides
+        {t("slides.upload")}
       </button>
     </>
   );

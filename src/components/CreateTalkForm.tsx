@@ -3,11 +3,13 @@
 import { useActionState } from "react";
 
 import { createTalkAction, type ActionResult } from "@/actions/talks";
+import { useT } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
 
 const initial: ActionResult = { ok: true };
 
 export function CreateTalkForm() {
+  const t = useT();
   const [state, formAction, pending] = useActionState(
     createTalkAction,
     initial,
@@ -17,7 +19,7 @@ export function CreateTalkForm() {
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <label htmlFor="name" className="text-ink text-sm font-bold">
-          Talk name <span className="text-red">*</span>
+          {t("createTalk.nameLabel")} <span className="text-red">*</span>
         </label>
         <input
           id="name"
@@ -25,27 +27,31 @@ export function CreateTalkForm() {
           type="text"
           required
           maxLength={200}
-          placeholder="AI Agents in Production"
+          placeholder={t("createTalk.namePlaceholder")}
           className="input"
         />
       </div>
       <div className="flex flex-col gap-2">
         <label htmlFor="heldAt" className="text-ink text-sm font-bold">
-          Date{" "}
-          <span className="text-muted text-xs font-semibold">(optional)</span>
+          {t("createTalk.dateLabel")}{" "}
+          <span className="text-muted text-xs font-semibold">
+            {t("createTalk.optional")}
+          </span>
         </label>
         <input id="heldAt" name="heldAt" type="date" className="input" />
       </div>
       <div className="flex flex-col gap-2">
         <label htmlFor="description" className="text-ink text-sm font-bold">
-          Description{" "}
-          <span className="text-muted text-xs font-semibold">(optional)</span>
+          {t("createTalk.descriptionLabel")}{" "}
+          <span className="text-muted text-xs font-semibold">
+            {t("createTalk.optional")}
+          </span>
         </label>
         <textarea
           id="description"
           name="description"
           rows={3}
-          placeholder="What this talk is about"
+          placeholder={t("createTalk.descriptionPlaceholder")}
           className="input"
         />
       </div>
@@ -57,26 +63,25 @@ export function CreateTalkForm() {
         />
         <span className="flex flex-col gap-0.5">
           <span className="text-ink text-sm font-bold">
-            Public talk (anonymous joining)
+            {t("createTalk.publicTitle")}
           </span>
           <span className="text-muted text-xs font-semibold">
-            Anyone with the join QR can enter a username and take part. You can
-            stop new joins at any time from the talk&apos;s access page.
+            {t("createTalk.publicDetail")}
           </span>
         </span>
       </label>
-      {state && !state.ok && state.error ? (
+      {!state.ok ? (
         <p role="alert" className="text-red text-sm font-bold">
-          {state.error}
+          {t(state.errorKey, state.errorParams)}
         </p>
       ) : null}
       <button type="submit" disabled={pending} className="btn w-fit">
         {pending ? (
           <>
-            Creating… <LoadingDots />
+            {t("createTalk.creating")} <LoadingDots />
           </>
         ) : (
-          "Create talk"
+          t("createTalk.create")
         )}
       </button>
     </form>

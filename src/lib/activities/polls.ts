@@ -3,9 +3,15 @@ import type {
   ActivityType,
   ChoiceResultsRow,
 } from "@/lib/activities/activities";
+import type { ErrorKey } from "@/lib/i18n/dictionaries/en";
 
 export type { ActivityStatus, ActivityType };
-export { canClose, canLaunch, canVote, computeResults } from "@/lib/activities/activities";
+export {
+  canClose,
+  canLaunch,
+  canVote,
+  computeResults,
+} from "@/lib/activities/activities";
 
 export type PollResultsRow = ChoiceResultsRow;
 
@@ -36,7 +42,7 @@ export type ValidPollInput = {
   resultsIdentifiable: boolean;
 };
 
-export type InvalidPollInput = { ok: false; error: string };
+export type InvalidPollInput = { ok: false; errorKey: ErrorKey };
 
 export function validatePollInput(input: {
   question: string;
@@ -48,14 +54,14 @@ export function validatePollInput(input: {
     question.length < QUESTION_MIN_LENGTH ||
     question.length > QUESTION_MAX_LENGTH
   ) {
-    return { ok: false, error: "A poll needs a question." };
+    return { ok: false, errorKey: "errors.poll.questionRequired" };
   }
   const options = input.options.map((option) => option.trim());
   if (options.length < MIN_OPTIONS) {
-    return { ok: false, error: "A poll needs at least 2 answer options." };
+    return { ok: false, errorKey: "errors.poll.minOptions" };
   }
   if (options.length > MAX_OPTIONS) {
-    return { ok: false, error: "A poll can have at most 8 answer options." };
+    return { ok: false, errorKey: "errors.poll.maxOptions" };
   }
   if (
     options.some(
@@ -63,7 +69,7 @@ export function validatePollInput(input: {
         option.length === 0 || option.length > OPTION_LABEL_MAX_LENGTH,
     )
   ) {
-    return { ok: false, error: "Answer options cannot be empty." };
+    return { ok: false, errorKey: "errors.poll.emptyOption" };
   }
   return {
     ok: true,

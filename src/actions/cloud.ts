@@ -16,17 +16,14 @@ import {
 } from "@/lib/activities/cloud-activity";
 import { publishActivityResultsChanged } from "@/lib/platform/live-event-bus";
 import { isUniqueViolation } from "@/lib/platform/db-errors";
+import type { ActionFailure } from "@/lib/i18n/errors";
 import {
   requireTalkManager,
   resolveTalkAttendee,
 } from "@/lib/talks/membership";
 
-export type CloudActionResult = { ok: boolean; error?: string };
-export type CloudAnswerResult = {
-  ok: boolean;
-  error?: string;
-  talkId?: string;
-};
+export type CloudActionResult = { ok: true } | ActionFailure;
+export type CloudAnswerResult = { ok: true; talkId?: string } | ActionFailure;
 
 /** Create a ready idea cloud and its question atomically. */
 export async function createCloudActivityAction(
@@ -82,15 +79,15 @@ export async function submitCloudAnswerAction(
     .where(eq(activities.id, activityId))
     .limit(1);
   if (!activityRef) {
-    return { ok: false, error: "You don't have access to this activity." };
+    return { ok: false, errorKey: "errors.cloud.noAccess" };
   }
 
   const attendee = await resolveTalkAttendee(activityRef.talkId);
   if (!attendee) {
-    return { ok: false, error: "You don't have access to this activity." };
+    return { ok: false, errorKey: "errors.cloud.noAccess" };
   }
 
-  let outcome: { ok: true; talkId: string } | { ok: false; error: string };
+  let outcome: { ok: true; talkId: string } | ActionFailure;
   try {
     outcome = await db.transaction(async (tx) => {
       const [activity] = await tx
@@ -100,12 +97,12 @@ export async function submitCloudAnswerAction(
         .limit(1)
         .for("share", { of: activities });
       if (!activity) {
-        return { ok: false, error: "You don't have access to this activity." };
+        return { ok: false, errorKey: "errors.cloud.noAccess" };
       }
       if (!canAcceptAnswers(activity.status as ActivityStatus)) {
         return {
           ok: false,
-          error: "This idea cloud is not accepting ideas.",
+          errorKey: "errors.cloud.notAccepting",
         };
       }
 
@@ -119,7 +116,7 @@ export async function submitCloudAnswerAction(
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { ok: false, error: "You have already submitted an idea." };
+      return { ok: false, errorKey: "errors.cloud.alreadySubmitted" };
     }
     throw error;
   }

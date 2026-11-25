@@ -1,10 +1,10 @@
+import type { ActionFailure } from "@/lib/i18n/errors";
+
 import { getSessionUser, type SessionUser } from "@/lib/auth/auth";
 
-export type AdminGuard =
-  { ok: true; user: SessionUser } | { ok: false; error: string };
+export type AdminGuard = { ok: true; user: SessionUser } | ActionFailure;
 
-export type PresenterGuard =
-  { ok: true; user: SessionUser } | { ok: false; error: string };
+export type PresenterGuard = { ok: true; user: SessionUser } | ActionFailure;
 
 /**
  * Guard for admin-only server actions. Admin data access runs on the owner
@@ -13,10 +13,10 @@ export type PresenterGuard =
 export async function requireAdmin(): Promise<AdminGuard> {
   const user = await getSessionUser();
   if (!user) {
-    return { ok: false, error: "You need to sign in." };
+    return { ok: false, errorKey: "errors.auth.signedOut" };
   }
   if (user.role !== "admin") {
-    return { ok: false, error: "Only the admin can do this." };
+    return { ok: false, errorKey: "errors.auth.adminOnly" };
   }
   return { ok: true, user };
 }
@@ -25,13 +25,10 @@ export async function requireAdmin(): Promise<AdminGuard> {
 export async function requirePresenter(): Promise<PresenterGuard> {
   const user = await getSessionUser();
   if (!user) {
-    return { ok: false, error: "You need to sign in." };
+    return { ok: false, errorKey: "errors.auth.signedOut" };
   }
   if (user.role === "attendee") {
-    return {
-      ok: false,
-      error: "Only a presenter or admin can do this.",
-    };
+    return { ok: false, errorKey: "errors.auth.presenterOnly" };
   }
   return { ok: true, user };
 }

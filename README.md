@@ -249,6 +249,41 @@ that module's input/result data, then add its own actions and routes. Polls and
 quizzes are intentionally implemented as typed modules; there is no generic
 activity builder or configurable form engine.
 
+## Localization
+
+The app ships in English and Spanish. No i18n runtime dependency is used; the
+two dictionaries are plain TypeScript modules and dates go through the built-in
+`Intl` API.
+
+- `src/lib/i18n/config.ts` — supported locales, the `presentalia_locale`
+  cookie, cookie precedence, and the `Accept-Language` negotiator.
+- `src/lib/i18n/dictionaries/en.ts` — source of truth. Its keys define
+  `MessageKey`, so a missing Spanish key fails type-check. `es.ts` is typed as
+  `Record<MessageKey, string>`.
+- `src/lib/i18n/translate.ts` — `createTranslator(locale)`, `{name}`
+  interpolation, and `formatDate`.
+- `src/lib/i18n/server.ts` — `getLocale()` reads the cookie first and falls
+  back to `Accept-Language`. Call it inside the Suspense content that already
+  reads request data; the root layout stays static so every route keeps its
+  partial static shell.
+- `src/components/I18nProvider.tsx` and `LocaleSwitcher.tsx` — the client
+  context and the ES/EN toggle in the app bar, login, and join pages.
+- `src/actions/locale.ts` — persists the switch in a cookie; the client then
+  refreshes the route.
+
+The root layout sends `lang="en"` in the static shell and a small pre-paint
+script reads the same cookie (or `navigator.languages`) to set the real
+`html lang` before the first paint. `/login` renders per request because its
+card has no existing request-time boundary.
+
+To add a string, add the key to `en.ts` and `es.ts`. To add a language, extend
+`LOCALES`, add a dictionary module, and teach the root inline script the new
+primary subtag. User-authored content (talk titles, questions, options,
+answers, usernames, emails, PDFs) is never translated. AI ranking output
+follows the language selected when the ranking runs. Supabase email templates,
+native browser validation messages, and the root metadata description remain
+outside the app dictionaries.
+
 ## Checks and formatting
 
 ```bash

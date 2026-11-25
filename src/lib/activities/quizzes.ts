@@ -1,3 +1,5 @@
+import type { ErrorKey } from "@/lib/i18n/dictionaries/en";
+
 const QUESTION_MAX_LENGTH = 500;
 const QUESTION_MIN_LENGTH = 1;
 const OPTION_LABEL_MAX_LENGTH = 200;
@@ -12,7 +14,7 @@ export type ValidQuizInput = {
   resultsIdentifiable: boolean;
 };
 
-export type InvalidQuizInput = { ok: false; error: string };
+export type InvalidQuizInput = { ok: false; errorKey: ErrorKey };
 
 export function validateQuizInput(input: {
   question: string;
@@ -25,14 +27,14 @@ export function validateQuizInput(input: {
     question.length < QUESTION_MIN_LENGTH ||
     question.length > QUESTION_MAX_LENGTH
   ) {
-    return { ok: false, error: "A quiz needs a question." };
+    return { ok: false, errorKey: "errors.quiz.questionRequired" };
   }
   const options = input.options.map((option) => option.trim());
   if (options.length < MIN_OPTIONS) {
-    return { ok: false, error: "A quiz needs at least 2 answer options." };
+    return { ok: false, errorKey: "errors.quiz.minOptions" };
   }
   if (options.length > MAX_OPTIONS) {
-    return { ok: false, error: "A quiz can have at most 8 answer options." };
+    return { ok: false, errorKey: "errors.quiz.maxOptions" };
   }
   if (
     options.some(
@@ -40,18 +42,18 @@ export function validateQuizInput(input: {
         option.length === 0 || option.length > OPTION_LABEL_MAX_LENGTH,
     )
   ) {
-    return { ok: false, error: "Answer options cannot be empty." };
+    return { ok: false, errorKey: "errors.quiz.emptyOption" };
   }
   const uniqueLabels = new Set(options.map((option) => option.toLowerCase()));
   if (uniqueLabels.size !== options.length) {
-    return { ok: false, error: "Answer options must be unique." };
+    return { ok: false, errorKey: "errors.quiz.duplicateOption" };
   }
   if (
     !Number.isInteger(input.correctIndex) ||
     input.correctIndex < 0 ||
     input.correctIndex >= options.length
   ) {
-    return { ok: false, error: "Choose the correct answer." };
+    return { ok: false, errorKey: "errors.quiz.correctRequired" };
   }
   return {
     ok: true,

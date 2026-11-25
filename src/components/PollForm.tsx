@@ -3,11 +3,13 @@
 import { useActionState, useState } from "react";
 
 import { createPollAction, type PollActionResult } from "@/actions/polls";
+import { useT } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
 
 const initial: PollActionResult = { ok: true };
 
 export function PollForm({ talkId }: { talkId: string }) {
+  const t = useT();
   const [options, setOptions] = useState(["", ""]);
   const action = createPollAction.bind(null, talkId);
   const [state, formAction, pending] = useActionState(action, initial);
@@ -16,7 +18,7 @@ export function PollForm({ talkId }: { talkId: string }) {
     <form action={formAction} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <label htmlFor="question" className="text-ink text-sm font-bold">
-          Poll question
+          {t("poll.questionLabel")}
         </label>
         <textarea
           id="question"
@@ -24,15 +26,17 @@ export function PollForm({ talkId }: { talkId: string }) {
           required
           maxLength={500}
           rows={2}
-          placeholder="Which AI agent framework are you most excited to use?"
+          placeholder={t("poll.questionPlaceholder")}
           className="input"
         />
       </div>
 
       <fieldset className="flex flex-col gap-2">
         <legend className="text-ink mb-1 text-sm font-bold">
-          Answer options{" "}
-          <span className="text-muted text-xs font-semibold">(2–8)</span>
+          {t("poll.optionsLegend")}{" "}
+          <span className="text-muted text-xs font-semibold">
+            {t("poll.optionsHint")}
+          </span>
         </legend>
         {options.map((_, index) => (
           <div key={index} className="flex items-center gap-2">
@@ -41,8 +45,8 @@ export function PollForm({ talkId }: { talkId: string }) {
               type="text"
               required
               maxLength={200}
-              aria-label={`Answer option ${index + 1}`}
-              placeholder={`Option ${index + 1}`}
+              aria-label={t("poll.optionAria", { number: index + 1 })}
+              placeholder={t("poll.optionPlaceholder", { number: index + 1 })}
               className="input min-w-0 flex-1"
               value={options[index]}
               onChange={(event) =>
@@ -56,7 +60,7 @@ export function PollForm({ talkId }: { talkId: string }) {
             {options.length > 2 ? (
               <button
                 type="button"
-                aria-label={`Remove option ${index + 1}`}
+                aria-label={t("poll.removeOptionAria", { number: index + 1 })}
                 onClick={() =>
                   setOptions((current) =>
                     current.filter((_, optionIndex) => optionIndex !== index),
@@ -64,7 +68,7 @@ export function PollForm({ talkId }: { talkId: string }) {
                 }
                 className="btn btn-ghost btn-small"
               >
-                Remove
+                {t("form.remove")}
               </button>
             ) : null}
           </div>
@@ -75,7 +79,7 @@ export function PollForm({ talkId }: { talkId: string }) {
             onClick={() => setOptions((current) => [...current, ""])}
             className="linky mt-1 w-fit"
           >
-            + Add an option
+            {t("poll.addOption")}
           </button>
         ) : null}
       </fieldset>
@@ -88,27 +92,26 @@ export function PollForm({ talkId }: { talkId: string }) {
         />
         <span className="flex flex-col gap-0.5">
           <span className="text-ink text-sm font-bold">
-            Show voter names in results
+            {t("poll.identifiableTitle")}
           </span>
           <span className="text-muted text-xs font-semibold">
-            Off by default. This choice cannot be changed after you launch the
-            poll.
+            {t("poll.identifiableDetail")}
           </span>
         </span>
       </label>
 
-      {state && !state.ok && state.error ? (
+      {!state.ok ? (
         <p role="alert" className="text-red text-sm font-bold">
-          {state.error}
+          {t(state.errorKey, state.errorParams)}
         </p>
       ) : null}
       <button type="submit" disabled={pending} className="btn w-fit">
         {pending ? (
           <>
-            Creating… <LoadingDots />
+            {t("form.creating")} <LoadingDots />
           </>
         ) : (
-          "Create poll"
+          t("poll.create")
         )}
       </button>
     </form>

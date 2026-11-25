@@ -1,11 +1,34 @@
+"use client";
+
+import { useT } from "@/components/I18nProvider";
 import { ChartIcon, CloudIcon, QuizIcon, TextIcon } from "@/components/icons";
+import type { MessageKey } from "@/lib/i18n/dictionaries/en";
 
 const TYPES = {
-  poll: { label: "Poll", box: "bg-coral text-ink", Icon: ChartIcon },
-  quiz: { label: "Quiz", box: "bg-green text-white", Icon: QuizIcon },
-  text: { label: "Text prompt", box: "bg-amber text-ink", Icon: TextIcon },
-  cloud: { label: "Idea cloud", box: "bg-tan text-ink", Icon: CloudIcon },
-} as const;
+  poll: {
+    labelKey: "activity.type.poll",
+    box: "bg-coral text-ink",
+    Icon: ChartIcon,
+  },
+  quiz: {
+    labelKey: "activity.type.quiz",
+    box: "bg-green text-white",
+    Icon: QuizIcon,
+  },
+  text: {
+    labelKey: "activity.type.text",
+    box: "bg-amber text-ink",
+    Icon: TextIcon,
+  },
+  cloud: {
+    labelKey: "activity.type.cloud",
+    box: "bg-tan text-ink",
+    Icon: CloudIcon,
+  },
+} as const satisfies Record<
+  string,
+  { labelKey: MessageKey; box: string; Icon: typeof ChartIcon }
+>;
 
 /**
  * The activity type as an icon tile, in the same colours as the activity
@@ -18,7 +41,10 @@ export function ActivityTypeBadge({
   type: string;
   size?: "sm" | "md" | "lg";
 }) {
-  const { label, box, Icon } = TYPES[type as keyof typeof TYPES] ?? TYPES.poll;
+  const t = useT();
+  const { labelKey, box, Icon } =
+    TYPES[type as keyof typeof TYPES] ?? TYPES.poll;
+  const label = t(labelKey);
   return (
     <span
       role="img"

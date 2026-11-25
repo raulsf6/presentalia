@@ -9,8 +9,9 @@ import { isUniqueViolation } from "@/lib/platform/db-errors";
 import { publishActivityResultsChanged } from "@/lib/platform/live-event-bus";
 import { resolveTalkAttendee } from "@/lib/talks/membership";
 import { canVote } from "@/lib/activities/polls";
+import type { ActionFailure } from "@/lib/i18n/errors";
 
-export type VoteResult = { ok: boolean; error?: string; talkId?: string };
+export type VoteResult = { ok: true; talkId?: string } | ActionFailure;
 
 /** Submit an attendee's one immutable choice for an active poll. */
 export async function submitVoteAction(
@@ -25,15 +26,15 @@ export async function submitVoteAction(
     .where(eq(activities.id, pollId))
     .limit(1);
   if (!pollRef) {
-    return { ok: false, error: "You don't have access to this poll." };
+    return { ok: false, errorKey: "errors.poll.noAccess" };
   }
 
   const attendee = await resolveTalkAttendee(pollRef.talkId);
   if (!attendee) {
-    return { ok: false, error: "You don't have access to this poll." };
+    return { ok: false, errorKey: "errors.poll.noAccess" };
   }
 
-  let outcome: { ok: true; talkId: string } | { ok: false; error: string };
+  let outcome: { ok: true; talkId: string } | ActionFailure;
   try {
     outcome = await db.transaction(async (tx) => {
       const [poll] = await tx
@@ -44,10 +45,10 @@ export async function submitVoteAction(
         .limit(1)
         .for("share", { of: activities });
       if (!poll) {
-        return { ok: false, error: "You don't have access to this poll." };
+        return { ok: false, errorKey: "errors.poll.noAccess" };
       }
       if (!canVote(poll.status as "ready" | "active" | "closed")) {
-        return { ok: false, error: "This poll is not open for voting." };
+        return { ok: false, errorKey: "errors.poll.notOpen" };
       }
 
       const [option] = await tx
@@ -59,7 +60,7 @@ export async function submitVoteAction(
         .limit(1)
         .for("share");
       if (!option) {
-        return { ok: false, error: "This vote was not accepted." };
+        return { ok: false, errorKey: "errors.poll.voteRejected" };
       }
 
       await tx.insert(pollVotes).values({
@@ -72,7 +73,7 @@ export async function submitVoteAction(
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { ok: false, error: "You have already voted in this poll." };
+      return { ok: false, errorKey: "errors.poll.alreadyVoted" };
     }
     throw error;
   }

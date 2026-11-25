@@ -4,8 +4,15 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { signOutAction } from "@/actions/auth";
+import { useT } from "@/components/I18nProvider";
 import { LogOutIcon } from "@/components/icons";
 import type { AppRole } from "@/lib/auth/roles";
+
+const ROLE_KEYS = {
+  admin: "roles.admin",
+  presenter: "roles.presenter",
+  attendee: "roles.attendee",
+} as const;
 
 /**
  * Account menu in the app bar: who is signed in, the global destinations,
@@ -18,6 +25,7 @@ export function UserMenu({
   email: string | null;
   role: AppRole;
 }) {
+  const t = useT();
   const pathname = usePathname();
   // The menu is open only while the route stays where it was opened, so
   // navigating closes it without a state-setting effect.
@@ -62,7 +70,7 @@ export function UserMenu({
         type="button"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        aria-label="Account menu"
+        aria-label={t("nav.accountMenu")}
         onClick={() => setOpenedOn(open ? null : pathname)}
         className="avatar-btn"
       >
@@ -72,17 +80,17 @@ export function UserMenu({
         <div id={panelId} className="menu-panel">
           <div className="menu-header">
             <span className="text-ink truncate font-mono text-xs font-bold">
-              {email ?? "No email address"}
+              {email ?? t("common.noEmail")}
             </span>
             <span className="text-muted text-[0.65rem] font-bold tracking-[0.05em] uppercase">
-              {role}
+              {t(ROLE_KEYS[role])}
             </span>
           </div>
           <div className="menu-divider" />
           <form action={signOutAction}>
             <button type="submit" className="menu-item">
               <LogOutIcon className="size-5 shrink-0" />
-              Sign out
+              {t("nav.signOut")}
             </button>
           </form>
         </div>

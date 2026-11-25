@@ -3,11 +3,13 @@
 import { useActionState, useState } from "react";
 
 import { createQuizAction, type QuizActionResult } from "@/actions/quizzes";
+import { useT } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
 
 const initial: QuizActionResult = { ok: true };
 
 export function QuizForm({ talkId }: { talkId: string }) {
+  const t = useT();
   const [options, setOptions] = useState(["", ""]);
   const [correctIndex, setCorrectIndex] = useState<number | null>(null);
   const action = createQuizAction.bind(null, talkId);
@@ -28,7 +30,7 @@ export function QuizForm({ talkId }: { talkId: string }) {
     <form action={formAction} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <label htmlFor="question" className="text-ink text-sm font-bold">
-          Quiz question
+          {t("quiz.questionLabel")}
         </label>
         <textarea
           id="question"
@@ -36,18 +38,20 @@ export function QuizForm({ talkId }: { talkId: string }) {
           required
           maxLength={500}
           rows={2}
-          placeholder="Which framework uses a state graph?"
+          placeholder={t("quiz.questionPlaceholder")}
           className="input"
         />
       </div>
 
       <fieldset className="flex flex-col gap-2">
         <legend className="text-ink mb-1 text-sm font-bold">
-          Answer options{" "}
-          <span className="text-muted text-xs font-semibold">(2–8)</span>
+          {t("quiz.optionsLegend")}{" "}
+          <span className="text-muted text-xs font-semibold">
+            {t("quiz.optionsHint")}
+          </span>
         </legend>
         <p className="text-muted -mt-1 mb-1 text-xs font-semibold">
-          Mark the one correct answer with the radio button.
+          {t("quiz.correctHint")}
         </p>
         {options.map((option, index) => (
           <div key={index} className="flex items-center gap-2">
@@ -56,7 +60,7 @@ export function QuizForm({ talkId }: { talkId: string }) {
               name="correctIndex"
               value={index}
               required
-              aria-label={`Mark option ${index + 1} as the correct answer`}
+              aria-label={t("quiz.correctAria", { number: index + 1 })}
               checked={correctIndex === index}
               onChange={() => setCorrectIndex(index)}
               className="accent-green size-4 shrink-0"
@@ -66,8 +70,8 @@ export function QuizForm({ talkId }: { talkId: string }) {
               type="text"
               required
               maxLength={200}
-              aria-label={`Answer option ${index + 1}`}
-              placeholder={`Option ${index + 1}`}
+              aria-label={t("quiz.optionAria", { number: index + 1 })}
+              placeholder={t("quiz.optionPlaceholder", { number: index + 1 })}
               className="input min-w-0 flex-1"
               value={option}
               onChange={(event) =>
@@ -81,11 +85,13 @@ export function QuizForm({ talkId }: { talkId: string }) {
             {options.length > 2 ? (
               <button
                 type="button"
-                aria-label={`Remove option ${index + 1}`}
+                aria-label={t("quiz.removeOptionAria", {
+                  number: index + 1,
+                })}
                 onClick={() => removeOption(index)}
                 className="btn btn-ghost btn-small"
               >
-                Remove
+                {t("form.remove")}
               </button>
             ) : null}
           </div>
@@ -96,7 +102,7 @@ export function QuizForm({ talkId }: { talkId: string }) {
             onClick={() => setOptions((current) => [...current, ""])}
             className="linky mt-1 w-fit"
           >
-            + Add an option
+            {t("quiz.addOption")}
           </button>
         ) : null}
       </fieldset>
@@ -109,27 +115,26 @@ export function QuizForm({ talkId }: { talkId: string }) {
         />
         <span className="flex flex-col gap-0.5">
           <span className="text-ink text-sm font-bold">
-            Show voter names in results
+            {t("quiz.identifiableTitle")}
           </span>
           <span className="text-muted text-xs font-semibold">
-            Off by default. This choice cannot be changed after you launch the
-            quiz.
+            {t("quiz.identifiableDetail")}
           </span>
         </span>
       </label>
 
-      {state && !state.ok && state.error ? (
+      {!state.ok ? (
         <p role="alert" className="text-red text-sm font-bold">
-          {state.error}
+          {t(state.errorKey, state.errorParams)}
         </p>
       ) : null}
       <button type="submit" disabled={pending} className="btn w-fit">
         {pending ? (
           <>
-            Creating… <LoadingDots />
+            {t("form.creating")} <LoadingDots />
           </>
         ) : (
-          "Create quiz"
+          t("quiz.create")
         )}
       </button>
     </form>

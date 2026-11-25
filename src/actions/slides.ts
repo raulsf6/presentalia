@@ -9,8 +9,9 @@ import {
   type SlidesUploadTicket,
 } from "@/lib/deck/slides-upload";
 import { createSupabaseServiceClient } from "@/lib/platform/supabase/service";
+import type { ActionFailure } from "@/lib/i18n/errors";
 
-export type SlidesResult = { ok: boolean; error?: string };
+export type SlidesResult = { ok: true } | ActionFailure;
 
 /**
  * Validates the declared file metadata and returns a time-limited
@@ -53,18 +54,18 @@ export async function completeSlidesUploadAction(
     .from("talk-slides")
     .list(talkId, { limit: 100, search: "slides.pdf" });
   if (error) {
-    return { ok: false, error: "Could not verify the uploaded slides." };
+    return { ok: false, errorKey: "errors.slides.verifyFailed" };
   }
   if (!objects?.some((object) => object.name === "slides.pdf")) {
     return {
       ok: false,
-      error: "The upload did not complete. Please try again.",
+      errorKey: "errors.slides.uploadIncomplete",
     };
   }
 
   const updated = await markSlidesUploaded(talkId);
   if (!updated) {
-    return { ok: false, error: "Talk not found." };
+    return { ok: false, errorKey: "errors.talk.notFound" };
   }
 
   updateTag("talks");
@@ -92,12 +93,12 @@ export async function removeSlidesAction(
     .from("talk-slides")
     .remove([`${talkId}/slides.pdf`]);
   if (error) {
-    return { ok: false, error: "Could not remove the slides. Try again." };
+    return { ok: false, errorKey: "errors.slides.removeFailed" };
   }
 
   const cleared = await clearSlides(talkId);
   if (!cleared) {
-    return { ok: false, error: "Talk not found." };
+    return { ok: false, errorKey: "errors.talk.notFound" };
   }
 
   updateTag("talks");

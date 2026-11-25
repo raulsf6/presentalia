@@ -28,7 +28,7 @@ describe("validateTextActivityInput", () => {
   test("requires a prompt", () => {
     expect(
       validateTextActivityInput({ prompt: "   ", criteria: "Most useful" }),
-    ).toEqual({ ok: false, error: "A text prompt needs a question." });
+    ).toEqual({ ok: false, errorKey: "errors.text.promptRequired" });
   });
 
   test("caps the prompt length", () => {
@@ -37,7 +37,10 @@ describe("validateTextActivityInput", () => {
       criteria: "Most useful",
     });
 
-    expect(result).toEqual({ ok: false, error: "A text prompt needs a question." });
+    expect(result).toEqual({
+      ok: false,
+      errorKey: "errors.text.promptRequired",
+    });
   });
 
   test("requires a criterion", () => {
@@ -45,7 +48,7 @@ describe("validateTextActivityInput", () => {
       validateTextActivityInput({ prompt: "Ship what?", criteria: "  " }),
     ).toEqual({
       ok: false,
-      error: "Add a criterion for ranking the answers.",
+      errorKey: "errors.text.criterionRequired",
     });
   });
 
@@ -57,7 +60,7 @@ describe("validateTextActivityInput", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "Add a criterion for ranking the answers.",
+      errorKey: "errors.text.criterionRequired",
     });
   });
 
@@ -86,14 +89,15 @@ describe("validateTextAnswer", () => {
   test("rejects an empty answer", () => {
     expect(validateTextAnswer("   ")).toEqual({
       ok: false,
-      error: "Write an answer first.",
+      errorKey: "errors.text.answerRequired",
     });
   });
 
   test("caps the answer length", () => {
     expect(validateTextAnswer("x".repeat(ANSWER_MAX_LENGTH + 1))).toEqual({
       ok: false,
-      error: `Answers can be at most ${ANSWER_MAX_LENGTH} characters.`,
+      errorKey: "errors.text.answerTooLong",
+      errorParams: { max: ANSWER_MAX_LENGTH },
     });
   });
 });

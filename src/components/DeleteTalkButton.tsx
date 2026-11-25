@@ -3,7 +3,9 @@
 import { useState, useTransition } from "react";
 
 import { deleteTalkAction } from "@/actions/talks";
+import { useT } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
+import { toErrorState, type ErrorState } from "@/lib/i18n/errors";
 
 export function DeleteTalkButton({
   talkId,
@@ -12,8 +14,9 @@ export function DeleteTalkButton({
   talkId: string;
   talkName: string;
 }) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
   const [pending, startTransition] = useTransition();
 
   if (!confirming) {
@@ -23,7 +26,7 @@ export function DeleteTalkButton({
         onClick={() => setConfirming(true)}
         className="btn btn-danger"
       >
-        Delete talk…
+        {t("talk.deleteButton")}
       </button>
     );
   }
@@ -31,13 +34,11 @@ export function DeleteTalkButton({
   return (
     <div
       role="alertdialog"
-      aria-label="Delete talk"
+      aria-label={t("talk.deleteAria")}
       className="border-red bg-redsoft flex flex-col gap-3 rounded-lg border-[2.5px] p-4"
     >
       <p className="text-reddeep text-sm font-bold">
-        Delete <span className="font-bold">{talkName}</span>? This removes its
-        attendee roster, polls and votes, and the uploaded slides, and revokes
-        all attendee access. This cannot be undone.
+        {t("talk.deleteConfirm", { name: talkName })}
       </p>
       <div className="flex flex-wrap gap-2">
         <button
@@ -47,7 +48,7 @@ export function DeleteTalkButton({
             startTransition(async () => {
               const result = await deleteTalkAction(talkId);
               if (!result.ok) {
-                setError(result.error ?? "Could not delete the talk.");
+                setError(toErrorState(result, "errors.generic.delete"));
               }
             })
           }
@@ -55,10 +56,10 @@ export function DeleteTalkButton({
         >
           {pending ? (
             <>
-              Deleting… <LoadingDots />
+              {t("talk.deleting")} <LoadingDots />
             </>
           ) : (
-            "Yes, delete this talk"
+            t("talk.deleteYes")
           )}
         </button>
         <button
@@ -70,12 +71,12 @@ export function DeleteTalkButton({
           }}
           className="btn btn-ghost btn-small"
         >
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
       {error ? (
         <p role="alert" className="text-red text-sm font-bold">
-          {error}
+          {t(error.key, error.params)}
         </p>
       ) : null}
     </div>

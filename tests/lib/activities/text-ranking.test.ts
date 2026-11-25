@@ -57,6 +57,23 @@ describe("buildRankingPrompt", () => {
       expect(prompt.user).toContain(answer.text);
     }
   });
+
+  test("writes the model's output in the request language", () => {
+    const defaults = buildRankingPrompt({
+      prompt: "What should we ship next?",
+      criteria: "Most actionable",
+      answers,
+    });
+    const spanish = buildRankingPrompt({
+      prompt: "What should we ship next?",
+      criteria: "Most actionable",
+      answers,
+      locale: "es",
+    });
+
+    expect(defaults.system).toContain("in English");
+    expect(spanish.system).toContain("in Spanish");
+  });
 });
 
 describe("validateRankingOutput", () => {

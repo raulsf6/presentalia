@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/talks/membership", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/talks/membership")>();
+  const actual =
+    await importOriginal<typeof import("@/lib/talks/membership")>();
   return { ...actual, loadTalkAccess: mocks.loadTalkAccess };
 });
 
@@ -46,7 +47,11 @@ describe("GET /api/talks/[talkId]/guests", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       guests: [
-        { id: "guest-1", username: "Sam", joinedAtLabel: "Oct 21, 10:05 AM" },
+        {
+          id: "guest-1",
+          username: "Sam",
+          joinedAt: "2026-10-21T10:05:00.000Z",
+        },
       ],
     });
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");

@@ -1,3 +1,5 @@
+import type { ErrorKey, MessageParams } from "@/lib/i18n/dictionaries/en";
+
 export const CLOUD_PROMPT_MAX_LENGTH = 500;
 export const CLOUD_IDEA_MAX_LENGTH = 60;
 export const CLOUD_IDEA_MAX_WORDS = 5;
@@ -10,14 +12,14 @@ export type ValidCloudActivityInput = {
   prompt: string;
 };
 
-export type InvalidCloudActivityInput = { ok: false; error: string };
+export type InvalidCloudActivityInput = { ok: false; errorKey: ErrorKey };
 
 export function validateCloudActivityInput(input: {
   prompt: string;
 }): ValidCloudActivityInput | InvalidCloudActivityInput {
   const prompt = input.prompt.trim();
   if (prompt.length < 1 || prompt.length > CLOUD_PROMPT_MAX_LENGTH) {
-    return { ok: false, error: "An idea cloud needs a question." };
+    return { ok: false, errorKey: "errors.cloud.promptRequired" };
   }
   return { ok: true, prompt };
 }
@@ -38,26 +40,32 @@ export function cloudIdeaKey(raw: string): string {
 }
 
 export type ValidCloudIdea = { ok: true; body: string };
-export type InvalidCloudIdea = { ok: false; error: string };
+export type InvalidCloudIdea = {
+  ok: false;
+  errorKey: ErrorKey;
+  errorParams?: MessageParams;
+};
 
 export function validateCloudIdea(
   raw: string,
 ): ValidCloudIdea | InvalidCloudIdea {
   const body = displayCloudIdea(raw);
   if (body.length === 0) {
-    return { ok: false, error: "Write an idea first." };
+    return { ok: false, errorKey: "errors.cloud.ideaRequired" };
   }
   if (body.length > CLOUD_IDEA_MAX_LENGTH) {
     return {
       ok: false,
-      error: `Ideas can be at most ${CLOUD_IDEA_MAX_LENGTH} characters.`,
+      errorKey: "errors.cloud.ideaTooLong",
+      errorParams: { max: CLOUD_IDEA_MAX_LENGTH },
     };
   }
   const words = body.split(" ");
   if (words.length > CLOUD_IDEA_MAX_WORDS) {
     return {
       ok: false,
-      error: `Keep each idea to ${CLOUD_IDEA_MAX_WORDS} words or fewer.`,
+      errorKey: "errors.cloud.ideaTooManyWords",
+      errorParams: { max: CLOUD_IDEA_MAX_WORDS },
     };
   }
   return { ok: true, body };

@@ -7,7 +7,45 @@ import {
   closeActivityAction,
   launchActivityAction,
 } from "@/actions/activities";
+import { useT } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
+import type { MessageKey } from "@/lib/i18n/dictionaries/en";
+import { toErrorState, type ErrorState } from "@/lib/i18n/errors";
+
+const TYPE_KEYS = {
+  poll: "activity.type.poll",
+  quiz: "activity.type.quiz",
+  text: "activity.type.text",
+  cloud: "activity.type.cloud",
+} as const satisfies Record<string, MessageKey>;
+
+const CLOSED_KEYS = {
+  poll: "activity.closed.poll",
+  quiz: "activity.closed.quiz",
+  text: "activity.closed.text",
+  cloud: "activity.closed.cloud",
+} as const satisfies Record<string, MessageKey>;
+
+const LAUNCH_PROMPT_KEYS = {
+  poll: "activity.launchPrompt.poll",
+  quiz: "activity.launchPrompt.quiz",
+  text: "activity.launchPrompt.text",
+  cloud: "activity.launchPrompt.cloud",
+} as const satisfies Record<string, MessageKey>;
+
+const CLOSE_PROMPT_KEYS = {
+  poll: "activity.closePrompt.poll",
+  quiz: "activity.closePrompt.quiz",
+  text: "activity.closePrompt.text",
+  cloud: "activity.closePrompt.cloud",
+} as const satisfies Record<string, MessageKey>;
+
+const CLOSE_YES_KEYS = {
+  poll: "activity.closeYes.poll",
+  quiz: "activity.closeYes.quiz",
+  text: "activity.closeYes.text",
+  cloud: "activity.closeYes.cloud",
+} as const satisfies Record<string, MessageKey>;
 
 export function ActivityAdminControls({
   activityId,
@@ -21,11 +59,12 @@ export function ActivityAdminControls({
   /** When set on a ready activity, launching is unavailable and this explains why. */
   launchBlockedReason?: string | null;
 }) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
-  const name = kind === "cloud" ? "idea cloud" : kind;
+  const typeLabel = t(TYPE_KEYS[kind]);
 
   const action =
     status === "ready" ? launchActivityAction : closeActivityAction;
@@ -35,7 +74,7 @@ export function ActivityAdminControls({
     startTransition(async () => {
       const result = await action(activityId);
       if (!result.ok) {
-        setError(result.error ?? `Could not update the ${name}.`);
+        setError(toErrorState(result, "errors.activity.updateFailed"));
         return;
       }
       setConfirming(false);
@@ -44,21 +83,8 @@ export function ActivityAdminControls({
   }
 
   if (status === "closed") {
-    if (kind === "cloud") {
-      return (
-        <p className="text-muted text-sm font-semibold">
-          This idea cloud is closed. Its question is read-only and its ideas are
-          final.
-        </p>
-      );
-    }
     return (
-      <p className="text-muted text-sm font-semibold">
-        This {name} is closed. Its question, options, and results setting are
-        read-only.
-        {kind === "quiz" ? " The correct answer is now visible." : ""}
-        {kind === "text" ? " Its ranking is final." : ""}
-      </p>
+      <p className="text-muted text-sm font-semibold">{t(CLOSED_KEYS[kind])}</p>
     );
   }
 
@@ -66,7 +92,7 @@ export function ActivityAdminControls({
     return (
       <div className="flex flex-col gap-2">
         <button type="button" disabled className="btn w-fit">
-          Launch {name}…
+          {t("activity.launch.button", { type: typeLabel })}
         </button>
         <p className="text-muted text-xs font-semibold">
           {launchBlockedReason}
@@ -77,18 +103,8 @@ export function ActivityAdminControls({
 
   const launch = status === "ready";
   const prompt = launch
-    ? kind === "text"
-      ? "Launch this text prompt now? Attendees will be able to submit one answer each, and the prompt and criterion will be locked."
-      : kind === "cloud"
-        ? "Launch this idea cloud now? Attendees will be able to submit one word or short phrase each, and the question will be locked."
-        : `Launch this ${kind} now? Attendees will be able to vote, and the question, options, and results identity setting will be locked.`
-    : kind === "quiz"
-      ? "Close this quiz now? Attendees will no longer be able to submit votes, and the correct answer will be revealed to everyone with access."
-      : kind === "text"
-        ? "Close this text prompt now? Attendees will no longer be able to submit answers, and every answer will be published unranked."
-        : kind === "cloud"
-          ? "Close this idea cloud now? Attendees will no longer be able to submit ideas, and the final cloud will be visible to everyone with access."
-          : "Close voting now? Attendees will no longer be able to submit votes, but everyone authorized can still see the final results.";
+    ? t(LAUNCH_PROMPT_KEYS[kind])
+    : t(CLOSE_PROMPT_KEYS[kind]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -98,7 +114,9 @@ export function ActivityAdminControls({
           onClick={() => setConfirming(true)}
           className={`btn w-fit ${launch ? "btn-green" : "btn-ink"}`}
         >
-          {launch ? `Launch ${name}…` : `Close ${name}…`}
+          {launch
+            ? t("activity.launch.button", { type: typeLabel })
+            : t("activity.close.button", { type: typeLabel })}
         </button>
       ) : (
         <div className="border-amber bg-ambersoft flex flex-col gap-3 rounded-lg border-[2.5px] p-4">
@@ -112,14 +130,13 @@ export function ActivityAdminControls({
             >
               {pending ? (
                 <>
-                  {launch ? "Launching…" : "Closing…"} <LoadingDots />
+                  {launch ? t("activity.launching") : t("activity.closing")}{" "}
+                  <LoadingDots />
                 </>
               ) : launch ? (
-                `Yes, launch ${name} 🎉`
-              ) : kind === "cloud" ? (
-                "Yes, close idea cloud"
+                t("activity.launchYes", { type: typeLabel })
               ) : (
-                "Yes, close voting"
+                t(CLOSE_YES_KEYS[kind])
               )}
             </button>
             <button
@@ -128,14 +145,14 @@ export function ActivityAdminControls({
               onClick={() => setConfirming(false)}
               className="btn btn-ghost btn-small"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>
       )}
       {error ? (
         <p role="alert" className="text-red text-sm font-bold">
-          {error}
+          {t(error.key, error.params)}
         </p>
       ) : null}
     </div>

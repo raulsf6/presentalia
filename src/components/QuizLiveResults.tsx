@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/I18nProvider";
 import { useLiveResults } from "@/components/useLiveResults";
 import type { QuizResultsPayload } from "@/lib/activities/quiz-results";
 
@@ -16,6 +17,7 @@ export function QuizLiveResults({
   /** Overrides the attendee results URL, for the projected deck. */
   endpoint?: string;
 }) {
+  const t = useT();
   const { payload, accessRevoked } = useLiveResults({
     initial,
     url:
@@ -28,9 +30,7 @@ export function QuizLiveResults({
   if (!payload) {
     return (
       <p role="alert" className="alert alert-warn p-5">
-        {accessRevoked
-          ? "You no longer have access to these results."
-          : "Results are temporarily unavailable. Refresh to try again."}
+        {accessRevoked ? t("results.accessRevoked") : t("results.unavailable")}
       </p>
     );
   }
@@ -57,16 +57,19 @@ export function QuizLiveResults({
           {quiz.status === "active" ? (
             <span className="chip chip-live">
               <span className="pulse-dot" />
-              LIVE
+              {t("status.live")}
             </span>
           ) : (
-            <span className="chip chip-closed">CLOSED</span>
+            <span className="chip chip-closed">{t("status.closed")}</span>
           )}
           {showResults && total !== null ? (
             <span
               className={`${large ? "text-lg" : "text-sm"} text-muted font-bold`}
             >
-              {total} {total === 1 ? "response" : "responses"}
+              {t(
+                total === 1 ? "results.response.one" : "results.response.other",
+                { count: total },
+              )}
             </span>
           ) : null}
         </div>
@@ -82,13 +85,11 @@ export function QuizLiveResults({
       </header>
 
       {needsVote ? (
-        <p className="empty">
-          Vote on the quiz first. Results are revealed after you answer.
-        </p>
+        <p className="empty">{t("results.quizVoteFirst")}</p>
       ) : showWaiting ? (
         <section className="card flex flex-col gap-4 p-6">
           <div className="flex flex-col gap-2">
-            <h2 className="section-label">Answer options</h2>
+            <h2 className="section-label">{t("activity.answerOptions")}</h2>
             <ol
               className={`text-ink list-inside list-decimal space-y-2 font-semibold ${
                 large ? "text-xl md:text-2xl" : "text-sm"
@@ -99,10 +100,9 @@ export function QuizLiveResults({
               ))}
             </ol>
           </div>
-          <p className="text-ink font-bold">Voting is open.</p>
+          <p className="text-ink font-bold">{t("results.votingOpen")}</p>
           <p className="text-muted text-sm font-semibold">
-            Percentages, the number of responses, and the correct answer will be
-            revealed when the quiz closes.
+            {t("results.quizWaiting")}
           </p>
         </section>
       ) : (
@@ -118,8 +118,12 @@ export function QuizLiveResults({
                 aria-live="polite"
               >
                 {totalResponses === 0
-                  ? "No responses yet."
-                  : `${correctVotes} of ${totalResponses} got it right (${correctPercent}%)`}
+                  ? t("results.noResponses")
+                  : t("results.correctCount", {
+                      correct: correctVotes,
+                      total: totalResponses,
+                      percent: correctPercent,
+                    })}
               </p>
             </div>
           ) : null}
@@ -150,12 +154,12 @@ export function QuizLiveResults({
                       <span className="mt-1 flex flex-wrap gap-2">
                         {isCorrect ? (
                           <span className="chip chip-slide text-[0.65rem]">
-                            ✓ Correct answer
+                            {t("activity.correctAnswer")}
                           </span>
                         ) : null}
                         {isViewer ? (
                           <span className="chip chip-soft-amber text-[0.65rem]">
-                            Your pick
+                            {t("results.yourPick")}
                           </span>
                         ) : null}
                       </span>
@@ -212,10 +216,10 @@ export function QuizLiveResults({
               }`}
             >
               {viewer.correct
-                ? "You got it right."
-                : `Your pick was not correct. The correct answer is ${
-                    correctRow?.label ?? "the highlighted option"
-                  }.`}
+                ? t("results.youGotItRight")
+                : t("results.yourPickWrong", {
+                    answer: correctRow?.label ?? t("results.highlightedOption"),
+                  })}
             </p>
           ) : null}
 
@@ -223,12 +227,12 @@ export function QuizLiveResults({
             <p
               className={`${large ? "text-lg" : "text-sm"} text-muted font-semibold`}
             >
-              Results are anonymous.
+              {t("results.resultsAnonymous")}
             </p>
           ) : null}
           {quiz.status === "active" ? (
             <p className="text-muted text-xs font-semibold" aria-live="polite">
-              Results update automatically as votes arrive.
+              {t("results.autoUpdate")}
             </p>
           ) : null}
         </>

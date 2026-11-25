@@ -7,9 +7,12 @@ import {
   changeUserRoleAction,
   deleteUserAction,
 } from "@/actions/users";
+import { useT } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
 import { APP_ROLES, type AppRole } from "@/lib/auth/roles";
 import { filterUsers, type UserRoleFilter } from "@/lib/auth/user-filters";
+import type { MessageKey } from "@/lib/i18n/dictionaries/en";
+import { toErrorState, type ErrorState } from "@/lib/i18n/errors";
 
 type ManagedUser = {
   id: string;
@@ -18,13 +21,11 @@ type ManagedUser = {
   role: AppRole;
 };
 
-const ROLE_FILTERS: { value: UserRoleFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  ...APP_ROLES.map((role) => ({
-    value: role,
-    label: role[0].toUpperCase() + role.slice(1),
-  })),
-];
+const ROLE_KEYS = {
+  admin: "roles.admin",
+  presenter: "roles.presenter",
+  attendee: "roles.attendee",
+} as const satisfies Record<AppRole, MessageKey>;
 
 function UserRoleEditor({
   user,
@@ -33,8 +34,9 @@ function UserRoleEditor({
   user: ManagedUser;
   isCurrentUser: boolean;
 }) {
+  const t = useT();
   const [role, setRole] = useState(user.role);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
   const [pending, startTransition] = useTransition();
 
   function onChange(nextRole: string) {
@@ -44,7 +46,7 @@ function UserRoleEditor({
       const result = await changeUserRoleAction(user.id, nextRole);
       if (!result.ok) {
         setRole(user.role);
-        setError(result.error ?? "Could not update the role.");
+        setError(toErrorState(result, "errors.users.roleUpdateFailed"));
       }
     });
   }
@@ -55,29 +57,31 @@ function UserRoleEditor({
         htmlFor={`role-${user.id}`}
         className="text-muted text-xs font-bold"
       >
-        {isCurrentUser ? "Your role" : "Role"}
+        {isCurrentUser ? t("users.yourRole") : t("users.roleLabel")}
       </label>
       <select
         id={`role-${user.id}`}
         value={role}
         disabled={pending}
-        aria-label={`Role for ${user.email ?? "this user"}`}
+        aria-label={t("users.roleAria", {
+          email: user.email ?? t("users.thisUser"),
+        })}
         onChange={(event) => onChange(event.target.value)}
         className="select disabled:opacity-60"
       >
         {APP_ROLES.map((option) => (
           <option key={option} value={option}>
-            {option[0].toUpperCase() + option.slice(1)}
+            {t(ROLE_KEYS[option])}
           </option>
         ))}
       </select>
       {pending ? (
         <span role="status" className="text-muted text-xs font-bold">
-          Saving…
+          {t("users.saving")}
         </span>
       ) : error ? (
         <span role="alert" className="text-red max-w-48 text-xs font-bold">
-          {error}
+          {t(error.key, error.params)}
         </span>
       ) : null}
     </div>
@@ -91,20 +95,29 @@ export function UserManager({
   users: ManagedUser[];
   currentUserId: string;
 }) {
+  const t = useT();
   const [emailFilter, setEmailFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRoleFilter>("all");
   const [addEmail, setAddEmail] = useState("");
   const [addRole, setAddRole] = useState<AppRole>("attendee");
-  const [addError, setAddError] = useState<string | null>(null);
-  const [addNotice, setAddNotice] = useState<string | null>(null);
+  const [addError, setAddError] = useState<ErrorState | null>(null);
+  const [addNotice, setAddNotice] = useState<MessageKey | null>(null);
   const [addPending, startAddTransition] = useTransition();
   const addDialogRef = useRef<HTMLDialogElement>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<{
     id: string;
-    message: string;
+    error: ErrorState;
   } | null>(null);
   const [deletePending, startDeleteTransition] = useTransition();
+
+  const roleFilters: { value: UserRoleFilter; label: MessageKey }[] = [
+    { value: "all", label: "roster.filter.all" },
+    ...APP_ROLES.map((role) => ({
+      value: role,
+      label: ROLE_KEYS[role],
+    })),
+  ];
 
   const roleCounts = useMemo(() => {
     const counts: Record<UserRoleFilter, number> = {
@@ -138,7 +151,7 @@ export function UserManager({
       if (!result.ok) {
         setDeleteError({
           id: user.id,
-          message: result.error ?? "Could not delete that user.",
+          error: toErrorState(result, "errors.users.deleteFailed"),
         });
         return;
       }
@@ -164,16 +177,13 @@ export function UserManager({
     startAddTransition(async () => {
       const result = await addUserAction(addEmail, addRole);
       if (!result.ok) {
-        setAddError(result.error ?? "Could not add that user.");
+        setAddError(toErrorState(result, "errors.users.createFailed"));
         return;
       }
       addDialogRef.current?.close();
       setAddEmail("");
       setAddRole("attendee");
-      setAddNotice(
-        result.warning ??
-          "User added. They can sign in using this email address.",
-      );
+      setAddNotice(result.warningKey ?? "users.addedNotice");
     });
   }
 
@@ -182,19 +192,23 @@ export function UserManager({
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-baseline gap-3">
-            <h2 className="font-display text-ink text-lg">Users</h2>
+            <h2 className="font-display text-ink text-lg">
+              {t("users.title")}
+            </h2>
             <span className="section-label">
-              {users.length} {users.length === 1 ? "user" : "users"}
+              {t(users.length === 1 ? "users.count.one" : "users.count.other", {
+                count: users.length,
+              })}
             </span>
           </div>
           <button type="button" onClick={openAddUser} className="btn btn-small">
-            + Add user
+            {t("users.add")}
           </button>
         </div>
 
         {addNotice ? (
           <p role="status" className="text-green text-sm font-bold">
-            {addNotice}
+            {t(addNotice)}
           </p>
         ) : null}
 
@@ -202,7 +216,7 @@ export function UserManager({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <label htmlFor="user-email-filter" className="section-label">
-                Filter by email
+                {t("users.filterEmail")}
               </label>
               <div className="relative">
                 <input
@@ -213,13 +227,13 @@ export function UserManager({
                   spellCheck={false}
                   value={emailFilter}
                   onChange={(event) => setEmailFilter(event.target.value)}
-                  placeholder="name@example.com"
+                  placeholder={t("users.emailPlaceholder")}
                   className="input pr-10"
                 />
                 {emailFilter ? (
                   <button
                     type="button"
-                    aria-label="Clear email filter"
+                    aria-label={t("users.clearEmailFilter")}
                     onClick={() => setEmailFilter("")}
                     className="text-muted hover:text-ink focus-visible:outline-ink absolute top-1/2 right-2 -translate-y-1/2 rounded px-1.5 text-lg leading-none font-bold focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
@@ -231,14 +245,14 @@ export function UserManager({
 
             <div className="flex flex-col gap-1.5">
               <span id="role-filter-label" className="section-label">
-                Filter by role
+                {t("users.filterRole")}
               </span>
               <div
                 role="group"
                 aria-labelledby="role-filter-label"
                 className="flex flex-wrap gap-1.5"
               >
-                {ROLE_FILTERS.map((option) => {
+                {roleFilters.map((option) => {
                   const selected = roleFilter === option.value;
                   return (
                     <button
@@ -252,7 +266,7 @@ export function UserManager({
                           : "text-muted hover:bg-cream2 hover:text-ink bg-white"
                       }`}
                     >
-                      {option.label}
+                      {t(option.label)}
                       <span
                         className={selected ? "text-cream/70" : "text-inkfaint"}
                       >
@@ -267,29 +281,36 @@ export function UserManager({
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p aria-live="polite" className="text-muted text-xs font-semibold">
-              Showing {visibleUsers.length} of {users.length}{" "}
-              {users.length === 1 ? "user" : "users"}
-              {filtersActive ? " matching the filters" : ""}
+              {t(
+                users.length === 1
+                  ? "users.showing.one"
+                  : "users.showing.other",
+                {
+                  visible: visibleUsers.length,
+                  total: users.length,
+                },
+              )}
+              {filtersActive ? t("users.showingFiltered") : ""}
             </p>
             {filtersActive ? (
               <button type="button" onClick={clearFilters} className="linky">
-                Clear filters
+                {t("users.clearFilters")}
               </button>
             ) : null}
           </div>
         </div>
 
         {users.length === 0 ? (
-          <p className="empty">No provisioned users yet.</p>
+          <p className="empty">{t("users.none")}</p>
         ) : visibleUsers.length === 0 ? (
           <div className="empty flex flex-col items-center gap-3">
-            <p>No users match these filters.</p>
+            <p>{t("users.noneMatch")}</p>
             <button
               type="button"
               onClick={clearFilters}
               className="btn btn-ghost btn-small"
             >
-              Clear filters
+              {t("users.clearFilters")}
             </button>
           </div>
         ) : (
@@ -298,9 +319,11 @@ export function UserManager({
               aria-hidden="true"
               className="hidden grid-cols-[minmax(0,1fr)_9rem_5.5rem] gap-4 px-4 pt-1 pb-2 sm:grid"
             >
-              <span className="section-label">User</span>
-              <span className="section-label">Role</span>
-              <span className="section-label justify-end">Delete</span>
+              <span className="section-label">{t("users.table.user")}</span>
+              <span className="section-label">{t("users.table.role")}</span>
+              <span className="section-label justify-end">
+                {t("users.table.delete")}
+              </span>
             </div>
             <ul className="card divide-ink/10 divide-y-2 divide-dashed overflow-hidden">
               {visibleUsers.map((user) => (
@@ -311,16 +334,16 @@ export function UserManager({
                         className="text-ink truncate font-mono text-sm font-bold"
                         title={user.email ?? undefined}
                       >
-                        {user.email ?? "No email address"}
-                        {user.id === currentUserId ? " (you)" : ""}
+                        {user.email ?? t("common.noEmail")}
+                        {user.id === currentUserId ? t("common.you") : ""}
                       </span>
                       {user.emailVerifiedAt ? (
                         <span className="chip chip-slide mt-1 w-fit">
-                          ✓ Email verified
+                          {t("users.emailVerified")}
                         </span>
                       ) : (
                         <span className="chip chip-soft-amber mt-1 w-fit">
-                          ⌛ Email not verified
+                          {t("users.emailNotVerified")}
                         </span>
                       )}
                     </div>
@@ -333,14 +356,16 @@ export function UserManager({
                       confirmingId === user.id ? null : (
                         <button
                           type="button"
-                          aria-label={`Delete ${user.email ?? "user"}`}
+                          aria-label={t("users.deleteAria", {
+                            email: user.email ?? t("users.thisUser"),
+                          })}
                           onClick={() => {
                             setDeleteError(null);
                             setConfirmingId(user.id);
                           }}
                           className="btn btn-danger btn-small sm:justify-self-end"
                         >
-                          Delete
+                          {t("common.delete")}
                         </button>
                       )}
                     </div>
@@ -349,20 +374,15 @@ export function UserManager({
                   {confirmingId === user.id ? (
                     <div
                       role="alertdialog"
-                      aria-label={`Delete ${user.email ?? "user"}`}
+                      aria-label={t("users.deleteAria", {
+                        email: user.email ?? t("users.thisUser"),
+                      })}
                       className="border-red bg-redsoft mt-3 flex flex-col gap-3 rounded-lg border-[2.5px] p-3"
                     >
                       <p className="text-reddeep text-sm font-bold">
-                        Delete{" "}
-                        <span className="break-all">
-                          {user.email ?? "this user"}
-                        </span>
-                        ? They lose access immediately, are removed from talk
-                        rosters, and their poll and quiz votes are deleted. Text
-                        answers are kept in place but replaced with a removal
-                        notice, so published rankings do not change. Talks they
-                        created stay in the library, without an owner. This
-                        cannot be undone.
+                        {t("users.deleteConfirm", {
+                          email: user.email ?? t("users.thisUser"),
+                        })}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -373,10 +393,10 @@ export function UserManager({
                         >
                           {deletePending ? (
                             <>
-                              Deleting… <LoadingDots />
+                              {t("users.deleting")} <LoadingDots />
                             </>
                           ) : (
-                            "Yes, delete user"
+                            t("users.yesDelete")
                           )}
                         </button>
                         <button
@@ -389,12 +409,12 @@ export function UserManager({
                           }}
                           className="btn btn-ghost btn-small"
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                       </div>
                       {deleteError?.id === user.id ? (
                         <p role="alert" className="text-red text-sm font-bold">
-                          {deleteError.message}
+                          {t(deleteError.error.key, deleteError.error.params)}
                         </p>
                       ) : null}
                     </div>
@@ -421,16 +441,16 @@ export function UserManager({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 id="add-user-title" className="font-display text-ink text-lg">
-                Add a user
+                {t("users.addTitle")}
               </h2>
               <p className="text-muted mt-1 text-xs font-semibold">
-                They get a sign-in link by email.
+                {t("users.addDetail")}
               </p>
             </div>
             <button
               type="button"
               onClick={closeAddUser}
-              aria-label="Close"
+              aria-label={t("common.close")}
               className="text-muted hover:text-ink focus-visible:outline-ink -mt-1 -mr-1 rounded-md px-2 py-1 text-xl leading-none font-bold focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               ×
@@ -438,7 +458,7 @@ export function UserManager({
           </div>
 
           <label className="flex flex-col gap-1.5">
-            <span className="section-label">Email</span>
+            <span className="section-label">{t("users.email")}</span>
             <input
               type="email"
               autoComplete="email"
@@ -446,13 +466,13 @@ export function UserManager({
               autoFocus
               value={addEmail}
               onChange={(event) => setAddEmail(event.target.value)}
-              placeholder="name@example.com"
+              placeholder={t("users.emailPlaceholder")}
               className="input"
             />
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="section-label">Role</span>
+            <span className="section-label">{t("users.roleLabel")}</span>
             <select
               value={addRole}
               onChange={(event) => setAddRole(event.target.value as AppRole)}
@@ -460,7 +480,7 @@ export function UserManager({
             >
               {APP_ROLES.map((option) => (
                 <option key={option} value={option}>
-                  {option[0].toUpperCase() + option.slice(1)}
+                  {t(ROLE_KEYS[option])}
                 </option>
               ))}
             </select>
@@ -468,13 +488,13 @@ export function UserManager({
 
           {addRole === "admin" ? (
             <p className="text-amberdeep text-xs font-bold">
-              Admins can manage every user and talk.
+              {t("users.adminNotice")}
             </p>
           ) : null}
 
           {addError ? (
             <p role="alert" className="alert alert-err">
-              {addError}
+              {t(addError.key, addError.params)}
             </p>
           ) : null}
 
@@ -485,7 +505,7 @@ export function UserManager({
               disabled={addPending}
               className="btn btn-ghost"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
@@ -494,10 +514,10 @@ export function UserManager({
             >
               {addPending ? (
                 <>
-                  Adding… <LoadingDots />
+                  {t("users.adding")} <LoadingDots />
                 </>
               ) : (
-                "Add user"
+                t("users.addUser")
               )}
             </button>
           </div>

@@ -7,7 +7,7 @@ import { appUsers, talkRoster } from "@/db/schema";
 export type RosterEntry = {
   userId: string;
   email: string | null;
-  addedAtLabel: string;
+  addedAt: string;
   emailVerifiedAt: string | null;
 };
 
@@ -35,11 +35,7 @@ export async function loadTalkRoster(talkId: string): Promise<RosterEntry[]> {
   return rows.map((row) => ({
     userId: row.userId,
     email: row.email,
-    addedAtLabel: row.addedAt.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      timeZone: "UTC",
-    }),
+    addedAt: row.addedAt.toISOString(),
     emailVerifiedAt: row.emailVerifiedAt?.toISOString() ?? null,
   }));
 }

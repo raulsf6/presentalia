@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/I18nProvider";
 import type { SlideDirection, SlideState } from "@/lib/deck/slide-state";
 import { ActivityStep } from "./activity-step";
 import { requestSlideMove, reportSlideCount } from "./slide-api";
@@ -31,6 +32,7 @@ export function PresentationDeck({
   slidesUpdatedAt: string | null;
   initial: SlideState;
 }) {
+  const t = useT();
   const hasSlides = slidesUpdatedAt !== null;
   const { state, status, terminal, applyPosition, refresh } = useSlideState({
     talkId,
@@ -45,9 +47,9 @@ export function PresentationDeck({
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const statusLabel = error
-    ? "Slides unavailable"
+    ? t("present.slidesUnavailable")
     : status === "reconnecting"
-      ? "Reconnecting"
+      ? t("present.reconnecting")
       : null;
 
   useWakeLock(hasSlides && terminal === null);
@@ -165,11 +167,11 @@ export function PresentationDeck({
     return (
       <SlideScreenMessage
         tone="dark"
-        title="Sign in again"
-        detail="Your session ended, so the deck stopped following the talk."
+        title={t("present.signInTitle")}
+        detail={t("present.signInDetail")}
       >
         <Link href="/login" className="btn">
-          Sign in
+          {t("present.signIn")}
         </Link>
       </SlideScreenMessage>
     );
@@ -178,11 +180,11 @@ export function PresentationDeck({
     return (
       <SlideScreenMessage
         tone="dark"
-        title="You no longer have access"
-        detail="This talk changed hands or your role changed while it was open."
+        title={t("present.noAccessTitle")}
+        detail={t("present.noAccessDetail")}
       >
         <Link href="/talks" className="btn btn-ghost">
-          Back to talks
+          {t("present.backToTalks")}
         </Link>
       </SlideScreenMessage>
     );
@@ -191,11 +193,11 @@ export function PresentationDeck({
     return (
       <SlideScreenMessage
         tone="dark"
-        title="This talk no longer exists"
-        detail="It may have been deleted while the deck was open."
+        title={t("present.missingTitle")}
+        detail={t("present.missingDetail")}
       >
         <Link href="/talks" className="btn btn-ghost">
-          Back to talks
+          {t("present.backToTalks")}
         </Link>
       </SlideScreenMessage>
     );
@@ -204,11 +206,11 @@ export function PresentationDeck({
     return (
       <SlideScreenMessage
         tone="dark"
-        title="No slides uploaded yet"
-        detail="Upload the talk's PDF in the Slides tab, then open Present again."
+        title={t("present.noSlidesTitle")}
+        detail={t("present.noSlidesDetail")}
       >
         <Link href={`/talks/${talkId}/slides`} className="btn">
-          Open Slides
+          {t("present.openSlides")}
         </Link>
       </SlideScreenMessage>
     );
@@ -254,7 +256,7 @@ export function PresentationDeck({
       {!pdf ? (
         <div className="absolute inset-0 flex items-center justify-center">
           <p className="text-cream/60 text-sm font-bold tracking-[0.12em] uppercase">
-            {error ? "Couldn't load the slides — retrying" : "Loading slides…"}
+            {error ? t("present.slidesError") : t("present.loadingSlides")}
           </p>
         </div>
       ) : null}
@@ -285,7 +287,9 @@ export function PresentationDeck({
               onClick={() => void toggleFullscreen()}
               className="border-cream/25 text-cream/70 hover:border-cream/60 hover:text-cream pointer-events-auto rounded-md border px-2.5 py-1 text-[0.65rem] font-bold tracking-[0.08em] uppercase transition"
             >
-              {fullscreen ? "Exit full screen" : "Full screen"}
+              {fullscreen
+                ? t("present.exitFullscreen")
+                : t("present.fullscreen")}
             </button>
           </div>
         </div>

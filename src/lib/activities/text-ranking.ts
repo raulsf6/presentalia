@@ -1,7 +1,9 @@
 import { NoObjectGeneratedError, Output, generateText } from "ai";
 import { z } from "zod";
 
-export const RANKING_PROMPT_VERSION = "text-ranking-v1";
+import type { Locale } from "@/lib/i18n/config";
+
+export const RANKING_PROMPT_VERSION = "text-ranking-v2";
 export const RANKING_TIMEOUT_MS = 45_000;
 export const RANKING_FIRST_ATTEMPT_MS = 30_000;
 export const RANKING_MIN_RETRY_MS = 10_000;
@@ -67,7 +69,9 @@ export function buildRankingPrompt(input: {
   prompt: string;
   criteria: string;
   answers: RankingAnswer[];
+  locale?: Locale;
 }): { system: string; user: string } {
+  const language = input.locale === "es" ? "Spanish" : "English";
   const system = [
     "You are ranking short attendee answers to a live talk prompt.",
     "The presenter's criterion is the only basis for your ranking.",
@@ -78,6 +82,7 @@ export function buildRankingPrompt(input: {
     "Ties are acceptable; do not invent precision.",
     "Include a rationale of at most 200 characters for the five highest-scoring answers.",
     "Write a summary of at most 300 characters explaining the ordering.",
+    `Write the summary, the rationales, and every drop reason in ${language}.`,
   ].join(" ");
 
   const user = JSON.stringify({
@@ -196,7 +201,12 @@ export type RankingGenerator = (input: {
  * back once; a second failure is a failed run, not a loop.
  */
 export async function rankTextAnswers(
-  input: { prompt: string; criteria: string; answers: RankingAnswer[] },
+  input: {
+    prompt: string;
+    criteria: string;
+    answers: RankingAnswer[];
+    locale?: Locale;
+  },
   generate: RankingGenerator,
   options: { deadline?: number } = {},
 ): Promise<RankingResult> {

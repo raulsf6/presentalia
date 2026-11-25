@@ -8,16 +8,18 @@ import { appUsers, talkRoster } from "@/db/schema";
 import { requireTalkManager } from "@/lib/talks/membership";
 import { ensureAppUser, sendAppUserInvite } from "@/lib/auth/provision-user";
 import { mergeRoster, parseCsv, parseEmailList } from "@/lib/talks/roster";
+import type { ActionFailure } from "@/lib/i18n/errors";
 
-export type RosterSummary = {
-  ok: boolean;
-  error?: string;
-  added?: number;
-  invalid?: string[];
-  duplicates?: string[];
-  alreadyPresent?: string[];
-  inviteFailed?: string[];
-};
+export type RosterSummary =
+  | {
+      ok: true;
+      added: number;
+      invalid: string[];
+      duplicates: string[];
+      alreadyPresent: string[];
+      inviteFailed: string[];
+    }
+  | ActionFailure;
 
 async function addEmails(
   talkId: string,
@@ -47,7 +49,8 @@ async function addEmails(
       if (!appUser) {
         return {
           ok: false,
-          error: `Could not create an account for ${email}.`,
+          errorKey: "errors.roster.accountCreateFailed",
+          errorParams: { email },
         };
       }
       accounts.push({
@@ -58,7 +61,8 @@ async function addEmails(
     } catch {
       return {
         ok: false,
-        error: `Could not create an account for ${email}.`,
+        errorKey: "errors.roster.accountCreateFailed",
+        errorParams: { email },
       };
     }
   }
@@ -104,7 +108,7 @@ export async function addRosterAction(
 ): Promise<RosterSummary> {
   const guard = await requireTalkManager(talkId);
   if (!guard.ok) {
-    return { ok: false, error: guard.error };
+    return guard;
   }
   const parsed = parseEmailList(raw);
   return addEmails(talkId, parsed.valid, parsed.invalid, parsed.duplicates);
@@ -120,19 +124,19 @@ export async function importRosterCsvAction(
 ): Promise<RosterSummary> {
   const guard = await requireTalkManager(talkId);
   if (!guard.ok) {
-    return { ok: false, error: guard.error };
+    return guard;
   }
   const file = formData.get("csv");
   if (!(file instanceof File)) {
-    return { ok: false, error: "Please choose a CSV file." };
+    return { ok: false, errorKey: "errors.roster.chooseCsv" };
   }
   const isCsv =
     file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv");
   if (!isCsv) {
-    return { ok: false, error: "Please choose a CSV file." };
+    return { ok: false, errorKey: "errors.roster.chooseCsv" };
   }
   if (file.size > 1024 * 1024) {
-    return { ok: false, error: "That CSV is too large (1 MB limit)." };
+    return { ok: false, errorKey: "errors.roster.csvTooLarge" };
   }
   const parsed = parseCsv(await file.text());
   return addEmails(talkId, parsed.valid, parsed.invalid, parsed.duplicates);
@@ -142,7 +146,7 @@ export async function importRosterCsvAction(
 export async function removeRosterEntryAction(
   talkId: string,
   userId: string,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: true } | ActionFailure> {
   const guard = await requireTalkManager(talkId);
   if (!guard.ok) {
     return guard;

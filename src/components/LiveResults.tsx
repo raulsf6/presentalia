@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/I18nProvider";
 import { useLiveResults } from "@/components/useLiveResults";
 import type { PollResultsPayload } from "@/lib/activities/polls";
 
@@ -16,6 +17,7 @@ export function LiveResults({
   /** Overrides the attendee results URL, for the projected deck. */
   endpoint?: string;
 }) {
+  const t = useT();
   const { payload, accessRevoked } = useLiveResults({
     initial,
     url: endpoint ?? `/api/polls/${initial.poll.id}/results`,
@@ -26,9 +28,7 @@ export function LiveResults({
   if (!payload) {
     return (
       <p role="alert" className="alert alert-warn p-5">
-        {accessRevoked
-          ? "You no longer have access to these results."
-          : "Results are temporarily unavailable. Refresh to try again."}
+        {accessRevoked ? t("results.accessRevoked") : t("results.unavailable")}
       </p>
     );
   }
@@ -43,15 +43,20 @@ export function LiveResults({
           {poll.status === "active" ? (
             <span className="chip chip-live">
               <span className="pulse-dot" />
-              LIVE
+              {t("status.live")}
             </span>
           ) : (
-            <span className="chip chip-closed">CLOSED</span>
+            <span className="chip chip-closed">{t("status.closed")}</span>
           )}
           <span
             className={`${large ? "text-lg" : "text-sm"} text-muted font-bold`}
           >
-            {total} {total === 1 ? "response" : "responses"}
+            {t(
+              total === 1 ? "results.response.one" : "results.response.other",
+              {
+                count: total,
+              },
+            )}
           </span>
         </div>
         <h1
@@ -131,12 +136,12 @@ export function LiveResults({
         <p
           className={`${large ? "text-lg" : "text-sm"} text-muted font-semibold`}
         >
-          Results are anonymous.
+          {t("results.resultsAnonymous")}
         </p>
       ) : null}
       {poll.status === "active" ? (
         <p className="text-muted text-xs font-semibold" aria-live="polite">
-          Results update automatically as votes arrive.
+          {t("results.autoUpdate")}
         </p>
       ) : null}
     </section>

@@ -2,7 +2,9 @@ import { Suspense, type ReactNode } from "react";
 
 import { AppBar, AppBarSkeleton } from "@/components/AppBar";
 import { HideInProjector } from "@/components/HideInProjector";
+import { I18nProvider } from "@/components/I18nProvider";
 import { getSessionUser } from "@/lib/auth/auth";
+import { getLocale } from "@/lib/i18n/server";
 
 /**
  * Shell for every signed-in page. The app bar streams behind its own
@@ -27,5 +29,10 @@ async function SignedInAppBar() {
   if (!user) {
     return null;
   }
-  return <AppBar user={user} />;
+  const locale = await getLocale();
+  return (
+    <I18nProvider locale={locale}>
+      <AppBar user={user} locale={locale} />
+    </I18nProvider>
+  );
 }

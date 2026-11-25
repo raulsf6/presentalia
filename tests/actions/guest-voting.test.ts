@@ -116,7 +116,7 @@ describe("guest voting", () => {
 
     expect(again).toMatchObject({
       ok: false,
-      error: expect.stringMatching(/already voted/i),
+      errorKey: "errors.poll.alreadyVoted",
     });
   });
 

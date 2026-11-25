@@ -1,5 +1,7 @@
 import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
 
+import type { ErrorKey, MessageParams } from "@/lib/i18n/dictionaries/en";
+
 export const GUEST_COOKIE_PREFIX = "presentalia_guest_";
 export const GUEST_USERNAME_MIN = 2;
 export const GUEST_USERNAME_MAX = 32;
@@ -15,7 +17,8 @@ export type ValidGuestUsername = {
 };
 
 export type GuestUsernameResult =
-  ValidGuestUsername | { ok: false; error: string };
+  | ValidGuestUsername
+  | { ok: false; errorKey: ErrorKey; errorParams?: MessageParams };
 
 /** The stable uniqueness key for a name inside one talk. */
 export function normalizeGuestUsername(raw: string): string {
@@ -33,14 +36,14 @@ export function validateGuestUsername(raw: string): GuestUsernameResult {
   if (length < GUEST_USERNAME_MIN || length > GUEST_USERNAME_MAX) {
     return {
       ok: false,
-      error: `Choose a name between ${GUEST_USERNAME_MIN} and ${GUEST_USERNAME_MAX} characters.`,
+      errorKey: "errors.guest.nameLength",
+      errorParams: { min: GUEST_USERNAME_MIN, max: GUEST_USERNAME_MAX },
     };
   }
   if (!USERNAME_PATTERN.test(username)) {
     return {
       ok: false,
-      error:
-        "Use letters, numbers, spaces, dots, underscores, or hyphens, starting and ending with a letter or number.",
+      errorKey: "errors.guest.nameCharacters",
     };
   }
   return {
@@ -70,17 +73,6 @@ export function verifyGuestToken(token: string, hash: string): boolean {
 
 export function guestCookieName(talkId: string): string {
   return `${GUEST_COOKIE_PREFIX}${talkId}`;
-}
-
-/** Roster label for a guest's join time, stable across server time zones. */
-export function formatGuestJoinedAt(date: Date): string {
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "UTC",
-  });
 }
 
 export function isTalkId(value: string): boolean {

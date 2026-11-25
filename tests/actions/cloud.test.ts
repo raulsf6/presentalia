@@ -157,7 +157,9 @@ describe("submitCloudAnswerAction", () => {
     );
 
     expect(second.ok).toBe(false);
-    expect(second.error).toMatch(/already submitted/);
+    expect(second.ok ? null : second.errorKey).toBe(
+      "errors.cloud.alreadySubmitted",
+    );
   });
 
   test("rejects submissions after the activity closes", async () => {
@@ -169,7 +171,9 @@ describe("submitCloudAnswerAction", () => {
     );
 
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/not accepting ideas/);
+    expect(result.ok ? null : result.errorKey).toBe(
+      "errors.cloud.notAccepting",
+    );
   });
 
   test("stores a guest idea under the guest identity", async () => {

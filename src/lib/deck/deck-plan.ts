@@ -1,6 +1,7 @@
 import { eq, inArray, sql } from "drizzle-orm";
 
 import { getDb, type Db } from "@/db";
+import type { ErrorKey } from "@/lib/i18n/dictionaries/en";
 import {
   activities,
   cloudActivities,
@@ -36,7 +37,7 @@ export type DeckPlanInput = {
   placements: { activityId: string; afterSlide: number }[];
 };
 
-export type DeckPlanResult = { ok: true } | { ok: false; error: string };
+export type DeckPlanResult = { ok: true } | { ok: false; errorKey: ErrorKey };
 
 const MAX_PAGES = 2_000;
 
@@ -95,7 +96,7 @@ export async function saveDeckPlan(
 ): Promise<DeckPlanResult> {
   const { pageCount, placements } = input;
   if (!Number.isInteger(pageCount) || pageCount < 1 || pageCount > MAX_PAGES) {
-    return { ok: false, error: "That deck's page count is not valid." };
+    return { ok: false, errorKey: "errors.deck.pageCountInvalid" };
   }
 
   const seen = new Set<string>();
@@ -103,7 +104,7 @@ export async function saveDeckPlan(
     if (seen.has(placement.activityId)) {
       return {
         ok: false,
-        error: "Each activity can only be placed once.",
+        errorKey: "errors.deck.duplicateActivity",
       };
     }
     seen.add(placement.activityId);
@@ -114,7 +115,7 @@ export async function saveDeckPlan(
     ) {
       return {
         ok: false,
-        error: "Every activity must sit between two pages of the deck.",
+        errorKey: "errors.deck.betweenPages",
       };
     }
   }
@@ -131,7 +132,7 @@ export async function saveDeckPlan(
       .limit(1)
       .for("update");
     if (!talk) {
-      return { ok: false, error: "Talk not found." };
+      return { ok: false, errorKey: "errors.talk.notFound" };
     }
 
     const talkActivities = await tx
@@ -154,13 +155,13 @@ export async function saveDeckPlan(
       if (status === undefined) {
         return {
           ok: false,
-          error: "That activity is not part of this talk.",
+          errorKey: "errors.deck.activityNotInTalk",
         };
       }
       if (status !== "ready" && !alreadyPlaced.has(placement.activityId)) {
         return {
           ok: false,
-          error: "Only ready activities can be placed in the deck.",
+          errorKey: "errors.deck.notReady",
         };
       }
     }

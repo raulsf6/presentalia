@@ -7,49 +7,65 @@ import {
   importRosterCsvAction,
   type RosterSummary,
 } from "@/actions/roster";
+import { useT } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
 import { parseCsv, parseEmailList } from "@/lib/talks/roster";
 
-function formatList(items: string[], limit = 5): string {
-  const shown = items.slice(0, limit).join(", ");
-  const rest = items.length - Math.min(items.length, limit);
-  return rest > 0 ? `${shown} … (+${rest} more)` : shown;
+function useFormatList() {
+  const t = useT();
+  return (items: string[], limit = 5): string => {
+    const shown = items.slice(0, limit).join(", ");
+    const rest = items.length - Math.min(items.length, limit);
+    return rest > 0
+      ? `${shown} … (${t("common.more", { count: rest })})`
+      : shown;
+  };
 }
 
 function Summary({ summary }: { summary: RosterSummary }) {
+  const t = useT();
+  const formatList = useFormatList();
   if (!summary.ok) {
     return (
       <p role="alert" className="text-red text-sm font-bold">
-        {summary.error}
+        {t(summary.errorKey, summary.errorParams)}
       </p>
     );
   }
   return (
     <div role="status" className="flex flex-col gap-1 text-sm font-semibold">
-      {summary.added !== undefined ? (
-        <p className="text-green font-bold">
-          Added {summary.added} {summary.added === 1 ? "address" : "addresses"}.
-        </p>
-      ) : null}
-      {summary.invalid && summary.invalid.length > 0 ? (
+      <p className="text-green font-bold">
+        {t(
+          summary.added === 1
+            ? "roster.summary.added.one"
+            : "roster.summary.added.other",
+          { count: summary.added },
+        )}
+      </p>
+      {summary.invalid.length > 0 ? (
         <p className="text-amberdeep font-bold">
-          Couldn&apos;t read: {formatList(summary.invalid)}
+          {t("roster.couldntRead", { list: formatList(summary.invalid) })}
         </p>
       ) : null}
-      {summary.duplicates && summary.duplicates.length > 0 ? (
+      {summary.duplicates.length > 0 ? (
         <p className="text-muted">
-          Ignored duplicates: {formatList(summary.duplicates)}
+          {t("roster.summary.duplicates", {
+            list: formatList(summary.duplicates),
+          })}
         </p>
       ) : null}
-      {summary.alreadyPresent && summary.alreadyPresent.length > 0 ? (
+      {summary.alreadyPresent.length > 0 ? (
         <p className="text-muted">
-          Already on the roster: {formatList(summary.alreadyPresent)}
+          {t("roster.summary.alreadyPresent", {
+            list: formatList(summary.alreadyPresent),
+          })}
         </p>
       ) : null}
-      {summary.inviteFailed && summary.inviteFailed.length > 0 ? (
+      {summary.inviteFailed.length > 0 ? (
         <p className="text-amberdeep font-bold">
-          Added to the roster, but couldn&apos;t send an invite to:{" "}
-          {formatList(summary.inviteFailed)}
+          {t("roster.summary.inviteFailed", {
+            list: formatList(summary.inviteFailed),
+          })}
         </p>
       ) : null}
     </div>
@@ -62,6 +78,8 @@ function Summary({ summary }: { summary: RosterSummary }) {
  * silently.
  */
 export function AddPeopleForm({ talkId }: { talkId: string }) {
+  const t = useT();
+  const formatList = useFormatList();
   const [raw, setRaw] = useState("");
   const [summary, setSummary] = useState<RosterSummary | null>(null);
   const [csvSummary, setCsvSummary] = useState<RosterSummary | null>(null);
@@ -102,7 +120,7 @@ export function AddPeopleForm({ talkId }: { talkId: string }) {
     setCsvSummary(null);
     const file = csvInput.current?.files?.[0];
     if (!file) {
-      setCsvSummary({ ok: false, error: "Please choose a CSV file." });
+      setCsvSummary({ ok: false, errorKey: "errors.roster.chooseCsv" });
       return;
     }
     const formData = new FormData();
@@ -123,36 +141,45 @@ export function AddPeopleForm({ talkId }: { talkId: string }) {
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3">
         <div>
-          <p className="text-ink text-sm font-bold">Invite by email</p>
+          <p className="text-ink text-sm font-bold">
+            {t("roster.inviteTitle")}
+          </p>
           <p className="text-muted text-xs font-semibold">
-            Invited users always have access to this talk, even when it is
-            private.
+            {t("roster.inviteDetail")}
           </p>
         </div>
         <textarea
           rows={3}
           value={raw}
           onChange={(event) => setRaw(event.target.value)}
-          placeholder={
-            "one@email.com, another@email.com\none per line also works"
-          }
-          aria-label="Email addresses"
+          placeholder={t("roster.emailsPlaceholder")}
+          aria-label={t("roster.emailsAria")}
           className="input font-mono"
         />
         {raw.trim().length > 0 ? (
           <div className="text-muted flex flex-col gap-1 text-xs font-semibold">
             <p>
-              {preview.valid.length} valid{" "}
-              {preview.valid.length === 1 ? "address" : "addresses"} will be
-              added
+              {t(
+                preview.valid.length === 1
+                  ? "roster.previewValid.one"
+                  : "roster.previewValid.other",
+                { count: preview.valid.length },
+              )}
               {preview.duplicates.length > 0
-                ? `, ${preview.duplicates.length} duplicate${preview.duplicates.length === 1 ? "" : "s"} ignored`
+                ? t(
+                    preview.duplicates.length === 1
+                      ? "roster.previewDuplicates.one"
+                      : "roster.previewDuplicates.other",
+                    { count: preview.duplicates.length },
+                  )
                 : ""}
               .
             </p>
             {preview.invalid.length > 0 ? (
               <p className="text-amberdeep font-bold">
-                Couldn&apos;t read: {formatList(preview.invalid)}
+                {t("roster.couldntRead", {
+                  list: formatList(preview.invalid),
+                })}
               </p>
             ) : null}
           </div>
@@ -165,27 +192,26 @@ export function AddPeopleForm({ talkId }: { talkId: string }) {
         >
           {pending ? (
             <>
-              Adding… <LoadingDots />
+              {t("roster.adding")} <LoadingDots />
             </>
           ) : (
-            "Add addresses"
+            t("roster.addAddresses")
           )}
         </button>
         {summary ? <Summary summary={summary} /> : null}
       </section>
 
       <section className="border-ink/15 flex flex-col gap-3 border-t-2 border-dashed pt-5">
-        <h3 className="section-label">Import CSV</h3>
+        <h3 className="section-label">{t("roster.importCsv")}</h3>
         <p className="text-muted text-xs font-semibold">
-          First column is used, or the column headed &quot;email&quot;. 1 MB
-          limit.
+          {t("roster.importHint")}
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <input
             ref={csvInput}
             type="file"
             accept=".csv,text/csv"
-            aria-label="CSV file"
+            aria-label={t("roster.csvAria")}
             onChange={(event) => onCsvSelected(event.target.files?.[0])}
             className="text-muted file:border-ink file:text-ink file:shadow-hard hover:file:bg-cream2 hover:file:shadow-hard-md focus-visible:outline-ink text-xs font-medium file:mr-3 file:cursor-pointer file:rounded-md file:border-[2.5px] file:bg-white file:px-3.5 file:py-1.5 file:font-sans file:text-xs file:font-bold file:tracking-[0.04em] file:uppercase file:transition file:duration-150 hover:file:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2"
           />
@@ -197,16 +223,16 @@ export function AddPeopleForm({ talkId }: { talkId: string }) {
           >
             {csvPending ? (
               <>
-                Importing… <LoadingDots />
+                {t("roster.importing")} <LoadingDots />
               </>
             ) : (
-              "Import CSV"
+              t("roster.importCsv")
             )}
           </button>
         </div>
         {csvTooLarge ? (
           <p role="alert" className="text-red text-sm font-bold">
-            That CSV is too large (1 MB limit).
+            {t("roster.csvTooLarge")}
           </p>
         ) : csvFileName && csvText ? (
           <div className="text-muted flex flex-col gap-1 text-xs font-semibold">
@@ -214,22 +240,34 @@ export function AddPeopleForm({ talkId }: { talkId: string }) {
               📄 {csvFileName}
             </span>
             <p>
-              Preview: {csvPreview.valid.length} valid{" "}
-              {csvPreview.valid.length === 1 ? "address" : "addresses"} will be
-              added
+              {t(
+                csvPreview.valid.length === 1
+                  ? "roster.previewValid.one"
+                  : "roster.previewValid.other",
+                { count: csvPreview.valid.length },
+              )}
               {csvPreview.duplicates.length > 0
-                ? `, ${csvPreview.duplicates.length} duplicate${csvPreview.duplicates.length === 1 ? "" : "s"} ignored`
+                ? t(
+                    csvPreview.duplicates.length === 1
+                      ? "roster.previewDuplicates.one"
+                      : "roster.previewDuplicates.other",
+                    { count: csvPreview.duplicates.length },
+                  )
                 : ""}
               .
             </p>
             {csvPreview.invalid.length > 0 ? (
               <p className="text-amberdeep font-bold">
-                Couldn&apos;t read: {formatList(csvPreview.invalid)}
+                {t("roster.couldntRead", {
+                  list: formatList(csvPreview.invalid),
+                })}
               </p>
             ) : null}
             {csvPreview.duplicates.length > 0 ? (
               <p className="text-muted">
-                Duplicate addresses: {formatList(csvPreview.duplicates)}
+                {t("roster.duplicateAddresses", {
+                  list: formatList(csvPreview.duplicates),
+                })}
               </p>
             ) : null}
           </div>

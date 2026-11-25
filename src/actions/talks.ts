@@ -9,8 +9,9 @@ import { talks } from "@/db/schema";
 import { requireTalkManager } from "@/lib/talks/membership";
 import { createSupabaseServiceClient } from "@/lib/platform/supabase/service";
 import { requirePresenter } from "@/lib/auth/require-admin";
+import type { ActionFailure } from "@/lib/i18n/errors";
 
-export type ActionResult = { ok: boolean; error?: string };
+export type ActionResult = { ok: true } | ActionFailure;
 
 /** Creates a presenter-owned talk. */
 export async function createTalkAction(
@@ -23,7 +24,7 @@ export async function createTalkAction(
   }
   const name = String(formData.get("name") ?? "").trim();
   if (name.length < 1 || name.length > 200) {
-    return { ok: false, error: "Give the talk a name (1–200 characters)." };
+    return { ok: false, errorKey: "errors.talk.nameLength" };
   }
   const descriptionRaw = formData.get("description");
   const description =
@@ -35,7 +36,7 @@ export async function createTalkAction(
   if (typeof heldAtRaw === "string" && heldAtRaw.length > 0) {
     heldAt = new Date(heldAtRaw);
     if (Number.isNaN(heldAt.getTime())) {
-      return { ok: false, error: "That date could not be read." };
+      return { ok: false, errorKey: "errors.talk.invalidDate" };
     }
   }
   const isPublic = formData.get("isPublic") !== null;

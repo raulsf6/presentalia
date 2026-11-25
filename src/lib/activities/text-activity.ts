@@ -1,3 +1,5 @@
+import type { ErrorKey, MessageParams } from "@/lib/i18n/dictionaries/en";
+
 export const PROMPT_MAX_LENGTH = 500;
 export const CRITERIA_MAX_LENGTH = 500;
 export const ANSWER_MAX_LENGTH = 500;
@@ -15,7 +17,7 @@ export type ValidTextActivityInput = {
   resultsIdentifiable: boolean;
 };
 
-export type InvalidTextActivityInput = { ok: false; error: string };
+export type InvalidTextActivityInput = { ok: false; errorKey: ErrorKey };
 
 export function validateTextActivityInput(input: {
   prompt: string;
@@ -24,11 +26,11 @@ export function validateTextActivityInput(input: {
 }): ValidTextActivityInput | InvalidTextActivityInput {
   const prompt = input.prompt.trim();
   if (prompt.length < 1 || prompt.length > PROMPT_MAX_LENGTH) {
-    return { ok: false, error: "A text prompt needs a question." };
+    return { ok: false, errorKey: "errors.text.promptRequired" };
   }
   const criteria = input.criteria.trim();
   if (criteria.length < 1 || criteria.length > CRITERIA_MAX_LENGTH) {
-    return { ok: false, error: "Add a criterion for ranking the answers." };
+    return { ok: false, errorKey: "errors.text.criterionRequired" };
   }
   return {
     ok: true,
@@ -39,17 +41,24 @@ export function validateTextActivityInput(input: {
 }
 
 export type ValidTextAnswer = { ok: true; body: string };
-export type InvalidTextAnswer = { ok: false; error: string };
+export type InvalidTextAnswer = {
+  ok: false;
+  errorKey: ErrorKey;
+  errorParams?: MessageParams;
+};
 
-export function validateTextAnswer(raw: string): ValidTextAnswer | InvalidTextAnswer {
+export function validateTextAnswer(
+  raw: string,
+): ValidTextAnswer | InvalidTextAnswer {
   const body = raw.trim();
   if (body.length < 1) {
-    return { ok: false, error: "Write an answer first." };
+    return { ok: false, errorKey: "errors.text.answerRequired" };
   }
   if (body.length > ANSWER_MAX_LENGTH) {
     return {
       ok: false,
-      error: `Answers can be at most ${ANSWER_MAX_LENGTH} characters.`,
+      errorKey: "errors.text.answerTooLong",
+      errorParams: { max: ANSWER_MAX_LENGTH },
     };
   }
   return { ok: true, body };

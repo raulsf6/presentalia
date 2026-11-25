@@ -1,21 +1,35 @@
 import Link from "next/link";
 
 import { AppBarNav } from "@/components/AppBarNav";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import type { SessionUser } from "@/lib/auth/auth";
+import type { Locale } from "@/lib/i18n/config";
+import { createTranslator } from "@/lib/i18n/translate";
 
 /** Persistent top bar for every signed-in page. */
-export function AppBar({ user }: { user: SessionUser }) {
+export function AppBar({
+  user,
+  locale,
+}: {
+  user: SessionUser;
+  locale: Locale;
+}) {
+  const t = createTranslator(locale);
   return (
     <header className="appbar">
       <div className="appbar-inner">
         <Link
           href="/talks"
-          aria-label="Presentalia — all talks"
+          aria-label={t("app.allTalks")}
           className="font-display text-ink min-w-0 truncate text-lg"
         >
           Presentalia<span className="text-coral">.</span>
         </Link>
-        <AppBarNav email={user.email} role={user.role} />
+        <AppBarNav
+          email={user.email}
+          role={user.role}
+          switcher={<LocaleSwitcher locale={locale} />}
+        />
       </div>
     </header>
   );

@@ -18,7 +18,7 @@ describe("createSlidesUploadTicket", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "Slides must be a PDF file.",
+      errorKey: "errors.slides.invalidPdf",
     });
     expect(createSignedUploadUrl).not.toHaveBeenCalled();
   });
@@ -64,7 +64,7 @@ describe("createSlidesUploadTicket", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "Slides must be a valid PDF file.",
+      errorKey: "errors.slides.invalidFile",
     });
     expect(createSignedUploadUrl).not.toHaveBeenCalled();
   });
@@ -83,7 +83,7 @@ describe("createSlidesUploadTicket", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "Could not prepare the upload. Please try again.",
+      errorKey: "errors.slides.prepareFailed",
     });
   });
 });

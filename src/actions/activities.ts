@@ -13,9 +13,10 @@ import {
 import { getSessionUser } from "@/lib/auth/auth";
 import { isUniqueViolation } from "@/lib/platform/db-errors";
 import { publishActivityStatusChanged } from "@/lib/platform/live-event-bus";
+import type { ActionFailure } from "@/lib/i18n/errors";
 import { requireTalkManager } from "@/lib/talks/membership";
 
-export type ActivityActionResult = { ok: boolean; error?: string };
+export type ActivityActionResult = { ok: true } | ActionFailure;
 
 /** Launch a ready activity. The partial unique index is the race backstop. */
 export async function launchActivityAction(
@@ -23,7 +24,7 @@ export async function launchActivityAction(
 ): Promise<ActivityActionResult> {
   const user = await getSessionUser();
   if (!user?.email) {
-    return { ok: false, error: "You need to sign in." };
+    return { ok: false, errorKey: "errors.auth.signedOut" };
   }
   const [activity] = await getDb()
     .select({ status: activities.status, talkId: activities.talkId })
@@ -33,7 +34,7 @@ export async function launchActivityAction(
   if (!activity) {
     return {
       ok: false,
-      error: "Activity not found or you don't have access.",
+      errorKey: "errors.activity.notFound",
     };
   }
   const guard = await requireTalkManager(activity.talkId);
@@ -43,7 +44,7 @@ export async function launchActivityAction(
   if (!canLaunch(activity.status as ActivityStatus)) {
     return {
       ok: false,
-      error: "This activity has already been launched or closed.",
+      errorKey: "errors.activity.alreadyLaunched",
     };
   }
 
@@ -62,7 +63,7 @@ export async function launchActivityAction(
   if (otherActive) {
     return {
       ok: false,
-      error: "Another activity is already live for this talk.",
+      errorKey: "errors.activity.anotherLive",
     };
   }
 
@@ -75,14 +76,14 @@ export async function launchActivityAction(
     if (updated.length === 0) {
       return {
         ok: false,
-        error: "This activity has already been launched or closed.",
+        errorKey: "errors.activity.alreadyLaunched",
       };
     }
   } catch (error) {
     if (isUniqueViolation(error)) {
       return {
         ok: false,
-        error: "Another activity is already live for this talk.",
+        errorKey: "errors.activity.anotherLive",
       };
     }
     throw error;
@@ -102,7 +103,7 @@ export async function closeActivityAction(
 ): Promise<ActivityActionResult> {
   const user = await getSessionUser();
   if (!user?.email) {
-    return { ok: false, error: "You need to sign in." };
+    return { ok: false, errorKey: "errors.auth.signedOut" };
   }
   const [activity] = await getDb()
     .select({ status: activities.status, talkId: activities.talkId })
@@ -112,7 +113,7 @@ export async function closeActivityAction(
   if (!activity) {
     return {
       ok: false,
-      error: "Activity not found or you don't have access.",
+      errorKey: "errors.activity.notFound",
     };
   }
   const guard = await requireTalkManager(activity.talkId);
@@ -120,7 +121,7 @@ export async function closeActivityAction(
     return guard;
   }
   if (!canClose(activity.status as ActivityStatus)) {
-    return { ok: false, error: "This activity is not active." };
+    return { ok: false, errorKey: "errors.activity.notActive" };
   }
 
   const db = getDb();
@@ -130,7 +131,7 @@ export async function closeActivityAction(
     .where(and(eq(activities.id, activityId), eq(activities.status, "active")))
     .returning({ id: activities.id, talkId: activities.talkId });
   if (!closedActivity) {
-    return { ok: false, error: "This activity is not active." };
+    return { ok: false, errorKey: "errors.activity.notActive" };
   }
 
   updateTag(`activities:${closedActivity.talkId}`);

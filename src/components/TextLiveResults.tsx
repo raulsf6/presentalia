@@ -1,6 +1,8 @@
 "use client";
 
+import { useT } from "@/components/I18nProvider";
 import { useLiveResults } from "@/components/useLiveResults";
+import { isRemovedAnswer } from "@/lib/activities/text-activity";
 import type { TextResultsPayload } from "@/lib/activities/text-results";
 
 const textIsLive = (payload: TextResultsPayload) =>
@@ -16,6 +18,7 @@ export function TextLiveResults({
   /** Overrides the attendee results URL, for the projected deck. */
   endpoint?: string;
 }) {
+  const t = useT();
   const { payload, accessRevoked } = useLiveResults({
     initial,
     url:
@@ -28,9 +31,7 @@ export function TextLiveResults({
   if (!payload) {
     return (
       <p role="alert" className="alert alert-warn p-5">
-        {accessRevoked
-          ? "You no longer have access to these results."
-          : "Results are temporarily unavailable. Refresh to try again."}
+        {accessRevoked ? t("results.accessRevoked") : t("results.unavailable")}
       </p>
     );
   }
@@ -45,17 +46,21 @@ export function TextLiveResults({
       <header className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
           {closed ? (
-            <span className="chip chip-closed">CLOSED</span>
+            <span className="chip chip-closed">{t("status.closed")}</span>
           ) : (
             <span className="chip chip-live">
               <span className="pulse-dot" />
-              LIVE
+              {t("status.live")}
             </span>
           )}
           {closed ? (
             <span className="text-muted text-sm font-bold">
-              {activity.totalAnswers}{" "}
-              {activity.totalAnswers === 1 ? "answer" : "answers"}
+              {t(
+                activity.totalAnswers === 1
+                  ? "text.controls.answerCount.one"
+                  : "text.controls.answerCount.other",
+                { count: activity.totalAnswers },
+              )}
             </span>
           ) : null}
         </div>
@@ -71,7 +76,7 @@ export function TextLiveResults({
         <p
           className={`text-muted font-semibold ${large ? "text-lg" : "text-sm"}`}
         >
-          Ranked for: {activity.criteria}
+          {t("activity.rankedFor", { criteria: activity.criteria })}
         </p>
       </header>
 
@@ -79,23 +84,20 @@ export function TextLiveResults({
         <section className="card flex flex-col gap-2 p-6">
           <p className="text-ink font-bold">
             {run?.status === "failed"
-              ? "The last ranking attempt failed."
-              : "Answers are still coming in."}
+              ? t("results.lastRankingFailed")
+              : t("results.answersComing")}
           </p>
           <p className="text-muted text-sm font-semibold">
             {run?.status === "failed"
-              ? "The presenter can retry or publish every answer."
-              : "Results appear here when the presenter closes the activity."}
+              ? t("results.retryOrPublish")
+              : t("results.appearWhenClosed")}
           </p>
-          {run?.status === "failed" && run.error ? (
-            <p className="text-muted text-xs font-semibold">{run.error}</p>
-          ) : null}
         </section>
       ) : mode === "ranking" ? (
         <section className="card flex flex-col gap-2 p-6">
-          <p className="text-ink font-bold">Ranking the answers…</p>
+          <p className="text-ink font-bold">{t("results.rankingAnswers")}</p>
           <p className="text-muted text-sm font-semibold">
-            The results will appear as soon as the model finishes.
+            {t("results.appearWhenModel")}
           </p>
         </section>
       ) : (
@@ -113,15 +115,13 @@ export function TextLiveResults({
               <p
                 className={`text-ink font-bold ${large ? "text-xl" : "text-sm"}`}
               >
-                Published without AI ranking.
+                {t("results.publishedUnranked")}
               </p>
             </div>
           )}
 
           {rows.length === 0 ? (
-            <p className="empty">
-              Every answer was filtered out as off-topic or spam.
-            </p>
+            <p className="empty">{t("results.allFiltered")}</p>
           ) : ranked ? (
             <ol className={`flex flex-col ${large ? "gap-7" : "gap-4"}`}>
               {rows.map((row) => (
@@ -145,7 +145,9 @@ export function TextLiveResults({
                             : "text-base md:text-lg"
                         }`}
                       >
-                        {row.body}
+                        {isRemovedAnswer(row.body)
+                          ? t("text.answerRemoved")
+                          : row.body}
                         {row.name ? (
                           <span className="text-muted ml-2 text-xs font-semibold">
                             {row.name}
@@ -178,7 +180,9 @@ export function TextLiveResults({
                       large ? "text-2xl" : "text-base"
                     }`}
                   >
-                    {row.body}
+                    {isRemovedAnswer(row.body)
+                      ? t("text.answerRemoved")
+                      : row.body}
                     {row.name ? (
                       <span className="text-muted ml-2 text-xs font-semibold">
                         {row.name}
@@ -194,16 +198,18 @@ export function TextLiveResults({
             <p
               className={`text-muted font-semibold ${large ? "text-lg" : "text-sm"}`}
             >
-              {droppedCount} off-topic{" "}
-              {droppedCount === 1 ? "answer was" : "answers were"} omitted.
+              {t(
+                droppedCount === 1
+                  ? "results.omitted.one"
+                  : "results.omitted.other",
+                { count: droppedCount },
+              )}
             </p>
           ) : null}
 
           {dropped && dropped.length > 0 ? (
             <section className="card flex flex-col gap-3 p-4">
-              <h2 className="section-label">
-                Omitted answers (presenter only)
-              </h2>
+              <h2 className="section-label">{t("results.omittedTitle")}</h2>
               <ul className="flex flex-col gap-2">
                 {dropped.map((row) => (
                   <li key={row.answerId} className="text-sm">
@@ -220,18 +226,20 @@ export function TextLiveResults({
           {activity.resultsIdentifiable ? (
             <p className="text-muted text-xs font-semibold">
               {projector
-                ? "Results are identifiable. Names are hidden on the projector."
-                : "Results are identifiable. Attendee names appear next to their answers."}
+                ? t("results.identifiableProjector")
+                : t("results.identifiable")}
             </p>
           ) : (
             <p className="text-muted text-xs font-semibold">
-              Results are anonymous.
+              {t("results.resultsAnonymous")}
             </p>
           )}
 
           {run ? (
             <p className="text-muted text-[0.65rem] font-semibold">
-              Ranked with {run.model ?? "the configured model"}.
+              {t("results.rankedWith", {
+                model: run.model ?? t("results.configuredModel"),
+              })}
             </p>
           ) : null}
         </>

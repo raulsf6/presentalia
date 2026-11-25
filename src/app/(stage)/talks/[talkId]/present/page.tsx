@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { I18nProvider } from "@/components/I18nProvider";
 import { PresentationDeck } from "@/components/slides/presentation-deck";
+import { getLocale } from "@/lib/i18n/server";
 import { isManager, loadTalkAccess } from "@/lib/talks/membership";
 import { readSlideState, slideStateFromTalk } from "@/lib/deck/slide-state";
 
@@ -28,13 +30,16 @@ async function PresentContent({
 
   const initial =
     (await readSlideState(talkId)) ?? slideStateFromTalk(access.talk);
+  const locale = await getLocale();
 
   return (
-    <PresentationDeck
-      talkId={talkId}
-      talkName={access.talk.name}
-      slidesUpdatedAt={initial.slidesUpdatedAt}
-      initial={initial}
-    />
+    <I18nProvider locale={locale}>
+      <PresentationDeck
+        talkId={talkId}
+        talkName={access.talk.name}
+        slidesUpdatedAt={initial.slidesUpdatedAt}
+        initial={initial}
+      />
+    </I18nProvider>
   );
 }

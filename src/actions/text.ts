@@ -40,9 +40,11 @@ import {
   rankTextAnswers,
   type RankingAnswer,
 } from "@/lib/activities/text-ranking";
+import type { ActionFailure } from "@/lib/i18n/errors";
+import { isLocale, type Locale } from "@/lib/i18n/config";
 
-export type TextActionResult = { ok: boolean; error?: string };
-export type TextAnswerResult = { ok: boolean; error?: string; talkId?: string };
+export type TextActionResult = { ok: true } | ActionFailure;
+export type TextAnswerResult = { ok: true; talkId?: string } | ActionFailure;
 
 type PreparedRanking =
   | {
@@ -50,7 +52,7 @@ type PreparedRanking =
       runId: string;
       answers: { id: string; body: string; createdAt: Date }[];
     }
-  | { ok: false; error: string };
+  | ActionFailure;
 
 /** Create a ready text activity and its prompt/criterion atomically. */
 export async function createTextActivityAction(
@@ -110,15 +112,15 @@ export async function submitTextAnswerAction(
     .where(eq(activities.id, activityId))
     .limit(1);
   if (!activityRef) {
-    return { ok: false, error: "You don't have access to this activity." };
+    return { ok: false, errorKey: "errors.text.noAccess" };
   }
 
   const attendee = await resolveTalkAttendee(activityRef.talkId);
   if (!attendee) {
-    return { ok: false, error: "You don't have access to this activity." };
+    return { ok: false, errorKey: "errors.text.noAccess" };
   }
 
-  let outcome: { ok: true; talkId: string } | { ok: false; error: string };
+  let outcome: { ok: true; talkId: string } | ActionFailure;
   try {
     outcome = await db.transaction(async (tx) => {
       const [activity] = await tx
@@ -128,12 +130,12 @@ export async function submitTextAnswerAction(
         .limit(1)
         .for("share", { of: activities });
       if (!activity) {
-        return { ok: false, error: "You don't have access to this activity." };
+        return { ok: false, errorKey: "errors.text.noAccess" };
       }
       if (!canAcceptAnswers(activity.status as ActivityStatus)) {
         return {
           ok: false,
-          error: "This activity is not accepting answers.",
+          errorKey: "errors.text.notAccepting",
         };
       }
 
@@ -147,7 +149,7 @@ export async function submitTextAnswerAction(
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { ok: false, error: "You have already answered this activity." };
+      return { ok: false, errorKey: "errors.text.alreadyAnswered" };
     }
     throw error;
   }
@@ -170,6 +172,7 @@ export async function submitTextAnswerAction(
  */
 export async function rankTextActivityAction(
   activityId: string,
+  locale?: Locale,
 ): Promise<TextActionResult> {
   const db = getDb();
   const [activity] = await db
@@ -187,7 +190,7 @@ export async function rankTextActivityAction(
   if (!activity) {
     return {
       ok: false,
-      error: "Activity not found or you don't have access.",
+      errorKey: "errors.text.notFound",
     };
   }
 
@@ -196,7 +199,7 @@ export async function rankTextActivityAction(
     return guard;
   }
   if (!canRank(activity.status as ActivityStatus)) {
-    return { ok: false, error: "This activity can no longer be ranked." };
+    return { ok: false, errorKey: "errors.text.cannotRank" };
   }
 
   await sweepStaleRuns(db, activityId);
@@ -217,11 +220,11 @@ export async function rankTextActivityAction(
       if (!current) {
         return {
           ok: false,
-          error: "Activity not found or you don't have access.",
+          errorKey: "errors.text.notFound",
         };
       }
       if (!canRank(current.status as ActivityStatus)) {
-        return { ok: false, error: "This activity can no longer be ranked." };
+        return { ok: false, errorKey: "errors.text.cannotRank" };
       }
 
       const answers = await tx
@@ -240,12 +243,16 @@ export async function rankTextActivityAction(
         .orderBy(asc(textAnswers.createdAt), asc(textAnswers.id));
 
       if (answers.length === 0) {
-        return { ok: false, error: "There are no answers to rank." };
+        return { ok: false, errorKey: "errors.text.noAnswers" };
       }
       if (answers.length > RANKED_ANSWER_LIMIT) {
         return {
           ok: false,
-          error: `Too many answers to rank (${answers.length}). Publish all answers instead.`,
+          errorKey: "errors.text.tooManyAnswers",
+          errorParams: {
+            count: answers.length,
+            limit: RANKED_ANSWER_LIMIT,
+          },
         };
       }
 
@@ -274,7 +281,7 @@ export async function rankTextActivityAction(
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { ok: false, error: "Ranking is already running." };
+      return { ok: false, errorKey: "errors.text.rankingRunning" };
     }
     throw error;
   }
@@ -302,6 +309,7 @@ export async function rankTextActivityAction(
         prompt: activity.prompt,
         criteria: activity.criteria,
         answers: rankingAnswers,
+        locale: isLocale(locale) ? locale : "en",
       },
       generateRankingWithGateway,
     );
@@ -315,7 +323,7 @@ export async function rankTextActivityAction(
     revalidateText(activity.talkId, activityId);
     return {
       ok: false,
-      error: "Ranking failed. Retry or publish all answers.",
+      errorKey: "errors.text.rankingFailed",
     };
   }
 
@@ -382,7 +390,7 @@ export async function rankTextActivityAction(
     revalidateText(activity.talkId, activityId);
     return {
       ok: false,
-      error: "Ranking could not be saved. Retry or publish all answers.",
+      errorKey: "errors.text.rankingNotSaved",
     };
   }
 
@@ -407,7 +415,7 @@ export async function publishTextUnrankedAction(
   if (!activity) {
     return {
       ok: false,
-      error: "Activity not found or you don't have access.",
+      errorKey: "errors.text.notFound",
     };
   }
 
@@ -420,9 +428,7 @@ export async function publishTextUnrankedAction(
   // check and the close. Stale runs are swept first, so a dead invocation does
   // not block the escape hatch.
   const outcome = await db.transaction(
-    async (
-      tx,
-    ): Promise<{ ok: true; talkId: string } | { ok: false; error: string }> => {
+    async (tx): Promise<{ ok: true; talkId: string } | ActionFailure> => {
       const [current] = await tx
         .select({ status: activities.status, talkId: activities.talkId })
         .from(activities)
@@ -432,11 +438,11 @@ export async function publishTextUnrankedAction(
       if (!current) {
         return {
           ok: false,
-          error: "Activity not found or you don't have access.",
+          errorKey: "errors.text.notFound",
         };
       }
       if (!canPublishUnranked(current.status as ActivityStatus)) {
-        return { ok: false, error: "This activity can no longer be closed." };
+        return { ok: false, errorKey: "errors.text.cannotClose" };
       }
 
       await sweepStaleRuns(tx, activityId);
@@ -454,7 +460,7 @@ export async function publishTextUnrankedAction(
       if (running) {
         return {
           ok: false,
-          error: "Ranking is still running. Wait for it to finish or time out.",
+          errorKey: "errors.text.rankingStillRunning",
         };
       }
 

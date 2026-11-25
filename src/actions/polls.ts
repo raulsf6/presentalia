@@ -6,9 +6,10 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { activities, pollOptions, polls } from "@/db/schema";
 import { validatePollInput } from "@/lib/activities/polls";
+import type { ActionFailure } from "@/lib/i18n/errors";
 import { requireTalkManager } from "@/lib/talks/membership";
 
-export type PollActionResult = { ok: boolean; error?: string };
+export type PollActionResult = { ok: true } | ActionFailure;
 
 /** Create a ready single-choice poll and its options atomically. */
 export async function createPollAction(

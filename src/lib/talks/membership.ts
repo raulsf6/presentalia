@@ -7,6 +7,7 @@ import { appUsers, talkRoster, talks, type TalkRow } from "@/db/schema";
 import { getSessionUser, type SessionUser } from "@/lib/auth/auth";
 import { readGuestSession, type GuestSession } from "@/lib/talks/guest-session";
 import type { AppRole } from "@/lib/auth/roles";
+import type { ActionFailure } from "@/lib/i18n/errors";
 
 export type ManagerTalkAccess = {
   user: SessionUser;
@@ -37,7 +38,7 @@ export type TalkManagerGuard =
       talk: TalkRow;
       access: "admin" | "presenter";
     }
-  | { ok: false; error: string };
+  | ActionFailure;
 
 /** True for the talk's owner or an admin; false for members and guests. */
 export function isManager(access: TalkAccess): access is ManagerTalkAccess {
@@ -203,10 +204,10 @@ export async function requireTalkManager(
 ): Promise<TalkManagerGuard> {
   const access = await loadTalkAccess(talkId);
   if (!access) {
-    return { ok: false, error: "You don't have access to this talk." };
+    return { ok: false, errorKey: "errors.talk.noAccess" };
   }
   if (!isManager(access)) {
-    return { ok: false, error: "You can't manage this talk." };
+    return { ok: false, errorKey: "errors.talk.cannotManage" };
   }
   return {
     ok: true,

@@ -6,15 +6,18 @@ import { isAllowedLoginEmail } from "@/lib/auth/login-gate";
 import { waitForMinimumDuration } from "@/lib/auth/auth-timing";
 import { normalizeEmail, validateEmail } from "@/lib/talks/roster";
 import { ensureAppUser, sendAppUserInvite } from "@/lib/auth/provision-user";
-import { logServerError, logServerWarning, maskEmail } from "@/lib/platform/server-log";
+import {
+  logServerError,
+  logServerWarning,
+  maskEmail,
+} from "@/lib/platform/server-log";
 import { getSiteUrl } from "@/lib/platform/site-url";
 import { createSupabaseServerClient } from "@/lib/platform/supabase/server";
+import type { ErrorKey, MessageParams } from "@/lib/i18n/dictionaries/en";
 
-export type MagicLinkState = {
-  ok: boolean;
-  sent?: boolean;
-  error?: string;
-};
+export type MagicLinkState =
+  | { ok: true; sent: true }
+  | { ok: false; errorKey?: ErrorKey; errorParams?: MessageParams };
 
 /**
  * Same response for every accepted address, invited or not, so the form
@@ -45,7 +48,7 @@ export async function requestMagicLinkAction(
 ): Promise<MagicLinkState> {
   const raw = String(formData.get("email") ?? "");
   if (!validateEmail(raw)) {
-    return { ok: false, error: "Enter a valid email address." };
+    return { ok: false, errorKey: "errors.auth.invalidEmail" };
   }
   const email = normalizeEmail(raw);
   const startedAt = Date.now();

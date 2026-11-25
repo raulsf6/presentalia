@@ -32,13 +32,13 @@ describe("validateSlidesFile", () => {
   test("rejects a non-PDF file", () => {
     expect(
       validateSlidesFile({ name: "slides.txt", type: "text/plain", size: 10 }),
-    ).toEqual({ ok: false, error: "Slides must be a PDF file." });
+    ).toEqual({ ok: false, errorKey: "errors.slides.invalidPdf" });
   });
 
   test("rejects a file with no name and no type", () => {
     expect(validateSlidesFile({ name: "", type: "", size: 10 })).toEqual({
       ok: false,
-      error: "Slides must be a PDF file.",
+      errorKey: "errors.slides.invalidPdf",
     });
   });
 
@@ -49,7 +49,11 @@ describe("validateSlidesFile", () => {
         type: "application/pdf",
         size: MAX_SLIDES_BYTES + 1,
       }),
-    ).toEqual({ ok: false, error: "Slides file is larger than 20 MB." });
+    ).toEqual({
+      ok: false,
+      errorKey: "errors.slides.tooLarge",
+      errorParams: { maxMb: 20 },
+    });
   });
 
   test("accepts a file at exactly the 20 MB limit", () => {
@@ -69,6 +73,6 @@ describe("validateSlidesFile", () => {
         type: "application/pdf",
         size: 0,
       }),
-    ).toEqual({ ok: false, error: "Slides file is empty." });
+    ).toEqual({ ok: false, errorKey: "errors.slides.empty" });
   });
 });

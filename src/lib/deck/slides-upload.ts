@@ -1,7 +1,8 @@
 import { hasPdfHeader, validateSlidesFile } from "@/lib/deck/slides";
+import type { ActionFailure } from "@/lib/i18n/errors";
 
 export type SlidesUploadTicket =
-  { ok: true; path: string; token: string } | { ok: false; error: string };
+  { ok: true; path: string; token: string } | ActionFailure;
 
 export type CreateSignedSlidesUrl = (
   path: string,
@@ -23,7 +24,7 @@ export async function createSlidesUploadTicket(
     return validation;
   }
   if (!hasPdfHeader(file.pdfHeader)) {
-    return { ok: false, error: "Slides must be a valid PDF file." };
+    return { ok: false, errorKey: "errors.slides.invalidFile" };
   }
 
   const path = `${talkId}/slides.pdf`;
@@ -31,7 +32,7 @@ export async function createSlidesUploadTicket(
   if (!ticket) {
     return {
       ok: false,
-      error: "Could not prepare the upload. Please try again.",
+      errorKey: "errors.slides.prepareFailed",
     };
   }
   return { ok: true, path: ticket.path, token: ticket.token };

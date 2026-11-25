@@ -4,24 +4,27 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { saveDeckPlanAction } from "@/actions/deck";
 import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
+import { useT } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
 import { SlideCanvas } from "@/components/slides/slide-canvas";
 import { usePdfDocument } from "@/components/slides/use-pdf-document";
 import type { DeckPlan, DeckPlanEntry } from "@/lib/deck/deck-plan";
+import { toErrorState, type ErrorState } from "@/lib/i18n/errors";
+import type { Translator } from "@/lib/i18n/translate";
 
 type Item = { activityId: string; afterSlide: number };
 
-function statusChip(status: DeckPlanEntry["status"]) {
+function statusChip(status: DeckPlanEntry["status"], t: Translator) {
   if (status === "ready") {
     return null;
   }
   if (status === "closed") {
-    return <span className="chip chip-closed">CLOSED</span>;
+    return <span className="chip chip-closed">{t("status.closed")}</span>;
   }
   return (
     <span className="chip chip-live">
       <span className="pulse-dot" />
-      {status === "locked" ? "RANKING" : "LIVE"}
+      {status === "locked" ? t("status.ranking") : t("status.live")}
     </span>
   );
 }
@@ -55,6 +58,7 @@ export function DeckPlanEditor({
   slidesUpdatedAt: string;
   initial: DeckPlan;
 }) {
+  const t = useT();
   const { pdf, error: pdfError } = usePdfDocument(talkId, slidesUpdatedAt);
   const [items, setItems] = useState<Item[]>(() =>
     initial.placements.map((placement) => ({
@@ -75,7 +79,7 @@ export function DeckPlanEditor({
   const [hoverGap, setHoverGap] = useState<number | null>(null);
   const gapElements = useRef(new Map<number, HTMLDivElement>());
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
   const [pending, startTransition] = useTransition();
 
   const activities = useMemo(
@@ -173,7 +177,7 @@ export function DeckPlanEditor({
         })),
       });
       if (!result.ok) {
-        setError(result.error);
+        setError(toErrorState(result, "errors.generic.save"));
         return;
       }
       setBaseline(serialize(items));
@@ -184,14 +188,14 @@ export function DeckPlanEditor({
   if (pdfError && !pdf) {
     return (
       <p role="alert" className="alert alert-warn p-5">
-        The deck could not be loaded, so it cannot be planned right now.
+        {t("deck.loadFailed")}
       </p>
     );
   }
 
   if (!pdf) {
     return (
-      <p className="text-muted text-sm font-semibold">Loading the deck…</p>
+      <p className="text-muted text-sm font-semibold">{t("deck.loading")}</p>
     );
   }
 
@@ -211,11 +215,10 @@ export function DeckPlanEditor({
           draggingPlaced ? "border-red bg-red/5" : "border-ink/20 bg-white/60"
         }`}
       >
-        <span className="section-label mr-1">Ready to place</span>
+        <span className="section-label mr-1">{t("deck.readyToPlace")}</span>
         {palette.length === 0 ? (
           <span className="text-muted text-xs font-semibold">
-            No ready activity to place. New activities start ready; a live or
-            closed one cannot be added.
+            {t("deck.noReady")}
           </span>
         ) : (
           palette.map((activity) => (
@@ -247,7 +250,7 @@ export function DeckPlanEditor({
         )}
         {draggingPlaced ? (
           <span className="text-red text-xs font-bold">
-            Drop here to take it out
+            {t("deck.dropHere")}
           </span>
         ) : null}
       </div>
@@ -272,7 +275,7 @@ export function DeckPlanEditor({
             {pages.map((page) => (
               <div key={page} className="flex shrink-0 items-center gap-1">
                 <figure
-                  aria-label={`Slide ${page}`}
+                  aria-label={t("deck.slideAria", { number: page })}
                   className="border-ink relative h-36 w-60 shrink-0 overflow-hidden rounded-md border-[3px] bg-white shadow-[3px_3px_0_var(--color-ink)] transition duration-150 hover:z-20 hover:scale-[1.08] hover:shadow-[6px_6px_0_var(--color-ink)]"
                 >
                   <SlideCanvas
@@ -325,27 +328,31 @@ export function DeckPlanEditor({
         >
           {pending ? (
             <>
-              Saving… <LoadingDots />
+              {t("deck.saving")} <LoadingDots />
             </>
           ) : (
-            "Save plan"
+            t("deck.save")
           )}
         </button>
         <span className="text-muted text-xs font-semibold">
           {items.length === 0
-            ? "No activities placed."
-            : `${items.length} placed.`}
+            ? t("deck.nonePlaced")
+            : t(items.length === 1 ? "deck.placed.one" : "deck.placed.other", {
+                count: items.length,
+              })}
         </span>
         {saved && !dirty ? (
-          <span className="text-green text-xs font-bold">Saved.</span>
+          <span className="text-green text-xs font-bold">
+            {t("deck.saved")}
+          </span>
         ) : null}
         {error ? (
           <p role="alert" className="text-red text-xs font-bold">
-            {error}
+            {t(error.key, error.params)}
           </p>
         ) : null}
         <span className="text-muted ml-auto text-[0.7rem] font-semibold">
-          Drag an activity into a gap, or tap it and then tap a gap.
+          {t("deck.dragHint")}
         </span>
       </div>
     </div>
@@ -375,6 +382,7 @@ function Gap({
   onDragStart: (activityId: string) => void;
   onDragEnd: () => void;
 }) {
+  const t = useT();
   const placed = items.filter((item) => item.afterSlide === page);
   const empty = placed.length === 0;
 
@@ -424,7 +432,7 @@ function Gap({
               className="border-ink shrink-0 cursor-grab rounded-md border-[2.5px] bg-white px-1 py-0.5 shadow-[2px_2px_0_var(--color-ink)] transition duration-150 hover:z-10 hover:scale-105"
             >
               <span className="flex flex-wrap items-center gap-1">
-                {statusChip(activity.status)}
+                {statusChip(activity.status, t)}
                 <ActivityTypeBadge type={activity.type} />
               </span>
               <p className="text-ink mt-0.5 line-clamp-2 text-[0.6rem] leading-tight font-bold">

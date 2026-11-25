@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/I18nProvider";
 import { useLiveResults } from "@/components/useLiveResults";
 import type { CloudItem } from "@/lib/activities/cloud-activity";
 import type { CloudResultsPayload } from "@/lib/activities/cloud-results";
@@ -49,6 +50,7 @@ export function CloudLiveResults({
   /** Overrides the attendee results URL, for the projected deck. */
   endpoint?: string;
 }) {
+  const t = useT();
   const { payload, accessRevoked } = useLiveResults({
     initial,
     url: endpoint ?? `/api/cloud/${initial.activity.id}/results`,
@@ -59,9 +61,7 @@ export function CloudLiveResults({
   if (!payload) {
     return (
       <p role="alert" className="alert alert-warn p-5">
-        {accessRevoked
-          ? "You no longer have access to these results."
-          : "Results are temporarily unavailable. Refresh to try again."}
+        {accessRevoked ? t("results.accessRevoked") : t("results.unavailable")}
       </p>
     );
   }
@@ -79,18 +79,23 @@ export function CloudLiveResults({
       <header className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
           {closed ? (
-            <span className="chip chip-closed">CLOSED</span>
+            <span className="chip chip-closed">{t("status.closed")}</span>
           ) : (
             <span className="chip chip-live">
               <span className="pulse-dot" />
-              LIVE
+              {t("status.live")}
             </span>
           )}
           <span
             className={`text-muted font-bold ${large ? "text-lg" : "text-sm"}`}
           >
-            {activity.totalIdeas} {activity.totalIdeas === 1 ? "idea" : "ideas"}{" "}
-            · {activity.uniqueIdeas} unique
+            {t(
+              activity.totalIdeas === 1 ? "results.ideaOne" : "results.ideas",
+              {
+                total: activity.totalIdeas,
+                unique: activity.uniqueIdeas,
+              },
+            )}
           </span>
         </div>
         <h1
@@ -109,24 +114,21 @@ export function CloudLiveResults({
           <p
             className={`text-ink font-bold ${large ? "text-xl" : "text-base"}`}
           >
-            Your idea is in.
+            {t("results.ideaIn")}
           </p>
           <p
             className={`text-muted font-semibold ${large ? "text-base" : "text-sm"}`}
           >
-            Watch the big screen as more ideas arrive. The final cloud will
-            appear here when the presenter closes the activity.
+            {t("results.watchBigScreen")}
           </p>
         </section>
       ) : items.length === 0 ? (
         <p className="empty">
-          {closed
-            ? "No ideas were submitted."
-            : "Waiting for the first idea. It will appear here as soon as someone submits one."}
+          {closed ? t("results.noIdeas") : t("results.waitingFirstIdea")}
         </p>
       ) : (
         <ul
-          aria-label="Idea cloud. Repeated ideas appear larger."
+          aria-label={t("results.cloudAria")}
           className={`flex flex-wrap content-center items-center justify-center ${
             large
               ? "min-h-[22rem] gap-x-10 gap-y-6"
@@ -145,7 +147,12 @@ export function CloudLiveResults({
               {item.label}
               <span className="sr-only">
                 {" "}
-                — {item.count} {item.count === 1 ? "mention" : "mentions"}
+                {t(
+                  item.count === 1
+                    ? "results.mentions.one"
+                    : "results.mentions.other",
+                  { count: item.count },
+                )}
               </span>
             </li>
           ))}
@@ -156,14 +163,16 @@ export function CloudLiveResults({
         <p
           className={`text-muted font-semibold ${large ? "text-lg" : "text-sm"}`}
         >
-          +{hiddenIdeas} more {hiddenIdeas === 1 ? "idea" : "ideas"} not shown.
+          {t(hiddenIdeas === 1 ? "results.oneMoreIdea" : "results.moreIdeas", {
+            count: hiddenIdeas,
+          })}
         </p>
       ) : null}
 
       <p
         className={`text-muted font-semibold ${large ? "text-base" : "text-xs"}`}
       >
-        Repeated ideas appear bigger. Ideas are anonymous — no names are shown.
+        {t("results.repeatedBigger")}
       </p>
     </section>
   );

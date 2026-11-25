@@ -7,8 +7,10 @@ import {
   publishTextUnrankedAction,
   rankTextActivityAction,
 } from "@/actions/text";
+import { useI18n } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
 import { RANKED_ANSWER_LIMIT } from "@/lib/activities/text-activity";
+import { toErrorState, type ErrorState } from "@/lib/i18n/errors";
 
 type Mode = "rank" | "unranked";
 
@@ -23,25 +25,29 @@ export function TextActivityControls({
   runStatus: "running" | "succeeded" | "failed" | null;
   answerCount: number;
 }) {
+  const { t, locale } = useI18n();
   const [confirming, setConfirming] = useState<Mode | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   const ranking = runStatus === "running";
   const overCap = answerCount > RANKED_ANSWER_LIMIT;
   const empty = answerCount === 0;
-  const label = status === "locked" ? "Retry ranking" : "Rank & close";
+  const label =
+    status === "locked"
+      ? t("text.controls.retryRanking")
+      : t("text.controls.rankClose");
 
   function run(mode: Mode) {
     setError(null);
     startTransition(async () => {
       const result =
         mode === "rank"
-          ? await rankTextActivityAction(activityId)
+          ? await rankTextActivityAction(activityId, locale)
           : await publishTextUnrankedAction(activityId);
       if (!result.ok) {
-        setError(result.error ?? "Could not update the activity.");
+        setError(toErrorState(result, "errors.activity.updateFailed"));
         return;
       }
       setConfirming(null);
@@ -60,7 +66,7 @@ export function TextActivityControls({
         >
           {pending && confirming === "rank" ? (
             <>
-              Ranking… <LoadingDots />
+              {t("text.controls.ranking")} <LoadingDots />
             </>
           ) : (
             `${label}…`
@@ -73,31 +79,37 @@ export function TextActivityControls({
           className="btn btn-ghost btn-small"
         >
           {pending && confirming === "unranked"
-            ? "Closing…"
-            : "Close without ranking…"}
+            ? t("text.controls.closing")
+            : t("text.controls.closeNoRank")}
         </button>
         <span className="text-muted text-xs font-semibold">
-          {answerCount} {answerCount === 1 ? "answer" : "answers"}
+          {t(
+            answerCount === 1
+              ? "text.controls.answerCount.one"
+              : "text.controls.answerCount.other",
+            { count: answerCount },
+          )}
         </span>
       </div>
 
       {overCap ? (
         <p className="text-amberdeep text-xs font-semibold">
-          {answerCount} answers is above the {RANKED_ANSWER_LIMIT}-answer limit
-          for AI ranking. Close without ranking to publish them all.
+          {t("text.controls.overCap", {
+            count: answerCount,
+            limit: RANKED_ANSWER_LIMIT,
+          })}
         </p>
       ) : null}
 
       {empty ? (
         <p className="text-muted text-xs font-semibold">
-          No answers yet. Ranking starts after at least one attendee answers.
+          {t("text.controls.noAnswers")}
         </p>
       ) : null}
 
       {ranking ? (
         <p className="text-muted text-xs font-semibold">
-          Ranking is in progress. You can publish every answer if it fails or
-          times out.
+          {t("text.controls.rankingProgress")}
         </p>
       ) : null}
 
@@ -106,9 +118,9 @@ export function TextActivityControls({
           <p className="text-amberdeep text-sm font-bold">
             {confirming === "rank"
               ? status === "locked"
-                ? `Retry ranking the ${answerCount} answers? The room will see the result as soon as the model finishes.`
-                : `Rank the ${answerCount} answers and close? No more answers will be accepted, and the room will see the result as soon as the model finishes.`
-              : `Close without ranking? All ${answerCount} answers will be published in submission order, with no AI ranking.`}
+                ? t("text.controls.retryPrompt", { count: answerCount })
+                : t("text.controls.rankPrompt", { count: answerCount })
+              : t("text.controls.unrankedPrompt", { count: answerCount })}
           </p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -119,13 +131,15 @@ export function TextActivityControls({
             >
               {pending ? (
                 <>
-                  {confirming === "rank" ? "Ranking…" : "Closing…"}{" "}
+                  {confirming === "rank"
+                    ? t("text.controls.ranking")
+                    : t("text.controls.closing")}{" "}
                   <LoadingDots />
                 </>
               ) : confirming === "rank" ? (
-                "Yes, rank and close"
+                t("text.controls.yesRank")
               ) : (
-                "Yes, close without ranking"
+                t("text.controls.yesUnranked")
               )}
             </button>
             <button
@@ -134,7 +148,7 @@ export function TextActivityControls({
               onClick={() => setConfirming(null)}
               className="btn btn-ghost btn-small"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>
@@ -142,7 +156,7 @@ export function TextActivityControls({
 
       {error ? (
         <p role="alert" className="text-red text-sm font-bold">
-          {error}
+          {t(error.key, error.params)}
         </p>
       ) : null}
     </div>

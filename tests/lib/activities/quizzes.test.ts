@@ -44,7 +44,7 @@ describe("validateQuizInput", () => {
       validateQuizInput({ question: "", options: ["A", "B"], correctIndex: 0 }),
     ).toEqual({
       ok: false,
-      error: "A quiz needs a question.",
+      errorKey: "errors.quiz.questionRequired",
     });
   });
 
@@ -57,7 +57,7 @@ describe("validateQuizInput", () => {
       }),
     ).toEqual({
       ok: false,
-      error: "A quiz needs a question.",
+      errorKey: "errors.quiz.questionRequired",
     });
   });
 
@@ -66,7 +66,7 @@ describe("validateQuizInput", () => {
       validateQuizInput({ question: "Q?", options: ["A"], correctIndex: 0 }),
     ).toEqual({
       ok: false,
-      error: "A quiz needs at least 2 answer options.",
+      errorKey: "errors.quiz.minOptions",
     });
   });
 
@@ -76,7 +76,7 @@ describe("validateQuizInput", () => {
       validateQuizInput({ question: "Q?", options, correctIndex: 0 }),
     ).toEqual({
       ok: false,
-      error: "A quiz can have at most 8 answer options.",
+      errorKey: "errors.quiz.maxOptions",
     });
   });
 
@@ -89,7 +89,7 @@ describe("validateQuizInput", () => {
       }),
     ).toEqual({
       ok: false,
-      error: "Answer options cannot be empty.",
+      errorKey: "errors.quiz.emptyOption",
     });
   });
 
@@ -102,7 +102,7 @@ describe("validateQuizInput", () => {
       }),
     ).toEqual({
       ok: false,
-      error: "Answer options must be unique.",
+      errorKey: "errors.quiz.duplicateOption",
     });
   });
 
@@ -115,7 +115,7 @@ describe("validateQuizInput", () => {
       }),
     ).toEqual({
       ok: false,
-      error: "Choose the correct answer.",
+      errorKey: "errors.quiz.correctRequired",
     });
   });
 
@@ -128,7 +128,7 @@ describe("validateQuizInput", () => {
       }),
     ).toEqual({
       ok: false,
-      error: "Choose the correct answer.",
+      errorKey: "errors.quiz.correctRequired",
     });
   });
 

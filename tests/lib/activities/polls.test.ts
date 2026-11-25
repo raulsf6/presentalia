@@ -44,7 +44,7 @@ describe("validatePollInput", () => {
   test("rejects a missing question", () => {
     expect(validatePollInput({ question: "", options: ["A", "B"] })).toEqual({
       ok: false,
-      error: "A poll needs a question.",
+      errorKey: "errors.poll.questionRequired",
     });
   });
 
@@ -52,7 +52,7 @@ describe("validatePollInput", () => {
     expect(validatePollInput({ question: "   ", options: ["A", "B"] })).toEqual(
       {
         ok: false,
-        error: "A poll needs a question.",
+        errorKey: "errors.poll.questionRequired",
       },
     );
   });
@@ -60,7 +60,7 @@ describe("validatePollInput", () => {
   test("rejects fewer than two options", () => {
     expect(validatePollInput({ question: "Q?", options: ["A"] })).toEqual({
       ok: false,
-      error: "A poll needs at least 2 answer options.",
+      errorKey: "errors.poll.minOptions",
     });
   });
 
@@ -68,7 +68,7 @@ describe("validatePollInput", () => {
     const options = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
     expect(validatePollInput({ question: "Q?", options })).toEqual({
       ok: false,
-      error: "A poll can have at most 8 answer options.",
+      errorKey: "errors.poll.maxOptions",
     });
   });
 
@@ -77,7 +77,7 @@ describe("validatePollInput", () => {
       validatePollInput({ question: "Q?", options: ["A", "   "] }),
     ).toEqual({
       ok: false,
-      error: "Answer options cannot be empty.",
+      errorKey: "errors.poll.emptyOption",
     });
   });
 });

@@ -2,9 +2,50 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { I18nProvider } from "@/components/I18nProvider";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { ChartIcon, CloudIcon, QuizIcon, TextIcon } from "@/components/icons";
+import type { MessageKey } from "@/lib/i18n/dictionaries/en";
+import { getLocale } from "@/lib/i18n/server";
+import { createTranslator } from "@/lib/i18n/translate";
 import { isManager, loadTalkAccess } from "@/lib/talks/membership";
+
+const TYPES: ReadonlyArray<{
+  href: "poll" | "quiz" | "text" | "cloud";
+  label: MessageKey;
+  detail: MessageKey;
+  icon: typeof ChartIcon;
+  box: string;
+}> = [
+  {
+    href: "poll",
+    label: "activity.type.poll",
+    detail: "activities.detail.poll",
+    icon: ChartIcon,
+    box: "bg-coral text-ink",
+  },
+  {
+    href: "quiz",
+    label: "activity.type.quiz",
+    detail: "activities.detail.quiz",
+    icon: QuizIcon,
+    box: "bg-green text-white",
+  },
+  {
+    href: "text",
+    label: "activity.type.text",
+    detail: "activities.detail.text",
+    icon: TextIcon,
+    box: "bg-amber text-ink",
+  },
+  {
+    href: "cloud",
+    label: "activity.type.cloud",
+    detail: "activities.detail.cloud",
+    icon: CloudIcon,
+    box: "bg-tan text-ink",
+  },
+];
 
 export default function NewActivityPage({
   params,
@@ -30,87 +71,46 @@ async function NewActivityContent({
     notFound();
   }
 
+  const locale = await getLocale();
+  const t = createTranslator(locale);
+
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <div className="mb-8">
-        <h1 className="font-display text-ink text-2xl">New activity</h1>
-        <p className="text-muted mt-1 text-sm font-semibold">
-          {access.talk.name} — choose what to create.
-        </p>
-      </div>
-      <section className="flex flex-col gap-3">
-        <h2 className="section-label">Activity types</h2>
-        <Link
-          href={`/talks/${talkId}/activities/new/poll`}
-          className="card card-hover flex items-center gap-4 p-4"
-        >
-          <span className="border-ink bg-coral shadow-hard-sm flex size-11 shrink-0 items-center justify-center rounded-lg border-[2.5px]">
-            <ChartIcon className="size-5" />
-          </span>
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-ink font-bold">Poll</span>
-            <span className="text-muted text-xs font-semibold">
-              Ask a multiple-choice question and show the results live.
-            </span>
-          </span>
-          <span className="text-muted ml-auto shrink-0 text-sm font-bold">
-            Create →
-          </span>
-        </Link>
-        <Link
-          href={`/talks/${talkId}/activities/new/quiz`}
-          className="card card-hover flex items-center gap-4 p-4"
-        >
-          <span className="border-ink bg-green shadow-hard-sm flex size-11 shrink-0 items-center justify-center rounded-lg border-[2.5px] text-white">
-            <QuizIcon className="size-5" />
-          </span>
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-ink font-bold">Quiz</span>
-            <span className="text-muted text-xs font-semibold">
-              Ask a question with one correct answer and reveal it at the end.
-            </span>
-          </span>
-          <span className="text-muted ml-auto shrink-0 text-sm font-bold">
-            Create →
-          </span>
-        </Link>
-        <Link
-          href={`/talks/${talkId}/activities/new/text`}
-          className="card card-hover flex items-center gap-4 p-4"
-        >
-          <span className="border-ink bg-amber shadow-hard-sm flex size-11 shrink-0 items-center justify-center rounded-lg border-[2.5px]">
-            <TextIcon className="size-5" />
-          </span>
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-ink font-bold">Text prompt</span>
-            <span className="text-muted text-xs font-semibold">
-              Collect short written answers and rank them against your criterion
-              with AI.
-            </span>
-          </span>
-          <span className="text-muted ml-auto shrink-0 text-sm font-bold">
-            Create →
-          </span>
-        </Link>
-        <Link
-          href={`/talks/${talkId}/activities/new/cloud`}
-          className="card card-hover flex items-center gap-4 p-4"
-        >
-          <span className="border-ink bg-tan shadow-hard-sm flex size-11 shrink-0 items-center justify-center rounded-lg border-[2.5px]">
-            <CloudIcon className="size-5" />
-          </span>
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-ink font-bold">Idea cloud</span>
-            <span className="text-muted text-xs font-semibold">
-              Collect one word or short phrase per person and grow the repeated
-              ideas on the big screen.
-            </span>
-          </span>
-          <span className="text-muted ml-auto shrink-0 text-sm font-bold">
-            Create →
-          </span>
-        </Link>
-      </section>
-    </main>
+    <I18nProvider locale={locale}>
+      <main className="mx-auto w-full max-w-2xl px-6 py-12">
+        <div className="mb-8">
+          <h1 className="font-display text-ink text-2xl">
+            {t("activities.new")}
+          </h1>
+          <p className="text-muted mt-1 text-sm font-semibold">
+            {t("activities.chooseSubtitle", { name: access.talk.name })}
+          </p>
+        </div>
+        <section className="flex flex-col gap-3">
+          <h2 className="section-label">{t("activities.types")}</h2>
+          {TYPES.map(({ href, label, detail, icon: Icon, box }) => (
+            <Link
+              key={href}
+              href={`/talks/${talkId}/activities/new/${href}`}
+              className="card card-hover flex items-center gap-4 p-4"
+            >
+              <span
+                className={`border-ink shadow-hard-sm flex size-11 shrink-0 items-center justify-center rounded-lg border-[2.5px] ${box}`}
+              >
+                <Icon className="size-5" />
+              </span>
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-ink font-bold">{t(label)}</span>
+                <span className="text-muted text-xs font-semibold">
+                  {t(detail)}
+                </span>
+              </span>
+              <span className="text-muted ml-auto shrink-0 text-sm font-bold">
+                {t("activities.create")}
+              </span>
+            </Link>
+          ))}
+        </section>
+      </main>
+    </I18nProvider>
   );
 }

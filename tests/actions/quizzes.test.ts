@@ -136,7 +136,7 @@ describe("createQuizAction", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "Choose the correct answer.",
+      errorKey: "errors.quiz.correctRequired",
     });
     expect(mocks.transaction).not.toHaveBeenCalled();
   });
@@ -150,7 +150,7 @@ describe("createQuizAction", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "Answer options must be unique.",
+      errorKey: "errors.quiz.duplicateOption",
     });
     expect(mocks.transaction).not.toHaveBeenCalled();
   });

@@ -134,7 +134,7 @@ describe("adding users", () => {
       addUserAction("existing@example.com", "attendee"),
     ).resolves.toEqual({
       ok: false,
-      error: "That email already has a presenter or admin role.",
+      errorKey: "errors.users.alreadyPrivileged",
     });
 
     expect(mocks.execute).not.toHaveBeenCalled();
@@ -192,7 +192,7 @@ describe("adding users", () => {
 
     await expect(addUserAction("new@example.com", "owner")).resolves.toEqual({
       ok: false,
-      error: "Choose a valid role.",
+      errorKey: "errors.auth.invalidRole",
     });
     expect(mocks.ensureAppUser).not.toHaveBeenCalled();
   });
@@ -202,7 +202,7 @@ describe("adding users", () => {
 
     await expect(addUserAction("not-an-email", "attendee")).resolves.toEqual({
       ok: false,
-      error: "Enter a valid email address.",
+      errorKey: "errors.auth.invalidEmail",
     });
     expect(mocks.ensureAppUser).not.toHaveBeenCalled();
   });
@@ -210,14 +210,14 @@ describe("adding users", () => {
   test("a non-admin cannot add users", async () => {
     mocks.requireAdmin.mockResolvedValue({
       ok: false,
-      error: "Only the admin can do this.",
+      errorKey: "errors.auth.adminOnly",
     });
     const { addUserAction } = await import("@/actions/users");
 
     await expect(addUserAction("new@example.com", "attendee")).resolves.toEqual(
       {
         ok: false,
-        error: "Only the admin can do this.",
+        errorKey: "errors.auth.adminOnly",
       },
     );
     expect(mocks.ensureAppUser).not.toHaveBeenCalled();
@@ -263,7 +263,7 @@ describe("user deletion", () => {
 
     await expect(deleteUserAction(ADMIN_ID)).resolves.toMatchObject({
       ok: false,
-      error: "You can't delete your own account.",
+      errorKey: "errors.users.cannotDeleteSelf",
     });
     expect(mocks.deleteUser).not.toHaveBeenCalled();
   });
@@ -280,13 +280,13 @@ describe("user deletion", () => {
   test("a non-admin cannot delete users", async () => {
     mocks.requireAdmin.mockResolvedValue({
       ok: false,
-      error: "Only the admin can do this.",
+      errorKey: "errors.auth.adminOnly",
     });
     const { deleteUserAction } = await import("@/actions/users");
 
     await expect(deleteUserAction(TARGET_ID)).resolves.toEqual({
       ok: false,
-      error: "Only the admin can do this.",
+      errorKey: "errors.auth.adminOnly",
     });
     expect(mocks.deleteUser).not.toHaveBeenCalled();
   });
@@ -300,7 +300,7 @@ describe("user deletion", () => {
 
     await expect(deleteUserAction(TARGET_ID)).resolves.toMatchObject({
       ok: false,
-      error: "At least one admin must remain. Promote another user first.",
+      errorKey: "errors.users.lastAdmin",
     });
   });
 
@@ -310,7 +310,7 @@ describe("user deletion", () => {
 
     await expect(deleteUserAction(TARGET_ID)).resolves.toMatchObject({
       ok: false,
-      error: "Could not delete that user.",
+      errorKey: "errors.users.deleteFailed",
     });
   });
 });

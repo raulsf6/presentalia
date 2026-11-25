@@ -2,6 +2,8 @@
 
 import type { ReactNode, RefObject } from "react";
 
+import { useT } from "@/components/I18nProvider";
+
 /**
  * Native modal dialog with the app's hard-shadow frame. Clicking the backdrop
  * or the close button dismisses it; Escape works through the browser.
@@ -15,6 +17,7 @@ export function Popup({
   title: string;
   children: ReactNode;
 }) {
+  const t = useT();
   return (
     <dialog
       ref={ref}
@@ -30,7 +33,7 @@ export function Popup({
         <button
           type="button"
           onClick={() => ref.current?.close()}
-          aria-label="Close"
+          aria-label={t("common.close")}
           className="border-ink/25 hover:border-ink rounded-md border px-2 py-0.5 text-sm font-bold"
         >
           ×

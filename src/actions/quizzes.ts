@@ -15,9 +15,10 @@ import {
 } from "@/lib/talks/membership";
 import { clearQuizResultsCache } from "@/lib/activities/quiz-results";
 import { validateQuizInput } from "@/lib/activities/quizzes";
+import type { ActionFailure } from "@/lib/i18n/errors";
 
-export type QuizActionResult = { ok: boolean; error?: string };
-export type QuizVoteResult = { ok: boolean; error?: string; talkId?: string };
+export type QuizActionResult = { ok: true } | ActionFailure;
+export type QuizVoteResult = { ok: true; talkId?: string } | ActionFailure;
 
 /** Create a ready quiz and its options atomically. */
 export async function createQuizAction(
@@ -85,15 +86,15 @@ export async function submitQuizVoteAction(
     .where(eq(activities.id, quizId))
     .limit(1);
   if (!quizRef) {
-    return { ok: false, error: "You don't have access to this quiz." };
+    return { ok: false, errorKey: "errors.quiz.noAccess" };
   }
 
   const attendee = await resolveTalkAttendee(quizRef.talkId);
   if (!attendee) {
-    return { ok: false, error: "You don't have access to this quiz." };
+    return { ok: false, errorKey: "errors.quiz.noAccess" };
   }
 
-  let outcome: { ok: true; talkId: string } | { ok: false; error: string };
+  let outcome: { ok: true; talkId: string } | ActionFailure;
   try {
     outcome = await db.transaction(async (tx) => {
       const [quiz] = await tx
@@ -104,10 +105,10 @@ export async function submitQuizVoteAction(
         .limit(1)
         .for("share", { of: activities });
       if (!quiz) {
-        return { ok: false, error: "You don't have access to this quiz." };
+        return { ok: false, errorKey: "errors.quiz.noAccess" };
       }
       if (!canVote(quiz.status as ActivityStatus)) {
-        return { ok: false, error: "This quiz is not open for voting." };
+        return { ok: false, errorKey: "errors.quiz.notOpen" };
       }
 
       const [option] = await tx
@@ -119,7 +120,7 @@ export async function submitQuizVoteAction(
         .limit(1)
         .for("share");
       if (!option) {
-        return { ok: false, error: "This vote was not accepted." };
+        return { ok: false, errorKey: "errors.quiz.voteRejected" };
       }
 
       await tx.insert(quizVotes).values({
@@ -132,7 +133,7 @@ export async function submitQuizVoteAction(
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { ok: false, error: "You have already voted in this quiz." };
+      return { ok: false, errorKey: "errors.quiz.alreadyVoted" };
     }
     throw error;
   }

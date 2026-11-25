@@ -45,7 +45,7 @@ describe("removeSlidesAction", () => {
   test("refuses a caller who cannot manage the talk", async () => {
     mocks.requireTalkManager.mockResolvedValue({
       ok: false,
-      error: "You can't manage this talk.",
+      errorKey: "errors.talk.cannotManage",
     });
 
     const result = await removeSlidesAction("talk-1");
@@ -82,6 +82,6 @@ describe("removeSlidesAction", () => {
 
     const result = await removeSlidesAction("talk-1");
 
-    expect(result).toEqual({ ok: false, error: "Talk not found." });
+    expect(result).toEqual({ ok: false, errorKey: "errors.talk.notFound" });
   });
 });

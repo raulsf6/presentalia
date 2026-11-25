@@ -1,5 +1,4 @@
 import { isManager, loadTalkAccess } from "@/lib/talks/membership";
-import { formatGuestJoinedAt } from "@/lib/talks/talk-guests";
 import { loadTalkGuests } from "@/lib/talks/talk-guests-db";
 
 /** Manager-only guest list for the live roster view. */
@@ -22,7 +21,7 @@ export async function GET(
       guests: guests.map((guest) => ({
         id: guest.id,
         username: guest.username,
-        joinedAtLabel: formatGuestJoinedAt(guest.joinedAt),
+        joinedAt: guest.joinedAt.toISOString(),
       })),
     },
     { headers: { "Cache-Control": "private, no-store" } },

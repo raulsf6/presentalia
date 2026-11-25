@@ -10,14 +10,13 @@ import { ensureAppUser, sendAppUserInvite } from "@/lib/auth/provision-user";
 import { normalizeEmail, validateEmail } from "@/lib/talks/roster";
 import { logServerError } from "@/lib/platform/server-log";
 import { createSupabaseServiceClient } from "@/lib/platform/supabase/service";
+import type { ErrorKey, WarningKey } from "@/lib/i18n/dictionaries/en";
+import type { ActionFailure } from "@/lib/i18n/errors";
 
 const USER_ID_RE = /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i;
 
-export type UserActionResult = {
-  ok: boolean;
-  error?: string;
-  warning?: string;
-};
+export type UserActionResult =
+  { ok: true; warningKey?: WarningKey } | ActionFailure;
 
 async function setUserRole(userId: string, role: AppRole): Promise<void> {
   await getDb().execute(
@@ -25,11 +24,11 @@ async function setUserRole(userId: string, role: AppRole): Promise<void> {
   );
 }
 
-function roleChangeError(error: unknown): string {
+function roleChangeError(error: unknown): ErrorKey {
   const message = error instanceof Error ? error.message : String(error);
   return message.toLowerCase().includes("at least one admin")
-    ? "At least one admin must remain. Promote another user first."
-    : "Could not update that user's role.";
+    ? "errors.users.lastAdmin"
+    : "errors.users.roleUpdateFailed";
 }
 
 /** Adds a user with an attendee or presenter role, provisioning Auth if needed. */
@@ -43,10 +42,10 @@ export async function addUserAction(
   }
 
   if (!validateEmail(rawEmail)) {
-    return { ok: false, error: "Enter a valid email address." };
+    return { ok: false, errorKey: "errors.auth.invalidEmail" };
   }
   if (!APP_ROLES.includes(role as AppRole)) {
-    return { ok: false, error: "Choose a valid role." };
+    return { ok: false, errorKey: "errors.auth.invalidRole" };
   }
 
   const email = normalizeEmail(rawEmail);
@@ -54,7 +53,7 @@ export async function addUserAction(
   if (!appUser) {
     return {
       ok: false,
-      error: "Could not create or find the account for that email.",
+      errorKey: "errors.users.createFailed",
     };
   }
 
@@ -64,7 +63,7 @@ export async function addUserAction(
     if (appUser.role !== "attendee") {
       return {
         ok: false,
-        error: "That email already has a presenter or admin role.",
+        errorKey: "errors.users.alreadyPrivileged",
       };
     }
   } else {
@@ -78,7 +77,7 @@ export async function addUserAction(
       try {
         await setUserRole(appUser.id, role as AppRole);
       } catch (error) {
-        return { ok: false, error: roleChangeError(error) };
+        return { ok: false, errorKey: roleChangeError(error) };
       }
     }
   }
@@ -92,9 +91,7 @@ export async function addUserAction(
   revalidatePath("/talks");
   return {
     ok: true,
-    warning: inviteSent
-      ? undefined
-      : "User added, but we couldn't send the verification invitation.",
+    warningKey: inviteSent ? undefined : "warnings.user.inviteFailed",
   };
 }
 
@@ -109,16 +106,16 @@ export async function changeUserRoleAction(
   }
 
   if (!USER_ID_RE.test(userId)) {
-    return { ok: false, error: "That user could not be found." };
+    return { ok: false, errorKey: "errors.users.notFound" };
   }
   if (!APP_ROLES.includes(role as AppRole)) {
-    return { ok: false, error: "Choose a valid role." };
+    return { ok: false, errorKey: "errors.auth.invalidRole" };
   }
 
   try {
     await setUserRole(userId, role as AppRole);
   } catch (error) {
-    return { ok: false, error: roleChangeError(error) };
+    return { ok: false, errorKey: roleChangeError(error) };
   }
 
   updateTag("users");
@@ -144,10 +141,10 @@ export async function deleteUserAction(
   }
 
   if (!USER_ID_RE.test(userId)) {
-    return { ok: false, error: "That user could not be found." };
+    return { ok: false, errorKey: "errors.users.notFound" };
   }
   if (userId === guard.user.id) {
-    return { ok: false, error: "You can't delete your own account." };
+    return { ok: false, errorKey: "errors.users.cannotDeleteSelf" };
   }
 
   try {
@@ -158,18 +155,18 @@ export async function deleteUserAction(
       if (message.includes("at least one admin")) {
         return {
           ok: false,
-          error: "At least one admin must remain. Promote another user first.",
+          errorKey: "errors.users.lastAdmin",
         };
       }
       if (message.includes("not found")) {
-        return { ok: false, error: "That user could not be found." };
+        return { ok: false, errorKey: "errors.users.notFound" };
       }
       logServerError("users.delete", error, { userId });
-      return { ok: false, error: "Could not delete that user." };
+      return { ok: false, errorKey: "errors.users.deleteFailed" };
     }
   } catch (error) {
     logServerError("users.delete", error, { userId });
-    return { ok: false, error: "Could not delete that user." };
+    return { ok: false, errorKey: "errors.users.deleteFailed" };
   }
 
   updateTag("users");

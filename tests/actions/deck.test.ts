@@ -38,14 +38,14 @@ describe("saveDeckPlanAction", () => {
   test("refuses a caller who cannot manage the talk", async () => {
     mocks.requireTalkManager.mockResolvedValue({
       ok: false,
-      error: "You can't manage this talk.",
+      errorKey: "errors.talk.cannotManage",
     });
 
     const result = await saveDeckPlanAction("talk-1", plan);
 
     expect(result).toEqual({
       ok: false,
-      error: "You can't manage this talk.",
+      errorKey: "errors.talk.cannotManage",
     });
     expect(mocks.saveDeckPlan).not.toHaveBeenCalled();
   });
@@ -62,7 +62,7 @@ describe("saveDeckPlanAction", () => {
   test("does not revalidate when the save is rejected", async () => {
     mocks.saveDeckPlan.mockResolvedValue({
       ok: false,
-      error: "Only ready activities can be placed in the deck.",
+      errorKey: "errors.deck.notReady",
     });
 
     const result = await saveDeckPlanAction("talk-1", plan);

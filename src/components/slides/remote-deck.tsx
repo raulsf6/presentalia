@@ -9,7 +9,10 @@ import {
 } from "@/actions/activities";
 import { rankTextActivityAction } from "@/actions/text";
 import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
+import { useT, useLocale } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
+import type { MessageKey } from "@/lib/i18n/dictionaries/en";
+import type { ActionFailure } from "@/lib/i18n/errors";
 import type {
   SlideDirection,
   SlideLiveActivity,
@@ -21,18 +24,26 @@ import { useWakeLock } from "./use-wake-lock";
 
 const POLL_MS = 1_000;
 
-function typeLabel(type: "poll" | "quiz" | "text" | "cloud"): string {
-  if (type === "quiz") return "Quiz";
-  if (type === "text") return "Text prompt";
-  if (type === "cloud") return "Idea cloud";
-  return "Poll";
+const TYPE_KEYS = {
+  poll: "activity.type.poll",
+  quiz: "activity.type.quiz",
+  text: "activity.type.text",
+  cloud: "activity.type.cloud",
+} as const satisfies Record<string, MessageKey>;
+
+const CLOSE_KEYS = {
+  poll: "remote.close.poll",
+  quiz: "remote.close.quiz",
+  text: "remote.close.text",
+  cloud: "remote.close.cloud",
+} as const satisfies Record<string, MessageKey>;
+
+function typeLabel(type: SlideLiveActivity["type"]): MessageKey {
+  return TYPE_KEYS[type];
 }
 
-function closeLabel(type: "poll" | "quiz" | "text" | "cloud"): string {
-  if (type === "quiz") return "Close quiz";
-  if (type === "text") return "Rank & close";
-  if (type === "cloud") return "Close idea cloud";
-  return "Close voting";
+function closeLabel(type: SlideLiveActivity["type"]): MessageKey {
+  return CLOSE_KEYS[type];
 }
 
 /**
@@ -51,6 +62,8 @@ export function RemoteDeck({
   slidesUpdatedAt: string | null;
   initial: SlideState;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const hasSlides = slidesUpdatedAt !== null;
   const { state, status, terminal, applyPosition, refresh } = useSlideState({
     talkId,
@@ -69,7 +82,7 @@ export function RemoteDeck({
     !onActivity && state.count !== null && state.slide >= state.count;
 
   const position = state.activity
-    ? `Activity after ${state.slide}`
+    ? t("remote.position", { slide: state.slide })
     : state.count === null
       ? `${state.slide}`
       : `${state.slide} / ${state.count}`;
@@ -95,12 +108,12 @@ export function RemoteDeck({
     });
   }
 
-  function run(action: () => Promise<{ ok: boolean; error?: string }>) {
+  function run(action: () => Promise<{ ok: true } | ActionFailure>) {
     setActionError(null);
     startTransition(async () => {
       const result = await action();
       if (!result.ok) {
-        setActionError(result.error ?? "That did not work. Try again.");
+        setActionError(t("errors.generic.retry"));
       }
       refresh();
     });
@@ -120,14 +133,14 @@ export function RemoteDeck({
       {terminal !== null ? (
         <p className="text-red px-4 pt-3 text-xs font-bold">
           {terminal === "sign-in"
-            ? "Your session ended. Sign in again."
+            ? t("remote.sessionEnded")
             : terminal === "no-access"
-              ? "You no longer have access to this talk."
-              : "This talk no longer exists."}
+              ? t("remote.noAccess")
+              : t("remote.missing")}
         </p>
       ) : status === "reconnecting" ? (
         <p className="text-amber px-4 pt-3 text-xs font-bold tracking-[0.08em] uppercase">
-          Reconnecting
+          {t("remote.reconnecting")}
         </p>
       ) : null}
 
@@ -136,25 +149,25 @@ export function RemoteDeck({
           type="button"
           onClick={() => go("previous")}
           disabled={atStart || !hasSlides || terminal !== null}
-          aria-label="Previous slide"
+          aria-label={t("remote.previousSlide")}
           className="border-ink shadow-hard-md enabled:hover:shadow-hard-lg flex min-h-24 flex-1 touch-manipulation flex-col items-center justify-center gap-2 rounded-[16px] border-[3px] bg-white text-base font-bold tracking-[0.08em] uppercase transition duration-150 ease-out enabled:active:scale-[0.985] enabled:active:shadow-[1px_1px_0_var(--color-ink)] disabled:opacity-40 disabled:shadow-none"
         >
           <span aria-hidden className="text-4xl leading-none">
             ←
           </span>
-          Back
+          {t("remote.back")}
         </button>
         <button
           type="button"
           onClick={() => go("next")}
           disabled={atEnd || !hasSlides || terminal !== null}
-          aria-label="Next slide"
+          aria-label={t("remote.nextSlide")}
           className="border-ink bg-coral shadow-hard-md enabled:hover:shadow-hard-lg flex min-h-24 flex-1 touch-manipulation flex-col items-center justify-center gap-2 rounded-[16px] border-[3px] text-base font-bold tracking-[0.08em] uppercase transition duration-150 ease-out enabled:active:scale-[0.985] enabled:active:shadow-[1px_1px_0_var(--color-ink)] disabled:opacity-40 disabled:shadow-none"
         >
           <span aria-hidden className="text-4xl leading-none">
             →
           </span>
-          Next
+          {t("remote.forward")}
         </button>
       </div>
 
@@ -165,7 +178,9 @@ export function RemoteDeck({
           error={actionError}
           onLaunch={() => run(() => launchActivityAction(state.activity!.id))}
           onClose={() => run(() => closeActivityAction(state.activity!.id))}
-          onRank={() => run(() => rankTextActivityAction(state.activity!.id))}
+          onRank={() =>
+            run(() => rankTextActivityAction(state.activity!.id, locale))
+          }
         />
       ) : state.live ? (
         <ElsewhereStrip
@@ -175,7 +190,7 @@ export function RemoteDeck({
           onClose={(type) =>
             run(() =>
               type === "text"
-                ? rankTextActivityAction(state.live!.id)
+                ? rankTextActivityAction(state.live!.id, locale)
                 : closeActivityAction(state.live!.id),
             )
           }
@@ -184,10 +199,10 @@ export function RemoteDeck({
 
       <footer className="flex items-center justify-between gap-3 px-4 pt-2 pb-4">
         <p className="text-muted text-xs font-semibold">
-          {hasSlides ? "" : "No slides uploaded yet"}
+          {hasSlides ? "" : t("remote.noSlides")}
         </p>
         <Link href={`/talks/${talkId}`} className="linky">
-          Back to talk
+          {t("remote.backToTalk")}
         </Link>
       </footer>
     </main>
@@ -209,6 +224,7 @@ function ActivityStrip({
   onClose: () => void;
   onRank: () => void;
 }) {
+  const t = useT();
   const isText = activity.type === "text";
 
   return (
@@ -227,10 +243,12 @@ function ActivityStrip({
         >
           {pending ? (
             <>
-              Launching… <LoadingDots />
+              {t("remote.launching")} <LoadingDots />
             </>
           ) : (
-            `Launch ${typeLabel(activity.type).toLowerCase()}`
+            t("activity.launch.button", {
+              type: t(typeLabel(activity.type)),
+            })
           )}
         </button>
       ) : null}
@@ -244,17 +262,18 @@ function ActivityStrip({
         >
           {pending ? (
             <>
-              {isText ? "Ranking…" : "Closing…"} <LoadingDots />
+              {isText ? t("remote.ranking") : t("remote.closing")}{" "}
+              <LoadingDots />
             </>
           ) : (
-            closeLabel(activity.type)
+            t(closeLabel(activity.type))
           )}
         </button>
       ) : null}
 
       {activity.status === "locked" ? (
         <span className="text-muted text-sm font-bold">
-          Ranking in progress — retry from the big screen if it fails.
+          {t("remote.rankingProgress")}
         </span>
       ) : null}
 
@@ -278,6 +297,7 @@ function ElsewhereStrip({
   error: string | null;
   onClose: (type: SlideLiveActivity["type"]) => void;
 }) {
+  const t = useT();
   const isText = activity.type === "text";
   const ranking = activity.status === "locked";
 
@@ -286,17 +306,19 @@ function ElsewhereStrip({
       <p className="text-ink flex flex-wrap items-center gap-2 text-sm font-bold">
         <span className="chip chip-live">
           <span className="pulse-dot" />
-          LIVE
+          {t("status.live")}
         </span>
         <ActivityTypeBadge type={activity.type} />
-        <span>{typeLabel(activity.type)} is live</span>
+        <span>{t("remote.isLive", { type: t(typeLabel(activity.type)) })}</span>
       </p>
       <p className="text-muted line-clamp-2 text-xs font-semibold">
         {activity.question}
       </p>
 
       {ranking ? (
-        <p className="text-muted text-sm font-bold">Ranking in progress</p>
+        <p className="text-muted text-sm font-bold">
+          {t("remote.rankingInProgress")}
+        </p>
       ) : (
         <button
           type="button"
@@ -306,10 +328,11 @@ function ElsewhereStrip({
         >
           {pending ? (
             <>
-              {isText ? "Ranking…" : "Closing…"} <LoadingDots />
+              {isText ? t("remote.ranking") : t("remote.closing")}{" "}
+              <LoadingDots />
             </>
           ) : (
-            closeLabel(activity.type)
+            t(closeLabel(activity.type))
           )}
         </button>
       )}

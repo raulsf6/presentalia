@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+
+import { useT } from "@/components/I18nProvider";
 
 /**
  * Full-screen explanation for a slide screen that cannot show the deck: no
@@ -36,9 +40,10 @@ export function SlideScreenMessage({
 
 /** The usual "back to the talk" action on these screens. */
 export function BackToTalk({ talkId }: { talkId: string }) {
+  const t = useT();
   return (
     <Link href={`/talks/${talkId}`} className="btn btn-ghost btn-small">
-      Back to talk
+      {t("remote.backToTalk")}
     </Link>
   );
 }

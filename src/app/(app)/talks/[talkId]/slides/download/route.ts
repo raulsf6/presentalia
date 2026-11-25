@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { getLocale } from "@/lib/i18n/server";
+import { createTranslator } from "@/lib/i18n/translate";
 import { loadTalkAccess } from "@/lib/talks/membership";
 import { createSupabaseServiceClient } from "@/lib/platform/supabase/service";
 
@@ -13,9 +15,14 @@ export async function GET(
   { params }: { params: Promise<{ talkId: string }> },
 ) {
   const { talkId } = await params;
+  const locale = await getLocale();
+  const t = createTranslator(locale);
   const access = await loadTalkAccess(talkId);
   if (!access || !access.talk.slidesUpdatedAt) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: t("errors.talk.notFound") },
+      { status: 404 },
+    );
   }
 
   const service = createSupabaseServiceClient();
@@ -25,7 +32,7 @@ export async function GET(
 
   if (error || !data?.signedUrl) {
     return NextResponse.json(
-      { error: "Slides are not available right now." },
+      { error: t("errors.slides.notAvailable") },
       { status: 503 },
     );
   }

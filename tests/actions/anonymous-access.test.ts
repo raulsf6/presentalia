@@ -124,7 +124,7 @@ describe("joinPublicTalkAction", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      error: expect.stringMatching(/closed/i),
+      errorKey: "errors.talk.joinClosed",
     });
     expect(mocks.setGuestCookie).not.toHaveBeenCalled();
     const guests = await exec(pglite, "select id from public.talk_guests");
@@ -149,7 +149,7 @@ describe("joinPublicTalkAction", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      error: expect.stringMatching(/taken/i),
+      errorKey: "errors.talk.usernameTaken",
     });
     expect(mocks.setGuestCookie).not.toHaveBeenCalled();
   });
@@ -241,7 +241,7 @@ describe("talk access switches", () => {
     });
     mocks.requireTalkManager.mockResolvedValue({
       ok: false,
-      error: "You can't manage this talk.",
+      errorKey: "errors.talk.cannotManage",
     });
 
     const result = await setTalkPublicAction(talkId, true);
@@ -343,7 +343,7 @@ describe("removeTalkGuestAction", () => {
     );
     mocks.requireTalkManager.mockResolvedValue({
       ok: false,
-      error: "You can't manage this talk.",
+      errorKey: "errors.talk.cannotManage",
     });
 
     const result = await removeTalkGuestAction(talkId, guestId);

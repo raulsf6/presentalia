@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
+import { I18nProvider } from "@/components/I18nProvider";
 import { VoteForm } from "@/components/VoteForm";
 import type { ActivityStatus } from "@/lib/activities/activities";
 import {
@@ -9,6 +10,8 @@ import {
   loadQuizWorkspace,
   type ActivityDetail,
 } from "@/lib/activities/activity-workspace";
+import { getLocale } from "@/lib/i18n/server";
+import { createTranslator } from "@/lib/i18n/translate";
 import { isAttendee, type TalkAccess } from "@/lib/talks/membership";
 
 /**
@@ -50,71 +53,75 @@ export async function QuizActivity({
     }
   }
 
+  const locale = await getLocale();
+  const t = createTranslator(locale);
+
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <div className="mb-8 flex items-center justify-between gap-4">
-        {isAttendee(access) ? (
-          <Link href={`/talks/${talkId}`} className="linky">
-            ← {access.talk.name}
-          </Link>
-        ) : null}
-        <div className="ml-auto">
-          {status === "active" ? (
-            <span className="chip chip-live">
-              <span className="pulse-dot" />
-              LIVE
-            </span>
+    <I18nProvider locale={locale}>
+      <main className="mx-auto w-full max-w-2xl px-6 py-12">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          {isAttendee(access) ? (
+            <Link href={`/talks/${talkId}`} className="linky">
+              ← {access.talk.name}
+            </Link>
           ) : null}
-        </div>
-      </div>
-
-      <h1 className="font-display text-ink mb-8 text-2xl">{quiz.question}</h1>
-
-      {!isAttendee(access) ? (
-        <section className="card flex flex-col gap-6 p-6">
-          <div className="flex flex-col gap-3">
-            <h2 className="section-label">Answer options</h2>
-            <ol className="text-ink list-inside list-decimal space-y-2 text-sm font-semibold">
-              {quiz.options.map((option) => (
-                <li key={option.id}>
-                  <span className="inline-flex flex-wrap items-center gap-2">
-                    {option.label}
-                    {option.isCorrect ? (
-                      <span className="chip chip-slide text-[0.65rem]">
-                        ✓ Correct answer
-                      </span>
-                    ) : null}
-                  </span>
-                </li>
-              ))}
-            </ol>
-            <p className="text-ink/75 text-sm font-semibold">
-              Results are{" "}
-              {quiz.resultsIdentifiable
-                ? "identifiable — voter names will be shown to all results viewers."
-                : "anonymous — voter identities will not appear in results."}
-            </p>
-            <p className="text-ink/75 text-sm font-semibold">
-              The correct answer is hidden from everyone until you close the
-              quiz.
-            </p>
+          <div className="ml-auto">
+            {status === "active" ? (
+              <span className="chip chip-live">
+                <span className="pulse-dot" />
+                {t("status.live")}
+              </span>
+            ) : null}
           </div>
-          <ActivityAdminControls
-            activityId={activityId}
-            kind="quiz"
-            status="ready"
-          />
-        </section>
-      ) : status === "ready" ? (
-        <p className="empty">
-          The quiz hasn&apos;t opened yet. Check back when the speaker launches
-          it.
-        </p>
-      ) : (
-        <section className="card p-6">
-          <VoteForm activityId={activityId} kind="quiz" options={voteOptions} />
-        </section>
-      )}
-    </main>
+        </div>
+
+        <h1 className="font-display text-ink mb-8 text-2xl">{quiz.question}</h1>
+
+        {!isAttendee(access) ? (
+          <section className="card flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-3">
+              <h2 className="section-label">{t("activity.answerOptions")}</h2>
+              <ol className="text-ink list-inside list-decimal space-y-2 text-sm font-semibold">
+                {quiz.options.map((option) => (
+                  <li key={option.id}>
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      {option.label}
+                      {option.isCorrect ? (
+                        <span className="chip chip-slide text-[0.65rem]">
+                          {t("activity.correctAnswer")}
+                        </span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <p className="text-ink/75 text-sm font-semibold">
+                {quiz.resultsIdentifiable
+                  ? t("activity.resultsIdentifiable")
+                  : t("activity.resultsAnonymous")}
+              </p>
+              <p className="text-ink/75 text-sm font-semibold">
+                {t("activity.correctHidden")}
+              </p>
+            </div>
+            <ActivityAdminControls
+              activityId={activityId}
+              kind="quiz"
+              status="ready"
+            />
+          </section>
+        ) : status === "ready" ? (
+          <p className="empty">{t("activity.notOpen.quiz")}</p>
+        ) : (
+          <section className="card p-6">
+            <VoteForm
+              activityId={activityId}
+              kind="quiz"
+              options={voteOptions}
+            />
+          </section>
+        )}
+      </main>
+    </I18nProvider>
   );
 }

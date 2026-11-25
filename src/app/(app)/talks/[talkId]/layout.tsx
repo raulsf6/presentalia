@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { HideInProjector } from "@/components/HideInProjector";
+import { I18nProvider } from "@/components/I18nProvider";
 import { TalkNav } from "@/components/TalkNav";
+import { getLocale } from "@/lib/i18n/server";
 import { isManager, loadTalkAccess } from "@/lib/talks/membership";
 
 /**
@@ -37,9 +39,12 @@ async function TalkChrome({
   if (!isManager(access)) {
     return null;
   }
+  const locale = await getLocale();
   return (
     <HideInProjector>
-      <TalkNav talkId={talkId} />
+      <I18nProvider locale={locale}>
+        <TalkNav talkId={talkId} />
+      </I18nProvider>
     </HideInProjector>
   );
 }

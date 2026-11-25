@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { submitQuizVoteAction } from "@/actions/quizzes";
 import { submitVoteAction } from "@/actions/vote";
+import { useT } from "@/components/I18nProvider";
+import { toErrorState, type ErrorState } from "@/lib/i18n/errors";
 
 export function VoteForm({
   activityId,
@@ -15,8 +17,9 @@ export function VoteForm({
   kind?: "poll" | "quiz";
   options: { id: string; label: string }[];
 }) {
+  const t = useT();
   const [selected, setSelected] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -29,7 +32,14 @@ export function VoteForm({
     startTransition(async () => {
       const result = await action(activityId, selected);
       if (!result.ok) {
-        setError(result.error ?? "Your vote was not accepted.");
+        setError(
+          toErrorState(
+            result,
+            kind === "quiz"
+              ? "errors.quiz.voteRejected"
+              : "errors.poll.voteRejected",
+          ),
+        );
         return;
       }
       if (!result.talkId) {
@@ -60,7 +70,7 @@ export function VoteForm({
         className="flex flex-col gap-2.5"
         disabled={pending || celebrating}
       >
-        <legend className="sr-only">Choose one answer</legend>
+        <legend className="sr-only">{t("vote.legend")}</legend>
         {options.map((option) => {
           const isSelected = selected === option.id;
           return (
@@ -88,21 +98,19 @@ export function VoteForm({
           );
         })}
       </fieldset>
-      <p className="text-muted text-xs font-medium">
-        Your vote is final and cannot be changed.
-      </p>
+      <p className="text-muted text-xs font-medium">{t("vote.final")}</p>
       <div className={`vote-celebrate ${celebrating ? "is-celebrating" : ""}`}>
         <button
           type="submit"
           disabled={!selected || pending || celebrating}
           className="vote-btn"
         >
-          {pending ? "Submitting…" : "Submit my vote"}
+          {pending ? t("vote.submitting") : t("vote.submit")}
         </button>
       </div>
       {error ? (
         <p role="alert" className="text-red text-sm font-bold">
-          {error}
+          {t(error.key, error.params)}
         </p>
       ) : null}
     </form>

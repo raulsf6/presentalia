@@ -36,7 +36,7 @@ describe("requireAdmin", () => {
 
     await expect(requireAdmin()).resolves.toEqual({
       ok: false,
-      error: "Only the admin can do this.",
+      errorKey: "errors.auth.adminOnly",
     });
   });
 

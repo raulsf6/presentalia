@@ -5,8 +5,11 @@ import { Suspense } from "react";
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
 import { ActivityResultsBody } from "@/components/ActivityResultsBody";
 import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
+import { I18nProvider } from "@/components/I18nProvider";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { TextActivityControls } from "@/components/TextActivityControls";
+import { getLocale } from "@/lib/i18n/server";
+import { createTranslator } from "@/lib/i18n/translate";
 import { loadActivityPageContext } from "@/lib/activities/activity-workspace";
 import { loadActivityResults } from "@/lib/activities/activity-results";
 import { isManager } from "@/lib/talks/membership";
@@ -70,47 +73,51 @@ async function ActivityResultsContent({
       : loaded.type === "cloud"
         ? "cloud"
         : "poll";
+  const locale = await getLocale();
+  const t = createTranslator(locale);
 
   return (
-    <main
-      className={`mx-auto w-full px-6 py-8 ${
-        projector ? "max-w-7xl" : "max-w-3xl"
-      }`}
-    >
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <Link href={`/talks/${talkId}`} className="linky">
-          ← {access.talk.name}
-        </Link>
-        <Link href={toggleHref} className="btn btn-ghost btn-small">
-          {projector ? "Attendee view" : "Projector view"}
-        </Link>
-      </div>
-      {textResults && textControls ? (
-        <div className="mb-6">
-          <TextActivityControls
-            activityId={activityId}
-            status={loaded.status as "active" | "locked"}
-            runStatus={textResults.run?.status ?? null}
-            answerCount={textResults.activity.totalAnswers}
-          />
+    <I18nProvider locale={locale}>
+      <main
+        className={`mx-auto w-full px-6 py-8 ${
+          projector ? "max-w-7xl" : "max-w-3xl"
+        }`}
+      >
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Link href={`/talks/${talkId}`} className="linky">
+            ← {access.talk.name}
+          </Link>
+          <Link href={toggleHref} className="btn btn-ghost btn-small">
+            {projector ? t("results.attendeeView") : t("results.projectorView")}
+          </Link>
         </div>
-      ) : !projector && manager && loaded.status === "active" ? (
-        <div className="mb-6">
-          <ActivityAdminControls
-            activityId={activityId}
-            kind={kind}
-            status="active"
-          />
-        </div>
-      ) : null}
-      <div className="relative">
-        {projector ? (
-          <div className="pointer-events-none absolute -top-2 right-0 z-10">
-            <ActivityTypeBadge type={loaded.type} size="lg" />
+        {textResults && textControls ? (
+          <div className="mb-6">
+            <TextActivityControls
+              activityId={activityId}
+              status={loaded.status as "active" | "locked"}
+              runStatus={textResults.run?.status ?? null}
+              answerCount={textResults.activity.totalAnswers}
+            />
+          </div>
+        ) : !projector && manager && loaded.status === "active" ? (
+          <div className="mb-6">
+            <ActivityAdminControls
+              activityId={activityId}
+              kind={kind}
+              status="active"
+            />
           </div>
         ) : null}
-        <ActivityResultsBody loaded={loaded} projector={projector} />
-      </div>
-    </main>
+        <div className="relative">
+          {projector ? (
+            <div className="pointer-events-none absolute -top-2 right-0 z-10">
+              <ActivityTypeBadge type={loaded.type} size="lg" />
+            </div>
+          ) : null}
+          <ActivityResultsBody loaded={loaded} projector={projector} />
+        </div>
+      </main>
+    </I18nProvider>
   );
 }

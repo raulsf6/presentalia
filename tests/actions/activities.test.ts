@@ -111,7 +111,7 @@ describe("activity push notifications", () => {
     const { activityId } = await setup();
     mocks.requireTalkManager.mockResolvedValue({
       ok: false,
-      error: "You can't manage this talk.",
+      errorKey: "errors.talk.cannotManage",
     });
 
     const result = await launchActivityAction(activityId);

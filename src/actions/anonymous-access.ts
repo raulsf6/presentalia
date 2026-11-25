@@ -14,8 +14,9 @@ import {
   isTalkId,
   validateGuestUsername,
 } from "@/lib/talks/talk-guests";
+import type { ActionFailure } from "@/lib/i18n/errors";
 
-export type AnonymousAccessResult = { ok: boolean; error?: string };
+export type AnonymousAccessResult = { ok: true } | ActionFailure;
 
 /** Admit an anonymous attendee to a public talk that is accepting joins. */
 export async function joinPublicTalkAction(
@@ -24,7 +25,7 @@ export async function joinPublicTalkAction(
   formData: FormData,
 ): Promise<AnonymousAccessResult> {
   if (!isTalkId(talkId)) {
-    return { ok: false, error: "This talk is not available." };
+    return { ok: false, errorKey: "errors.talk.notAvailable" };
   }
 
   const db = getDb();
@@ -38,10 +39,10 @@ export async function joinPublicTalkAction(
     .limit(1);
 
   if (!talk || !talk.isPublic) {
-    return { ok: false, error: "This talk is not available." };
+    return { ok: false, errorKey: "errors.talk.notAvailable" };
   }
   if (!talk.anonymousJoinOpen) {
-    return { ok: false, error: "Joining for this talk is closed." };
+    return { ok: false, errorKey: "errors.talk.joinClosed" };
   }
 
   const validation = validateGuestUsername(
@@ -68,7 +69,7 @@ export async function joinPublicTalkAction(
     if (isUniqueViolation(error)) {
       return {
         ok: false,
-        error: "That username is already taken in this talk.",
+        errorKey: "errors.talk.usernameTaken",
       };
     }
     throw error;
@@ -114,7 +115,7 @@ export async function setAnonymousJoinOpenAction(
     return guard;
   }
   if (!guard.talk.isPublic && joinOpen) {
-    return { ok: false, error: "Make the talk public first." };
+    return { ok: false, errorKey: "errors.talk.publicRequired" };
   }
 
   await getDb()
@@ -154,7 +155,7 @@ export async function removeTalkGuestAction(
     .returning({ id: talkGuests.id });
 
   if (removed.length === 0) {
-    return { ok: false, error: "That guest is no longer in this talk." };
+    return { ok: false, errorKey: "errors.talk.guestGone" };
   }
 
   revalidateTalkSettings(talkId);

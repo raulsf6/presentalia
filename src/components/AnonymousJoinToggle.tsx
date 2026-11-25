@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { setAnonymousJoinOpenAction } from "@/actions/anonymous-access";
+import { useT } from "@/components/I18nProvider";
+import { toErrorState, type ErrorState } from "@/lib/i18n/errors";
 
 export function AnonymousJoinToggle({
   talkId,
@@ -12,9 +14,10 @@ export function AnonymousJoinToggle({
   talkId: string;
   joinOpen: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   async function toggle() {
     setError(null);
@@ -22,7 +25,7 @@ export function AnonymousJoinToggle({
     try {
       const result = await setAnonymousJoinOpenAction(talkId, !joinOpen);
       if (!result.ok) {
-        setError(result.error ?? "That change could not be saved.");
+        setError(toErrorState(result, "errors.generic.save"));
       } else {
         router.refresh();
       }
@@ -39,11 +42,11 @@ export function AnonymousJoinToggle({
         disabled={pending}
         onClick={toggle}
       >
-        {joinOpen ? "Close joining" : "Open joining"}
+        {joinOpen ? t("privacy.closeJoining") : t("privacy.openJoining")}
       </button>
       {error ? (
         <p role="alert" className="text-red text-sm font-bold">
-          {error}
+          {t(error.key, error.params)}
         </p>
       ) : null}
     </div>

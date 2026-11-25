@@ -227,7 +227,7 @@ describe("submitTextAnswerAction", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "This activity is not accepting answers.",
+      errorKey: "errors.text.notAccepting",
     });
   });
 
@@ -239,7 +239,7 @@ describe("submitTextAnswerAction", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "You have already answered this activity.",
+      errorKey: "errors.text.alreadyAnswered",
     });
   });
 });
@@ -283,6 +283,22 @@ describe("rankTextActivityAction", () => {
     expect(mocks.publishActivityStatusChanged).toHaveBeenCalledWith(f.talkId, {
       activityId: f.activityId,
     });
+  });
+
+  test("asks the model for Spanish output when the locale is Spanish", async () => {
+    const f = await setup();
+    const first = await addAnswer(f, f.member, "Ship the small thing.");
+    const second = await addAnswer(f, f.other, "Talk to users first.");
+    mocks.generate.mockResolvedValue({
+      output: validOutput({ first, second }),
+    });
+
+    const result = await rankTextActivityAction(f.activityId, "es");
+
+    expect(result).toEqual({ ok: true });
+    expect(mocks.generate).toHaveBeenCalledTimes(1);
+    const { system } = mocks.generate.mock.calls[0][0];
+    expect(system).toContain("in Spanish");
   });
 
   test("ranks guest answers alongside member answers", async () => {
@@ -371,7 +387,8 @@ describe("rankTextActivityAction", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "Too many answers to rank (101). Publish all answers instead.",
+      errorKey: "errors.text.tooManyAnswers",
+      errorParams: { count: 101, limit: 100 },
     });
     expect(activity.rows[0]).toEqual({ status: "active" });
     expect(runs[0]?.count).toBe(0);
@@ -452,7 +469,7 @@ describe("publishTextUnrankedAction", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "Ranking is still running. Wait for it to finish or time out.",
+      errorKey: "errors.text.rankingStillRunning",
     });
     expect(activity.rows[0]).toEqual({ status: "locked" });
   });
