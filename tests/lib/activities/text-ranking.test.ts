@@ -5,6 +5,7 @@ import {
   RankingError,
   buildRankingPrompt,
   orderRanking,
+  rankingOutputSchema,
   rankTextAnswers,
   validateRankingOutput,
   type RankingAnswer,
@@ -51,6 +52,8 @@ describe("buildRankingPrompt", () => {
     expect(prompt.system).toMatch(/untrusted/i);
     expect(prompt.system).toMatch(/never follow/i);
     expect(prompt.system).toMatch(/reason of at most 120 characters/i);
+    expect(prompt.system).toMatch(/rationale to null/i);
+    expect(prompt.system).toMatch(/"ranked"/);
     expect(prompt.user).toContain("Most actionable");
     for (const answer of answers) {
       expect(prompt.user).toContain(answer.id);
@@ -155,32 +158,84 @@ describe("validateRankingOutput", () => {
     });
   });
 
-  test("rejects an out-of-range score", () => {
+  test("rounds and clamps scores instead of failing the run", () => {
     const result = validateRankingOutput(
       {
-        ...validOutput(),
+        dropped: [],
+        summary: "ok",
         ranked: [
           { id: "a", score: 101 },
-          { id: "b", score: 90 },
-          { id: "c", score: 60 },
+          { id: "b", score: 87.4 },
+          { id: "c", score: -3 },
         ],
       },
       answers,
     );
 
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error).toMatch(/invalid/i);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.ranked.map((row) => row.score)).toEqual([100, 87, 0]);
     }
   });
 
-  test("rejects an over-long summary", () => {
+  test("truncates over-long rationale, reasons, and summaries", () => {
     const result = validateRankingOutput(
-      { ...validOutput(), summary: "x".repeat(301) },
+      {
+        ranked: [
+          { id: "a", score: 90, rationale: "y".repeat(275) },
+          { id: "b", score: 80, rationale: null },
+        ],
+        dropped: [{ id: "c", reason: "z".repeat(130) }],
+        summary: "s".repeat(350),
+      },
       answers,
     );
 
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.ranked[0]?.rationale).toHaveLength(200);
+      expect(result.dropped[0]?.reason).toHaveLength(120);
+      expect(result.summary).toHaveLength(300);
+    }
+  });
+
+  test("falls back to a null rationale when the model sends unusable content", () => {
+    const result = validateRankingOutput(
+      {
+        ranked: [
+          { id: "a", score: 90, rationale: 123 },
+          { id: "b", score: 80 },
+          { id: "c", score: 60 },
+        ],
+        dropped: [],
+        summary: "ok",
+      },
+      answers,
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.ranked[0]?.rationale).toBeNull();
+    }
+  });
+
+  test("tolerates missing arrays when every answer is accounted for", () => {
+    const result = validateRankingOutput(
+      {
+        ranked: [
+          { id: "a", score: 90 },
+          { id: "b", score: 80 },
+          { id: "c", score: 60 },
+        ],
+        summary: "ok",
+      },
+      answers,
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.dropped).toEqual([]);
+    }
   });
 });
 
@@ -262,6 +317,51 @@ describe("rankTextAnswers", () => {
     );
     expect(generate.mock.calls[1][0].user).not.toContain("x".repeat(301));
     expect(result.ranked).toHaveLength(3);
+  });
+
+  test("feeds the failing field back when the SDK reports a schema violation", async () => {
+    const parsed = rankingOutputSchema.safeParse({
+      ranked: [{ id: "a", score: "87" }],
+    });
+    const schemaError = new NoObjectGeneratedError({
+      message: "No object generated: response did not match schema.",
+      text: JSON.stringify({ ranked: [{ id: "a", score: "87" }] }),
+      response: {} as never,
+      usage: {} as never,
+      finishReason: "stop",
+      cause: parsed.error,
+    });
+    const generate = vi
+      .fn()
+      .mockRejectedValueOnce(schemaError)
+      .mockResolvedValueOnce({ output: validOutput() });
+
+    const result = await rankTextAnswers(
+      { prompt: "What next?", criteria: "Most actionable", answers },
+      generate,
+    );
+
+    expect(result.ranked).toHaveLength(3);
+    expect(generate.mock.calls[1][0].user).toMatch(/ranked\.0\.score/i);
+  });
+
+  test("names the token limit when the model output was cut off", async () => {
+    const generate = vi.fn().mockRejectedValue(
+      new NoObjectGeneratedError({
+        message: "No object generated: could not parse the response.",
+        text: "{",
+        response: {} as never,
+        usage: {} as never,
+        finishReason: "length",
+      }),
+    );
+
+    await expect(
+      rankTextAnswers(
+        { prompt: "What next?", criteria: "Most actionable", answers },
+        generate,
+      ),
+    ).rejects.toThrow(/cut off at the output token limit/);
   });
 
   test("fails after two invalid outputs", async () => {
