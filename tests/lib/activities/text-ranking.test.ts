@@ -143,7 +143,7 @@ describe("validateRankingOutput", () => {
     });
   });
 
-  test("rejects a missing answer", () => {
+  test("rejects a missing answer and names it", () => {
     const result = validateRankingOutput(
       {
         ...validOutput(),
@@ -152,10 +152,11 @@ describe("validateRankingOutput", () => {
       answers,
     );
 
-    expect(result).toEqual({
-      ok: false,
-      error: "Ranking did not account for every answer.",
-    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/^Ranking did not account for every answer/);
+      expect(result.error).toContain("omitted 1 answer (c)");
+    }
   });
 
   test("rounds and clamps scores instead of failing the run", () => {
@@ -362,6 +363,25 @@ describe("rankTextAnswers", () => {
         generate,
       ),
     ).rejects.toThrow(/cut off at the output token limit/);
+  });
+
+  test("names the omitted answers in the retry prompt", async () => {
+    const partial = {
+      ...validOutput(),
+      ranked: validOutput().ranked.slice(0, 2),
+    };
+    const generate = vi
+      .fn()
+      .mockResolvedValueOnce({ output: partial })
+      .mockResolvedValueOnce({ output: validOutput() });
+
+    const result = await rankTextAnswers(
+      { prompt: "What next?", criteria: "Most actionable", answers },
+      generate,
+    );
+
+    expect(result.ranked).toHaveLength(3);
+    expect(generate.mock.calls[1][0].user).toMatch(/omitted 1 answer \(c\)/);
   });
 
   test("fails after two invalid outputs", async () => {

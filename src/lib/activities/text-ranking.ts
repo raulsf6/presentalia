@@ -151,8 +151,23 @@ export function validateRankingOutput(
     }
     seen.add(row.id);
   }
-  if (seen.size !== answers.length) {
-    return { ok: false, error: "Ranking did not account for every answer." };
+  const missing = answers
+    .filter((answer) => !seen.has(answer.id))
+    .map((answer) => answer.id);
+  if (missing.length > 0) {
+    const listed = missing.slice(0, 20);
+    const rest = missing.length - listed.length;
+    const idList = [
+      listed.join(", "),
+      ...(rest > 0 ? [`and ${rest} more`] : []),
+    ]
+      .filter(Boolean)
+      .join(", ");
+    const plural = missing.length === 1 ? "" : "s";
+    return {
+      ok: false,
+      error: `Ranking did not account for every answer: it omitted ${missing.length} answer${plural} (${idList}).`,
+    };
   }
 
   const summary = parsed.data.summary.trim();
