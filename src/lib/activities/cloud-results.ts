@@ -14,6 +14,7 @@ import {
   isManager,
   type TalkAccess,
 } from "@/lib/talks/membership";
+import { countTalkAttendees } from "@/lib/talks/talk-attendees";
 
 export type CloudResultsMode = "waiting" | "live" | "final";
 
@@ -27,6 +28,7 @@ export type CloudResultsSource = {
   };
   entries: CloudIdeaEntry[];
   viewer: { isAttendee: boolean; hasAnswered: boolean };
+  attendees: number;
 };
 
 export type CloudResultsPayload = {
@@ -44,6 +46,7 @@ export type CloudResultsPayload = {
   items: CloudItem[];
   hiddenIdeas: number;
   viewer: { hasAnswered: boolean };
+  attendees: number;
 };
 
 /**
@@ -76,6 +79,7 @@ export function buildCloudResultsPayload(
     items,
     hiddenIdeas: canSeeCloud ? allItems.length - items.length : 0,
     viewer: { hasAnswered: viewer.hasAnswered },
+    attendees: source.attendees,
   };
 }
 
@@ -142,5 +146,6 @@ export async function loadCloudResults(
       createdAt: entry.createdAt,
     })),
     viewer: { isAttendee: attendee, hasAnswered },
+    attendees: await countTalkAttendees(activity.talkId, db),
   });
 }

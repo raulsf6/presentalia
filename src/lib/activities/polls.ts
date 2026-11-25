@@ -1,8 +1,4 @@
-import type {
-  ActivityStatus,
-  ActivityType,
-  ChoiceResultsRow,
-} from "@/lib/activities/activities";
+import type { ActivityStatus, ActivityType } from "@/lib/activities/activities";
 import type { ErrorKey } from "@/lib/i18n/dictionaries/en";
 
 export type { ActivityStatus, ActivityType };
@@ -12,22 +8,6 @@ export {
   canVote,
   computeResults,
 } from "@/lib/activities/activities";
-
-export type PollResultsRow = ChoiceResultsRow;
-
-export type PollResultsPayload = {
-  poll: {
-    id: string;
-    talkId: string;
-    question: string;
-    status: ActivityStatus;
-    resultsIdentifiable: boolean;
-    closedAt: string | null;
-  };
-  rows: PollResultsRow[];
-  total: number;
-  voters: { optionId: string; name: string }[] | null;
-};
 
 const QUESTION_MAX_LENGTH = 500;
 const QUESTION_MIN_LENGTH = 1;

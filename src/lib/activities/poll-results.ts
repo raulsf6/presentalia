@@ -10,12 +10,27 @@ import {
   polls,
   talkGuests,
 } from "@/db/schema";
+import { countTalkAttendees } from "@/lib/talks/talk-attendees";
 import type { TalkAccess } from "@/lib/talks/membership";
-import {
-  computeResults,
-  type ActivityStatus,
-  type PollResultsPayload,
-} from "@/lib/activities/polls";
+import type { ChoiceResultsRow } from "@/lib/activities/activities";
+import { computeResults, type ActivityStatus } from "@/lib/activities/polls";
+
+export type PollResultsRow = ChoiceResultsRow;
+
+export type PollResultsPayload = {
+  poll: {
+    id: string;
+    talkId: string;
+    question: string;
+    status: ActivityStatus;
+    resultsIdentifiable: boolean;
+    closedAt: string | null;
+  };
+  rows: PollResultsRow[];
+  total: number;
+  voters: { optionId: string; name: string }[] | null;
+  attendees: number;
+};
 
 type PollSource = {
   id: string;
@@ -31,6 +46,7 @@ export type PollResultsSource = {
   options: { id: string; label: string }[];
   counts: { optionId: string; votes: number }[];
   votes?: { optionId: string; name: string }[];
+  attendees: number;
 };
 
 const POLL_RESULTS_CACHE_TTL_MS = 2_000;
@@ -120,6 +136,7 @@ export function buildPollResultsPayload(
     rows,
     total,
     voters: source.poll.resultsIdentifiable ? (source.votes ?? []) : null,
+    attendees: source.attendees,
   };
 }
 
@@ -157,7 +174,11 @@ export async function loadPollResults(
 
   const cached = fresh ? null : readCachedPollData(pollId);
   if (cached) {
-    return buildPollResultsPayload({ poll, ...cached.data });
+    return buildPollResultsPayload({
+      poll,
+      ...cached.data,
+      attendees: await countTalkAttendees(poll.talkId, db),
+    });
   }
 
   const optionRows = await db
@@ -205,5 +226,9 @@ export async function loadPollResults(
 
   const data = { options, counts, votes };
   writeCachedPollData(pollId, data);
-  return buildPollResultsPayload({ poll, ...data });
+  return buildPollResultsPayload({
+    poll,
+    ...data,
+    attendees: await countTalkAttendees(poll.talkId, db),
+  });
 }

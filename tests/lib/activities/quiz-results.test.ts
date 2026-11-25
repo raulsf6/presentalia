@@ -87,6 +87,7 @@ describe("buildQuizResultsPayload", () => {
       counts,
       viewer: { isAttendee: false, hasVoted: false, optionId: null },
       projector: false,
+      attendees: 2,
     });
 
     expect(payload?.needsVote).toBe(false);
@@ -97,6 +98,8 @@ describe("buildQuizResultsPayload", () => {
     ]);
     expect(payload?.rows).toEqual([]);
     expect(payload?.total).toBeNull();
+    expect(payload?.answeredTotal).toBe(4);
+    expect(payload?.attendees).toBe(2);
     expect(payload?.quiz.correctOptionId).toBeNull();
     expect(payload?.quiz.correctVotes).toBeNull();
     expect(payload?.viewer).toBeNull();
@@ -110,6 +113,7 @@ describe("buildQuizResultsPayload", () => {
       counts,
       viewer: { isAttendee: true, hasVoted: false, optionId: null },
       projector: false,
+      attendees: 2,
     });
 
     expect(payload?.needsVote).toBe(true);
@@ -125,6 +129,7 @@ describe("buildQuizResultsPayload", () => {
       counts,
       viewer: votedViewer,
       projector: false,
+      attendees: 2,
     });
 
     expect(payload?.needsVote).toBe(false);
@@ -147,6 +152,7 @@ describe("buildQuizResultsPayload", () => {
       counts,
       viewer: votedViewer,
       projector: true,
+      attendees: 2,
     });
 
     expect(payload?.showResults).toBe(false);
@@ -161,6 +167,7 @@ describe("buildQuizResultsPayload", () => {
       counts,
       viewer: votedViewer,
       projector: false,
+      attendees: 2,
     });
 
     expect(payload?.showResults).toBe(true);
@@ -177,6 +184,7 @@ describe("buildQuizResultsPayload", () => {
       counts,
       viewer: { isAttendee: true, hasVoted: true, optionId: "option-b" },
       projector: false,
+      attendees: 2,
     });
 
     expect(payload?.viewer).toEqual({ optionId: "option-b", correct: true });
@@ -191,6 +199,7 @@ describe("buildQuizResultsPayload", () => {
       votes,
       viewer: votedViewer,
       projector: false,
+      attendees: 2,
     });
     const manager = buildQuizResultsPayload({
       quiz: { ...quiz, resultsIdentifiable: true },
@@ -199,6 +208,7 @@ describe("buildQuizResultsPayload", () => {
       votes,
       viewer: { isAttendee: false, hasVoted: false, optionId: null },
       projector: false,
+      attendees: 2,
     });
 
     expect(live?.voters).toEqual(votes);
@@ -213,6 +223,7 @@ describe("buildQuizResultsPayload", () => {
       votes: [{ optionId: "option-b", name: "private@example.com" }],
       viewer: votedViewer,
       projector: false,
+      attendees: 2,
     });
 
     expect(payload?.voters).toBeNull();
@@ -227,6 +238,7 @@ describe("buildQuizResultsPayload", () => {
         counts: [],
         viewer: votedViewer,
         projector: false,
+        attendees: 2,
       }),
     ).toBeNull();
   });

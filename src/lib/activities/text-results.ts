@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import type { ActivityStatus } from "@/lib/activities/activities";
 import { attendeeVoteKey, type TalkAccess } from "@/lib/talks/membership";
+import { countTalkAttendees } from "@/lib/talks/talk-attendees";
 export type TextResultsMode = "waiting" | "ranking" | "ranked" | "unranked";
 
 export type TextResultsAnswer = {
@@ -52,6 +53,7 @@ export type TextResultsSource = {
   rankings: TextResultsRanking[];
   viewer: { isAttendee: boolean; hasAnswered: boolean };
   projector: boolean;
+  attendees: number;
 };
 
 export type TextResultsRow = {
@@ -87,6 +89,7 @@ export type TextResultsPayload = {
   summary: string | null;
   droppedCount: number;
   viewer: { hasAnswered: boolean };
+  attendees: number;
 };
 
 /**
@@ -207,6 +210,7 @@ export function buildTextResultsPayload(
       ? source.rankings.filter((ranking) => ranking.dropReason !== null).length
       : 0,
     viewer: { hasAnswered: viewer.hasAnswered },
+    attendees: source.attendees,
   };
 }
 
@@ -327,5 +331,6 @@ export async function loadTextResults(
       }),
     },
     projector,
+    attendees: await countTalkAttendees(activity.talkId, db),
   });
 }

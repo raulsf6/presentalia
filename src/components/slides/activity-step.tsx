@@ -10,12 +10,12 @@ import { rankTextActivityAction } from "@/actions/text";
 import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
 import { CloudLiveResults } from "@/components/CloudLiveResults";
 import { useT, useLocale } from "@/components/I18nProvider";
-import { LiveResults } from "@/components/LiveResults";
+import { PollLiveResults } from "@/components/PollLiveResults";
 import { LoadingDots } from "@/components/LoadingDots";
 import { QuizLiveResults } from "@/components/QuizLiveResults";
 import { TextLiveResults } from "@/components/TextLiveResults";
 import type { CloudResultsPayload } from "@/lib/activities/cloud-results";
-import type { PollResultsPayload } from "@/lib/activities/polls";
+import type { PollResultsPayload } from "@/lib/activities/poll-results";
 import type { QuizResultsPayload } from "@/lib/activities/quiz-results";
 import type { TextResultsPayload } from "@/lib/activities/text-results";
 import type { SlideActivity } from "@/lib/deck/slide-state";
@@ -225,7 +225,7 @@ export function ActivityStep({
           ) : activity.status === "ready" ? (
             <WaitingView payload={payload} />
           ) : payload.type === "poll" ? (
-            <LiveResults
+            <PollLiveResults
               key={`${activity.id}-${activity.status}`}
               initial={payload.payload}
               projector={true}

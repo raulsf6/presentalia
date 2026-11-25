@@ -1,5 +1,6 @@
 "use client";
 
+import { AnsweredCounter } from "@/components/AnsweredCounter";
 import { useT } from "@/components/I18nProvider";
 import { useLiveResults } from "@/components/useLiveResults";
 import type { CloudItem } from "@/lib/activities/cloud-activity";
@@ -66,7 +67,7 @@ export function CloudLiveResults({
     );
   }
 
-  const { activity, mode, items, hiddenIdeas } = payload;
+  const { activity, mode, items, hiddenIdeas, attendees } = payload;
   const large = projector;
   const closed = activity.status === "closed";
   const maxCount = items.reduce(
@@ -86,6 +87,11 @@ export function CloudLiveResults({
               {t("status.live")}
             </span>
           )}
+          <AnsweredCounter
+            answered={activity.totalIdeas}
+            attendees={attendees}
+            large={large}
+          />
           <span
             className={`text-muted font-bold ${large ? "text-lg" : "text-sm"}`}
           >

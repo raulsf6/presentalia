@@ -1,5 +1,5 @@
 import { CloudLiveResults } from "@/components/CloudLiveResults";
-import { LiveResults } from "@/components/LiveResults";
+import { PollLiveResults } from "@/components/PollLiveResults";
 import { QuizLiveResults } from "@/components/QuizLiveResults";
 import { TextLiveResults } from "@/components/TextLiveResults";
 import type { LoadedActivityResults } from "@/lib/activities/activity-results";
@@ -17,7 +17,11 @@ export function ActivityResultsBody({
   switch (loaded.type) {
     case "poll":
       return (
-        <LiveResults key={key} initial={loaded.payload} projector={projector} />
+        <PollLiveResults
+          key={key}
+          initial={loaded.payload}
+          projector={projector}
+        />
       );
     case "quiz":
       return (

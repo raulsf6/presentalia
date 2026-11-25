@@ -4,7 +4,7 @@ import { getDb, type Db } from "@/db";
 import { activities } from "@/db/schema";
 import type { TalkAccess } from "@/lib/talks/membership";
 import { loadPollResults } from "@/lib/activities/poll-results";
-import type { PollResultsPayload } from "@/lib/activities/polls";
+import type { PollResultsPayload } from "@/lib/activities/poll-results";
 import {
   loadQuizResults,
   type QuizResultsPayload,
@@ -25,6 +25,11 @@ export type DeckActivityPayload =
   | { type: "text"; payload: TextResultsPayload }
   | { type: "cloud"; payload: CloudResultsPayload };
 
+export type LoadDeckActivityOptions = {
+  db?: Db;
+  fresh?: boolean;
+};
+
 /**
  * Loads an activity for the projector, whatever its status. The attendee
  * routes hide a ready activity; the deck must show it before the launch.
@@ -36,7 +41,7 @@ export async function loadDeckActivity(
   talkId: string,
   activityId: string,
   access: TalkAccess,
-  db: Db = getDb(),
+  { db = getDb(), fresh = false }: LoadDeckActivityOptions = {},
 ): Promise<DeckActivityPayload | null> {
   const [activity] = await db
     .select({ type: activities.type, talkId: activities.talkId })
@@ -48,13 +53,14 @@ export async function loadDeckActivity(
   }
 
   if (activity.type === "poll") {
-    const payload = await loadPollResults(activityId, access, { db });
+    const payload = await loadPollResults(activityId, access, { db, fresh });
     return payload ? { type: "poll", payload } : null;
   }
   if (activity.type === "quiz") {
     const payload = await loadQuizResults(activityId, access, {
       db,
       projector: true,
+      fresh,
     });
     return payload ? { type: "quiz", payload } : null;
   }

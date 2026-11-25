@@ -5,7 +5,7 @@ import {
   type CloudResultsPayload,
 } from "@/lib/activities/cloud-results";
 import { loadPollResults } from "@/lib/activities/poll-results";
-import type { PollResultsPayload } from "@/lib/activities/polls";
+import type { PollResultsPayload } from "@/lib/activities/poll-results";
 import {
   loadQuizResults,
   type QuizResultsPayload,

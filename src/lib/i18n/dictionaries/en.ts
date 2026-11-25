@@ -291,6 +291,9 @@ export const en = {
     "Results are temporarily unavailable. Refresh to try again.",
   "results.response.one": "{count} response",
   "results.response.other": "{count} responses",
+  "results.answeredCount.one": "{answered}/{attendees} attendees have answered",
+  "results.answeredCount.other":
+    "{answered}/{attendees} attendees have answered",
   "results.resultsAnonymous": "Results are anonymous.",
   "results.autoUpdate": "Results update automatically as votes arrive.",
   "results.quizVoteFirst":

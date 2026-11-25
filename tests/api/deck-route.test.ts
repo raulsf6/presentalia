@@ -83,9 +83,36 @@ describe("GET /api/talks/[talkId]/activities/[activityId]/deck", () => {
       "talk-1",
       "activity-1",
       managerAccess,
+      { fresh: false },
     );
     expect(await response.json()).toMatchObject({
       poll: { id: "activity-1", status: "ready" },
     });
+  });
+
+  test("bypasses the results cache when fresh is requested", async () => {
+    mocks.loadDeckActivity.mockResolvedValue({
+      type: "poll",
+      payload: {
+        poll: { id: "activity-1", status: "active" },
+        rows: [],
+        total: 0,
+      },
+    });
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/talks/talk-1/activities/activity-1/deck?fresh=1",
+      ),
+      { params },
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.loadDeckActivity).toHaveBeenCalledWith(
+      "talk-1",
+      "activity-1",
+      managerAccess,
+      { fresh: true },
+    );
   });
 });

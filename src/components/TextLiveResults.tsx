@@ -1,5 +1,6 @@
 "use client";
 
+import { AnsweredCounter } from "@/components/AnsweredCounter";
 import { useT } from "@/components/I18nProvider";
 import { useLiveResults } from "@/components/useLiveResults";
 import { isRemovedAnswer } from "@/lib/activities/text-activity";
@@ -36,7 +37,16 @@ export function TextLiveResults({
     );
   }
 
-  const { activity, mode, rows, summary, dropped, droppedCount, run } = payload;
+  const {
+    activity,
+    mode,
+    rows,
+    summary,
+    dropped,
+    droppedCount,
+    run,
+    attendees,
+  } = payload;
   const large = projector;
   const closed = activity.status === "closed";
   const ranked = mode === "ranked";
@@ -53,16 +63,11 @@ export function TextLiveResults({
               {t("status.live")}
             </span>
           )}
-          {closed ? (
-            <span className="text-muted text-sm font-bold">
-              {t(
-                activity.totalAnswers === 1
-                  ? "text.controls.answerCount.one"
-                  : "text.controls.answerCount.other",
-                { count: activity.totalAnswers },
-              )}
-            </span>
-          ) : null}
+          <AnsweredCounter
+            answered={activity.totalAnswers}
+            attendees={attendees}
+            large={large}
+          />
         </div>
         <h1
           className={`font-display text-ink tracking-tight ${

@@ -20,6 +20,7 @@ import {
   isAttendee,
   type TalkAccess,
 } from "@/lib/talks/membership";
+import { countTalkAttendees } from "@/lib/talks/talk-attendees";
 
 export type QuizResultsRow = ChoiceResultsRow;
 
@@ -42,6 +43,8 @@ export type QuizResultsPayload = {
   total: number | null;
   voters: { optionId: string; name: string }[] | null;
   viewer: { optionId: string; correct: boolean } | null;
+  attendees: number;
+  answeredTotal: number;
 };
 
 export type QuizViewer = {
@@ -67,6 +70,7 @@ export type QuizResultsSource = {
   votes?: { optionId: string; name: string }[];
   viewer: QuizViewer;
   projector: boolean;
+  attendees: number;
 };
 
 export type QuizResultsVisibility = {
@@ -152,6 +156,8 @@ export function buildQuizResultsPayload(
             correct: source.viewer.optionId === correctOption?.id,
           }
         : null,
+    attendees: source.attendees,
+    answeredTotal: total,
   };
 }
 
@@ -300,6 +306,7 @@ export async function loadQuizResults(
       ...cached,
       viewer: viewerState(access, vote),
       projector,
+      attendees: await countTalkAttendees(quiz.talkId, db),
     });
   }
 
@@ -371,5 +378,6 @@ export async function loadQuizResults(
     ...data,
     viewer: viewerState(access, vote),
     projector,
+    attendees: await countTalkAttendees(quiz.talkId, db),
   });
 }

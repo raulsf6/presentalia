@@ -42,6 +42,7 @@ function source(overrides: Partial<TextResultsSource> = {}): TextResultsSource {
     rankings: [],
     viewer: { isAttendee: true, hasAnswered: false },
     projector: false,
+    attendees: 0,
     ...overrides,
   };
 }

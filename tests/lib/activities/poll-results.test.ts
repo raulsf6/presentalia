@@ -26,6 +26,7 @@ describe("buildPollResultsPayload", () => {
         { optionId: "option-b", votes: 1 },
       ],
       votes: [{ optionId: "option-a", name: "private@example.com" }],
+      attendees: 0,
     });
 
     expect(payload?.total).toBe(2);
@@ -39,6 +40,7 @@ describe("buildPollResultsPayload", () => {
       options,
       counts: [{ optionId: "option-a", votes: 1 }],
       votes: [{ optionId: "option-a", name: "voter@example.com" }],
+      attendees: 0,
     });
 
     expect(payload?.voters).toEqual([
@@ -48,7 +50,24 @@ describe("buildPollResultsPayload", () => {
 
   test("returns null when the poll is hidden or does not exist", () => {
     expect(
-      buildPollResultsPayload({ poll: null, options: [], counts: [] }),
+      buildPollResultsPayload({
+        poll: null,
+        options: [],
+        counts: [],
+        attendees: 0,
+      }),
     ).toBeNull();
+  });
+
+  test("passes the attendee count through", () => {
+    const payload = buildPollResultsPayload({
+      poll,
+      options,
+      counts: [{ optionId: "option-a", votes: 2 }],
+      attendees: 5,
+    });
+
+    expect(payload?.attendees).toBe(5);
+    expect(payload?.total).toBe(2);
   });
 });

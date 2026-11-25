@@ -170,6 +170,31 @@ describe("loadQuizResults", () => {
     expect(payload?.total).toBeNull();
   });
 
+  test("gives managers the attendee count and the true answered total while live", async () => {
+    const f = await setup();
+    await vote(f, f.member, f.optionIds[0]);
+
+    const payload = await loadQuizResults(f.quizId, f.managerAccess, {
+      db: f.db,
+    });
+
+    expect(payload?.attendees).toBe(2);
+    expect(payload?.answeredTotal).toBe(1);
+    expect(payload?.total).toBeNull();
+  });
+
+  test("counts attendees and the answered total for members too", async () => {
+    const f = await setup();
+    await vote(f, f.member, f.optionIds[0]);
+
+    const payload = await loadQuizResults(f.quizId, f.memberAccess, {
+      db: f.db,
+    });
+
+    expect(payload?.attendees).toBe(2);
+    expect(payload?.answeredTotal).toBe(1);
+  });
+
   test("reveals the answer and viewer correctness once closed", async () => {
     const f = await setup({ status: "closed" });
     await vote(f, f.member, f.optionIds[0]);

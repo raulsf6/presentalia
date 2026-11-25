@@ -114,10 +114,22 @@ describe("loadCloudResults", () => {
 
     expect(payload?.mode).toBe("live");
     expect(payload?.needsVote).toBe(false);
+    expect(payload?.attendees).toBe(3);
+    expect(payload?.activity.totalIdeas).toBe(3);
     expect(payload?.items).toEqual([
       { key: "better onboarding", label: "Better onboarding", count: 2 },
       { key: "voice", label: "voice", count: 1 },
     ]);
+  });
+
+  test("counts attendees for members too", async () => {
+    await addIdea(f, f.other.id, "Better onboarding");
+
+    const payload = await loadCloudResults(f.activityId, f.memberAccess, {
+      db: f.db,
+    });
+
+    expect(payload?.attendees).toBe(3);
   });
 
   test("after close the member sees the final cloud", async () => {

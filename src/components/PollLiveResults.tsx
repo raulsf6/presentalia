@@ -1,13 +1,14 @@
 "use client";
 
+import { AnsweredCounter } from "@/components/AnsweredCounter";
 import { useT } from "@/components/I18nProvider";
 import { useLiveResults } from "@/components/useLiveResults";
-import type { PollResultsPayload } from "@/lib/activities/polls";
+import type { PollResultsPayload } from "@/lib/activities/poll-results";
 
 const pollIsActive = (payload: PollResultsPayload) =>
   payload.poll.status === "active";
 
-export function LiveResults({
+export function PollLiveResults({
   initial,
   projector,
   endpoint,
@@ -33,7 +34,7 @@ export function LiveResults({
     );
   }
 
-  const { poll, rows, total, voters } = payload;
+  const { poll, rows, total, voters, attendees } = payload;
   const large = projector;
 
   return (
@@ -48,16 +49,11 @@ export function LiveResults({
           ) : (
             <span className="chip chip-closed">{t("status.closed")}</span>
           )}
-          <span
-            className={`${large ? "text-lg" : "text-sm"} text-muted font-bold`}
-          >
-            {t(
-              total === 1 ? "results.response.one" : "results.response.other",
-              {
-                count: total,
-              },
-            )}
-          </span>
+          <AnsweredCounter
+            answered={total}
+            attendees={attendees}
+            large={large}
+          />
         </div>
         <h1
           className={`font-display text-ink tracking-tight ${

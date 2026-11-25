@@ -14,6 +14,7 @@ import {
   seedPoll,
   seedQuiz,
   seedTalk,
+  setStatus,
   type Db as TestDb,
 } from "../../db/harness";
 
@@ -46,7 +47,7 @@ describe("loadDeckActivity", () => {
       talkId,
       pollId,
       await managerAccess(talkId),
-      db,
+      { db },
     );
 
     if (result?.type !== "poll") throw new Error("expected a poll");
@@ -66,7 +67,7 @@ describe("loadDeckActivity", () => {
       talkId,
       quizId,
       await managerAccess(talkId),
-      db,
+      { db },
     );
 
     if (result?.type !== "quiz") throw new Error("expected a quiz");
@@ -85,7 +86,7 @@ describe("loadDeckActivity", () => {
       talkId,
       activityId,
       await managerAccess(talkId),
-      db,
+      { db },
     );
 
     if (result?.type !== "cloud") throw new Error("expected an idea cloud");
@@ -103,7 +104,7 @@ describe("loadDeckActivity", () => {
       talkId,
       pollId,
       await managerAccess(talkId),
-      db,
+      { db },
     );
 
     expect(result).toBeNull();
@@ -115,8 +116,37 @@ describe("loadDeckActivity", () => {
       talkId,
       crypto.randomUUID(),
       await managerAccess(talkId),
-      db,
+      { db },
     );
     expect(result).toBeNull();
+  });
+
+  test("bypasses cached counts when fresh is requested", async () => {
+    const talkId = await seedTalk(pglite, "Deck talk", [], ownerId);
+    const { pollId, optionIds } = await seedPoll(pglite, talkId);
+    await setStatus(pglite, pollId, "active");
+    const access = await managerAccess(talkId);
+
+    const first = await loadDeckActivity(talkId, pollId, access, { db });
+    if (first?.type !== "poll") throw new Error("expected a poll");
+    expect(first.payload.total).toBe(0);
+
+    const voter = await makeUser(pglite, "voter@example.com");
+    await pglite.query(
+      `insert into public.poll_votes (poll_id, user_id, option_id)
+       values ($1, $2, $3)`,
+      [pollId, voter.id, optionIds[0]],
+    );
+
+    const cached = await loadDeckActivity(talkId, pollId, access, { db });
+    if (cached?.type !== "poll") throw new Error("expected a poll");
+    expect(cached.payload.total).toBe(0);
+
+    const fresh = await loadDeckActivity(talkId, pollId, access, {
+      db,
+      fresh: true,
+    });
+    if (fresh?.type !== "poll") throw new Error("expected a poll");
+    expect(fresh.payload.total).toBe(1);
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { AnsweredCounter } from "@/components/AnsweredCounter";
 import { useT } from "@/components/I18nProvider";
 import { useLiveResults } from "@/components/useLiveResults";
 import type { QuizResultsPayload } from "@/lib/activities/quiz-results";
@@ -35,8 +36,18 @@ export function QuizLiveResults({
     );
   }
 
-  const { quiz, options, rows, total, voters, viewer, showResults, needsVote } =
-    payload;
+  const {
+    quiz,
+    options,
+    rows,
+    total,
+    voters,
+    viewer,
+    showResults,
+    needsVote,
+    attendees,
+    answeredTotal,
+  } = payload;
   const large = projector;
   const closed = quiz.status === "closed";
   const showWaiting = !closed && !showResults;
@@ -62,16 +73,11 @@ export function QuizLiveResults({
           ) : (
             <span className="chip chip-closed">{t("status.closed")}</span>
           )}
-          {showResults && total !== null ? (
-            <span
-              className={`${large ? "text-lg" : "text-sm"} text-muted font-bold`}
-            >
-              {t(
-                total === 1 ? "results.response.one" : "results.response.other",
-                { count: total },
-              )}
-            </span>
-          ) : null}
+          <AnsweredCounter
+            answered={answeredTotal}
+            attendees={attendees}
+            large={large}
+          />
         </div>
         <h1
           className={`font-display text-ink tracking-tight ${

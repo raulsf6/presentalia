@@ -29,6 +29,7 @@ function source(
       entry("c", "faster responses", 3),
     ],
     viewer: { isAttendee: true, hasAnswered: false },
+    attendees: 0,
     ...overrides,
   };
 }

@@ -13,7 +13,7 @@ const NO_STORE = { "Cache-Control": "private, no-store" } as const;
  * poll this URL directly.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ talkId: string; activityId: string }> },
 ) {
   const { talkId, activityId } = await params;
@@ -25,10 +25,14 @@ export async function GET(
     );
   }
 
+  const fresh = new URL(request.url).searchParams.get("fresh") === "1";
   const payload = await loadDeckActivity(
     talkId,
     activityId,
     authorization.access,
+    {
+      fresh,
+    },
   );
   if (!payload) {
     return Response.json(

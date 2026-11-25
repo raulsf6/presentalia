@@ -296,6 +296,10 @@ export const es: Record<MessageKey, string> = {
     "Los resultados no están disponibles temporalmente. Actualiza para volver a intentarlo.",
   "results.response.one": "{count} respuesta",
   "results.response.other": "{count} respuestas",
+  "results.answeredCount.one":
+    "{answered}/{attendees} asistentes han respondido",
+  "results.answeredCount.other":
+    "{answered}/{attendees} asistentes han respondido",
   "results.resultsAnonymous": "Los resultados son anónimos.",
   "results.autoUpdate":
     "Los resultados se actualizan automáticamente a medida que llegan los votos.",

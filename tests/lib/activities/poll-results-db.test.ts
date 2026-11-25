@@ -189,4 +189,73 @@ describe("loadPollResults", () => {
     const second = await loadPollResults(pollId, access, { db });
     expect(second?.poll.status).toBe("closed");
   });
+
+  test("counts roster members and guests as attendees for managers", async () => {
+    const { pglite, db, talkId, pollId, access } = await setupPoll(false);
+    const member = await makeUser(pglite, "member@example.com");
+    await pglite.query(
+      "insert into public.talk_roster (talk_id, user_id) values ($1, $2)",
+      [talkId, member.id],
+    );
+    for (const username of ["Sam", "Alex"]) {
+      await pglite.query(
+        `insert into public.talk_guests
+           (id, talk_id, username, username_normalized, token_hash)
+         values ($1, $2, $3, $4, 'hash')`,
+        [crypto.randomUUID(), talkId, username, username.toLowerCase()],
+      );
+    }
+
+    const payload = await loadPollResults(pollId, access, { db });
+
+    expect(payload?.attendees).toBe(3);
+    expect(payload?.total).toBe(1);
+  });
+
+  test("keeps the attendee count current when counts are cached", async () => {
+    const { pglite, db, talkId, pollId, access } = await setupPoll(false);
+    const first = await loadPollResults(pollId, access, { db });
+    expect(first?.attendees).toBe(0);
+
+    await pglite.query(
+      `insert into public.talk_guests
+         (id, talk_id, username, username_normalized, token_hash)
+       values ($1, $2, 'Sam', 'sam', 'hash')`,
+      [crypto.randomUUID(), talkId],
+    );
+
+    const cached = await loadPollResults(pollId, access, { db });
+    expect(cached?.attendees).toBe(1);
+    expect(cached?.total).toBe(1);
+  });
+
+  test("counts attendees for members and guests too", async () => {
+    const { pglite, db, talkId, pollId, voter } = await setupPoll(false);
+    await pglite.query(
+      `insert into public.talk_guests
+         (id, talk_id, username, username_normalized, token_hash)
+       values ($1, $2, 'Sam', 'sam', 'hash')`,
+      [crypto.randomUUID(), talkId],
+    );
+    const memberAccess: TalkAccess = {
+      user: { id: voter.id, email: voter.email, role: "attendee" },
+      talk: { id: talkId } as TalkRow,
+      access: "member",
+    };
+    const guestAccess: TalkAccess = {
+      guest: {
+        id: crypto.randomUUID(),
+        talkId,
+        username: "Sam",
+      },
+      talk: { id: talkId } as TalkRow,
+      access: "guest",
+    };
+
+    const member = await loadPollResults(pollId, memberAccess, { db });
+    expect(member?.attendees).toBe(1);
+
+    const guest = await loadPollResults(pollId, guestAccess, { db });
+    expect(guest?.attendees).toBe(1);
+  });
 });

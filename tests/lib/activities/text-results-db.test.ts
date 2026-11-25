@@ -135,6 +135,21 @@ describe("loadTextResults", () => {
     expect(payload?.activity.totalAnswers).toBe(1);
   });
 
+  test("counts eligible attendees for managers and attendees alike", async () => {
+    await answer(f, f.other, "Talk to users first.");
+
+    const manager = await loadTextResults(f.activityId, f.managerAccess, {
+      db: f.db,
+    });
+    expect(manager?.attendees).toBe(2);
+    expect(manager?.activity.totalAnswers).toBe(1);
+
+    const member = await loadTextResults(f.activityId, f.memberAccess, {
+      db: f.db,
+    });
+    expect(member?.attendees).toBe(2);
+  });
+
   test("manager previews all answers while locked, attendees do not", async () => {
     const first = await answer(f, f.member, "Ship the small thing.");
     const second = await answer(f, f.other, "Talk to users first.");
