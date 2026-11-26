@@ -82,7 +82,7 @@ export function QuizLiveResults({
         <h1
           className={`font-display text-ink tracking-tight ${
             large
-              ? "text-4xl leading-tight md:text-6xl"
+              ? "text-3xl leading-tight md:text-4xl"
               : "text-2xl md:text-3xl"
           }`}
         >

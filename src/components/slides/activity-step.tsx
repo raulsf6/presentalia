@@ -205,7 +205,7 @@ export function ActivityStep({
                 ) : null}
               </div>
             ) : null}
-            <h1 className="font-display max-w-[calc(100%-7rem)] min-w-0 text-4xl leading-tight tracking-tight md:text-6xl">
+            <h1 className="font-display max-w-[calc(100%-7rem)] min-w-0 text-3xl leading-tight tracking-tight md:text-4xl">
               {activity.question}
             </h1>
           </header>
