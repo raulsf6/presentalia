@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { BackLink } from "@/components/BackLink";
 import { CloudForm } from "@/components/CloudForm";
 import { I18nProvider } from "@/components/I18nProvider";
 import { PageSkeleton } from "@/components/PageSkeleton";
@@ -43,12 +43,10 @@ async function NewCloudActivityContent({
           <h1 className="font-display text-ink text-2xl">
             {t("activities.newCloud")}
           </h1>
-          <Link
+          <BackLink
             href={`/talks/${talkId}/activities/new`}
-            className="linky shrink-0"
-          >
-            {t("activities.back")}
-          </Link>
+            label={t("activities.back")}
+          />
         </div>
         <div className="card p-6">
           <CloudForm talkId={talkId} />

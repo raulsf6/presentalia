@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { AnonymousJoinToggle } from "@/components/AnonymousJoinToggle";
+import { BackLink } from "@/components/BackLink";
 import { HideInProjector } from "@/components/HideInProjector";
 import { I18nProvider } from "@/components/I18nProvider";
 import { LiveActivityRefresh } from "@/components/LiveActivityRefresh";
@@ -66,9 +67,10 @@ async function JoinQrContent({
         <LiveActivityRefresh talkId={talkId} />
         <div className="mb-8 flex w-full items-center justify-between gap-4">
           <HideInProjector>
-            <Link href={`/talks/${talkId}`} className="linky">
-              ← {access.talk.name}
-            </Link>
+            <BackLink
+              href={`/talks/${talkId}`}
+              label={t("remote.backToTalk")}
+            />
           </HideInProjector>
           <Link href={toggleHref} className="btn btn-ghost btn-small ml-auto">
             {projector ? t("qr.presenterView") : t("qr.projectorView")}

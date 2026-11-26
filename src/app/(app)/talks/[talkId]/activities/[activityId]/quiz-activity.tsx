@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
+import { BackLink } from "@/components/BackLink";
 import { I18nProvider } from "@/components/I18nProvider";
 import { VoteForm } from "@/components/VoteForm";
 import type { ActivityStatus } from "@/lib/activities/activities";
@@ -61,9 +61,10 @@ export async function QuizActivity({
       <main className="mx-auto w-full max-w-2xl px-6 py-12">
         <div className="mb-8 flex items-center justify-between gap-4">
           {isAttendee(access) ? (
-            <Link href={`/talks/${talkId}`} className="linky">
-              ← {access.talk.name}
-            </Link>
+            <BackLink
+              href={`/talks/${talkId}`}
+              label={t("remote.backToTalk")}
+            />
           ) : null}
           <div className="ml-auto">
             {status === "active" ? (

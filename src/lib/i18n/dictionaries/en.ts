@@ -184,7 +184,7 @@ export const en = {
   "activities.newQuiz": "New quiz",
   "activities.newText": "New text prompt",
   "activities.newCloud": "New idea cloud",
-  "activities.back": "← New activity",
+  "activities.back": "New activity",
 
   "form.creating": "Creating…",
   "form.remove": "Remove",

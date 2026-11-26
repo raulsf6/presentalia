@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { Suspense } from "react";
 
+import { BackLink } from "@/components/BackLink";
 import { getLocale } from "@/lib/i18n/server";
 import { createTranslator } from "@/lib/i18n/translate";
 
@@ -37,9 +37,7 @@ async function NotFoundContent() {
         <p className="text-muted text-sm font-semibold">
           {t("notFound.detail")}
         </p>
-        <Link href="/talks" className="btn">
-          {t("notFound.back")}
-        </Link>
+        <BackLink href="/talks" label={t("notFound.back")} />
       </div>
     </main>
   );

@@ -24,6 +24,15 @@ function SvgIcon({ children, ...props }: IconProps) {
   );
 }
 
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <SvgIcon {...props}>
+      <path d="M20 12H4" />
+      <path d="m9.5 6.5-5.5 5.5 5.5 5.5" />
+    </SvgIcon>
+  );
+}
+
 export function PresentationIcon(props: IconProps) {
   return (
     <SvgIcon {...props}>

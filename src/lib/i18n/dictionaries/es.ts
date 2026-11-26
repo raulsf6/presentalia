@@ -186,7 +186,7 @@ export const es: Record<MessageKey, string> = {
   "activities.newQuiz": "Nuevo cuestionario",
   "activities.newText": "Nueva pregunta abierta",
   "activities.newCloud": "Nueva nube de ideas",
-  "activities.back": "← Nueva actividad",
+  "activities.back": "Nueva actividad",
 
   "form.creating": "Creando…",
   "form.remove": "Quitar",

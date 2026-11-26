@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import {
@@ -9,6 +8,7 @@ import {
 } from "@/actions/activities";
 import { rankTextActivityAction } from "@/actions/text";
 import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
+import { BackLink } from "@/components/BackLink";
 import { useT, useLocale } from "@/components/I18nProvider";
 import { LoadingDots } from "@/components/LoadingDots";
 import type { MessageKey } from "@/lib/i18n/dictionaries/en";
@@ -201,9 +201,7 @@ export function RemoteDeck({
         <p className="text-muted text-xs font-semibold">
           {hasSlides ? "" : t("remote.noSlides")}
         </p>
-        <Link href={`/talks/${talkId}`} className="linky">
-          {t("remote.backToTalk")}
-        </Link>
+        <BackLink href={`/talks/${talkId}`} label={t("remote.backToTalk")} />
       </footer>
     </main>
   );

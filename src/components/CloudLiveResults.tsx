@@ -6,12 +6,14 @@ import { useLiveResults } from "@/components/useLiveResults";
 import type { CloudItem } from "@/lib/activities/cloud-activity";
 import type { CloudResultsPayload } from "@/lib/activities/cloud-results";
 
+// Decorative hues only: avoid green/red, which imply correctness in quizzes.
 const CLOUD_COLORS = [
-  "#d9481f",
-  "#0f7a3b",
-  "#7a5200",
+  "#3157d5",
+  "#7c3aed",
+  "#b34d00",
+  "#007c91",
+  "#a21caf",
   "#1f140b",
-  "#6f614f",
 ] as const;
 
 const cloudIsLive = (payload: CloudResultsPayload) =>

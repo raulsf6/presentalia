@@ -158,6 +158,10 @@
     @apply border-ink bg-coral text-ink shadow-hard-md focus-visible:outline-ink enabled:hover:shadow-hard-xl inline-flex items-center justify-center gap-2 rounded-lg border-[3px] px-4 py-2 font-sans text-xs font-bold tracking-[0.04em] uppercase transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 enabled:cursor-pointer enabled:hover:scale-[1.02] enabled:active:scale-[0.985] enabled:active:shadow-[1px_1px_0_var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none;
   }
 
+  .icon-btn {
+    @apply border-ink text-ink shadow-hard-md hover:shadow-hard-lg focus-visible:outline-ink inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border-[3px] bg-white transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.985] active:shadow-[1px_1px_0_var(--color-ink)];
+  }
+
   .btn-ghost {
     @apply text-ink enabled:hover:bg-cream2 bg-white;
   }

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { ActivityAdminControls } from "@/components/ActivityAdminControls";
+import { BackLink } from "@/components/BackLink";
 import { ActivityResultsBody } from "@/components/ActivityResultsBody";
 import { ActivityTypeBadge } from "@/components/ActivityTypeBadge";
 import { I18nProvider } from "@/components/I18nProvider";
@@ -84,9 +85,7 @@ async function ActivityResultsContent({
         }`}
       >
         <div className="mb-6 flex items-center justify-between gap-4">
-          <Link href={`/talks/${talkId}`} className="linky">
-            ← {access.talk.name}
-          </Link>
+          <BackLink href={`/talks/${talkId}`} label={t("remote.backToTalk")} />
           <Link href={toggleHref} className="btn btn-ghost btn-small">
             {projector ? t("results.attendeeView") : t("results.projectorView")}
           </Link>

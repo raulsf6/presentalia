@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { BackLink } from "@/components/BackLink";
 import { useT } from "@/components/I18nProvider";
 import type { SlideDirection, SlideState } from "@/lib/deck/slide-state";
 import { ActivityStep } from "./activity-step";
@@ -183,9 +184,7 @@ export function PresentationDeck({
         title={t("present.noAccessTitle")}
         detail={t("present.noAccessDetail")}
       >
-        <Link href="/talks" className="btn btn-ghost">
-          {t("present.backToTalks")}
-        </Link>
+        <BackLink href="/talks" label={t("present.backToTalks")} />
       </SlideScreenMessage>
     );
   }
@@ -196,9 +195,7 @@ export function PresentationDeck({
         title={t("present.missingTitle")}
         detail={t("present.missingDetail")}
       >
-        <Link href="/talks" className="btn btn-ghost">
-          {t("present.backToTalks")}
-        </Link>
+        <BackLink href="/talks" label={t("present.backToTalks")} />
       </SlideScreenMessage>
     );
   }

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { BackLink } from "@/components/BackLink";
 import { useT } from "@/components/I18nProvider";
 
 /**
@@ -41,9 +41,5 @@ export function SlideScreenMessage({
 /** The usual "back to the talk" action on these screens. */
 export function BackToTalk({ talkId }: { talkId: string }) {
   const t = useT();
-  return (
-    <Link href={`/talks/${talkId}`} className="btn btn-ghost btn-small">
-      {t("remote.backToTalk")}
-    </Link>
-  );
+  return <BackLink href={`/talks/${talkId}`} label={t("remote.backToTalk")} />;
 }
